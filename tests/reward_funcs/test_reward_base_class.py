@@ -5,7 +5,7 @@ from numpy import array
 from numpy.random import randint
 
 # Punch Clock Imports
-from scheduler_testbed.reward_funcs.reward_base_class import RewardFunc
+from punchclock.reward_funcs.reward_base_class import RewardFunc
 
 # %% Test initialize
 print("\nTest initialize...")

@@ -53,12 +53,11 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = [
-    "scheduler_testbed", # folder where modules are stored
-    "studies",
+    "punchclock", # folder where modules are stored
 ]
 zip-safe = false
 [tool.setuptools.dynamic]
-version = {attr = "scheduler_testbed.__version__"}
+version = {attr = "punchclock.__version__"}
 
 [tool.isort]
 # Play nicely with black

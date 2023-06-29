@@ -9,8 +9,8 @@ from gymnasium.spaces import Box, Dict, MultiDiscrete
 from numpy import array
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import loadJSONFile, saveJSONFile
-from scheduler_testbed.policies.policy_builder import (
+from punchclock.common.utilities import loadJSONFile, saveJSONFile
+from punchclock.policies.policy_builder import (
     BoxConfig,
     DictConfig,
     MultiDiscreteConfig,

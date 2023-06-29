@@ -6,7 +6,7 @@ from __future__ import annotations
 from numpy import array, eye
 
 # Punch Clock Imports
-from scheduler_testbed.estimation.ez_ukf import ezUKF
+from punchclock.estimation.ez_ukf import ezUKF
 
 # %% Test ezUKF
 print("\nTest ezUKF...")

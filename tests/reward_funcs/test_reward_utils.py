@@ -4,7 +4,7 @@
 from numpy.random import rand
 
 # Punch Clock Imports
-from scheduler_testbed.reward_funcs.reward_utils import (
+from punchclock.reward_funcs.reward_utils import (
     cropArray,
     lookupPreprocessor,
     sumCols,

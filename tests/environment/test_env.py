@@ -14,12 +14,12 @@ from numpy.linalg import norm
 from ray.rllib.utils import check_env
 
 # Punch Clock Imports
-from scheduler_testbed.common.constants import getConstants
-from scheduler_testbed.common.math import getCircOrbitVel
-from scheduler_testbed.common.transforms import ecef2eci
-from scheduler_testbed.common.utilities import actionSpace2Array
-from scheduler_testbed.environment.env import SSAScheduler
-from scheduler_testbed.environment.env_parameters import SSASchedulerParams
+from punchclock.common.constants import getConstants
+from punchclock.common.math import getCircOrbitVel
+from punchclock.common.transforms import ecef2eci
+from punchclock.common.utilities import actionSpace2Array
+from punchclock.environment.env import SSAScheduler
+from punchclock.environment.env_parameters import SSASchedulerParams
 
 # %% Supporting test Parameters
 RE = getConstants()["earth_radius"]
@@ -406,7 +406,7 @@ print("\nRay environment checker...")
 check_env(env)
 # %% Test registration and gym.make()
 print("\nTest gym environment creation stuff...")
-# NOTE: See __init__.py in "scheduler_testbed" for registration code.
+# NOTE: See __init__.py in "punchclock" for registration code.
 env3 = gym.make("SSAScheduler-v0", scenario_params=env_params)
 env3.reset()
 [obs, rwd, done, truncated, info] = env3.step(action_test)

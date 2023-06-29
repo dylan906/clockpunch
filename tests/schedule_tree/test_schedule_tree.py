@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 from numpy import arange, array, eye, ndarray
 
 # Punch Clock Imports
-from scheduler_testbed.common.agents import Sensor, Target
-from scheduler_testbed.dynamics.dynamics_classes import (
+from punchclock.common.agents import Sensor, Target
+from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from scheduler_testbed.estimation.ukf_v2 import UnscentedKalmanFilter
-from scheduler_testbed.schedule_tree.schedule_tree import ScheduleTree
+from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
+from punchclock.schedule_tree.schedule_tree import ScheduleTree
 
 # %% Build test data for calcIntervalTree
 print("\nTest calcIntervalTree()...")

@@ -9,7 +9,7 @@ from numpy import array
 from numpy.random import randint
 
 # Punch Clock Imports
-from scheduler_testbed.analysis_utils.postprocess_sim_results import (
+from punchclock.analysis_utils.postprocess_sim_results import (
     addPostProcessedCols,
     calc3dTr,
     calcMissedOpportunities,
@@ -17,7 +17,7 @@ from scheduler_testbed.analysis_utils.postprocess_sim_results import (
     countOpportunities,
     loadSimResults,
 )
-from scheduler_testbed.common.utilities import MaskConverter
+from punchclock.common.utilities import MaskConverter
 
 # %% Load test sim results
 print("\nTest loadSimResults...")

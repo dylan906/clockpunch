@@ -8,8 +8,8 @@ from numpy import Inf, array, vstack
 from numpy.random import seed
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import isActionValid
-from scheduler_testbed.policies.greedy_cov_v2 import GreedyCovariance
+from punchclock.common.utilities import isActionValid
+from punchclock.policies.greedy_cov_v2 import GreedyCovariance
 
 # %% Set random seed
 seed(42)

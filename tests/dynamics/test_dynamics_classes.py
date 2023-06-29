@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from numpy import array, linspace, ndarray, ones
 
 # Punch Clock Imports
-from scheduler_testbed.dynamics.dynamics_classes import (
+from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
     SatDynamicsModel,
     StaticTerrestrial,
@@ -112,7 +112,9 @@ class TestDynamicsMoreParams(DynamicsModel):
         end_time: float,
         **kwargs,
     ) -> ndarray:
-        return super().propagate(start_state, start_time, end_time, [self.a, self.b])
+        return super().propagate(
+            start_state, start_time, end_time, [self.a, self.b]
+        )
 
 
 # %% Test base class

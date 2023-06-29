@@ -8,8 +8,8 @@ from numpy import array, zeros
 from numpy.random import randint
 
 # Punch Clock Imports
-from scheduler_testbed.common.agents import Sensor, Target
-from scheduler_testbed.common.utilities import (
+from punchclock.common.agents import Sensor, Target
+from punchclock.common.utilities import (
     MaskConverter,
     calcVisMap,
     filterAgentsType,
@@ -21,10 +21,10 @@ from scheduler_testbed.common.utilities import (
 
 # %% JSON loader
 # dat_sat = loadJSONFile(
-#     "/home/dylanrpenn/scheduler_testbed/tests/datafiles/" "leo_only_test_targets.json"
+#     "/home/dylanrpenn/punchclock/tests/datafiles/" "leo_only_test_targets.json"
 # )
 # dat_ssn = loadJSONFile(
-#     "/home/dylanrpenn/scheduler_testbed/tests/datafiles/" "dedicated_ssn_network.json"
+#     "/home/dylanrpenn/punchclock/tests/datafiles/" "dedicated_ssn_network.json"
 # )
 # print(f"dat_sat[0]={dat_sat[0]}")
 # print(f"dat_ssn[0]={dat_ssn[0]}")

@@ -11,10 +11,10 @@ from numpy import array, zeros
 from numpy.random import rand, randint, seed
 
 # Punch Clock Imports
-from scheduler_testbed.common.agents import Sensor, Target
-from scheduler_testbed.dynamics.dynamics_classes import SatDynamicsModel
-from scheduler_testbed.estimation.ez_ukf import ezUKF
-from scheduler_testbed.policies.need import NeedParameter
+from punchclock.common.agents import Sensor, Target
+from punchclock.dynamics.dynamics_classes import SatDynamicsModel
+from punchclock.estimation.ez_ukf import ezUKF
+from punchclock.policies.need import NeedParameter
 
 # %% Dummy Parameters
 print("\nSetting parameters...")

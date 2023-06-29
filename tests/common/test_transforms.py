@@ -6,7 +6,7 @@ from numpy import array, pi
 from numpy.random import rand
 
 # Punch Clock Imports
-from scheduler_testbed.common.transforms import (
+from punchclock.common.transforms import (
     coe2eci,
     ecef2eci,
     eci2ecef,

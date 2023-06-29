@@ -7,7 +7,7 @@ from numpy import ones
 from numpy.random import randint
 
 # Punch Clock Imports
-from scheduler_testbed.policies.ucb_v2 import UpperConfidenceBounds
+from punchclock.policies.ucb_v2 import UpperConfidenceBounds
 
 # %% Initialize policy
 print("\nTest initialization...")

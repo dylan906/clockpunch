@@ -6,7 +6,7 @@ from numpy import array
 from numpy.random import rand, randint
 
 # Punch Clock Imports
-from scheduler_testbed.reward_funcs.threshold_v2 import Threshold
+from punchclock.reward_funcs.threshold_v2 import Threshold
 
 # %% Test initialization
 print("\nTest initialization...")

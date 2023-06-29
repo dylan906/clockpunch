@@ -4,7 +4,7 @@
 from numpy import array
 
 # Punch Clock Imports
-from scheduler_testbed.reward_funcs.binary import BinaryReward
+from punchclock.reward_funcs.binary import BinaryReward
 
 # %% Test initialization
 pol = BinaryReward(penalty=0.2)

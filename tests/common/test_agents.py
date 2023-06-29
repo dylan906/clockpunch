@@ -12,14 +12,14 @@ from matplotlib import pyplot as plt
 from numpy import array, asarray, eye, linspace, sqrt, zeros
 
 # Punch Clock Imports
-from scheduler_testbed.common.agents import Agent, Sensor, Target
-from scheduler_testbed.common.constants import getConstants
-from scheduler_testbed.common.transforms import ecef2eci
-from scheduler_testbed.dynamics.dynamics_classes import (
+from punchclock.common.agents import Agent, Sensor, Target
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci
+from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from scheduler_testbed.estimation.ukf_v2 import UnscentedKalmanFilter
+from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
 
 # %% Build Filter
 print("Build filter...")
@@ -65,7 +65,9 @@ d = Agent(sat_dynamics, "derSat", array([7000, 0, 0, 0, sqrt(mu / 7000), 0]))
 print(f"New satellite agent: vars(sat agent) = \n{vars(d)}\n")
 
 d.propagate(10)
-print(f"New satellite agent: vars(sat agent) after updating dynamics = \n{vars(d)}\n")
+print(
+    f"New satellite agent: vars(sat agent) after updating dynamics = \n{vars(d)}\n"
+)
 
 # %% Test get measurement
 print("Test getMeasurement...")
@@ -98,7 +100,9 @@ e1 = Target(
 print("Test without noise")
 print(f"    true state = {e1.eci_state}")
 print(f"    measured state = \n{e1.getMeasurement()}")
-print(f"    truth - measured = {asarray(e1.eci_state).squeeze() - e1.getMeasurement()}")
+print(
+    f"    truth - measured = {asarray(e1.eci_state).squeeze() - e1.getMeasurement()}"
+)
 # %% Test Propagation over multiple iterations
 print("\nTest Propagation over multiple iterations...")
 

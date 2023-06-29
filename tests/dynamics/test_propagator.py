@@ -6,7 +6,7 @@ from __future__ import annotations
 from numpy import array
 
 # Punch Clock Imports
-from scheduler_testbed.dynamics.propagator import simplePropagate
+from punchclock.dynamics.propagator import simplePropagate
 
 # %% Test simplePropagate
 print("\nTest simple functionality...")

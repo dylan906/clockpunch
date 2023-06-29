@@ -9,8 +9,8 @@ from multiprocessing import active_children
 from pandas import DataFrame, concat, read_csv, read_pickle
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import loadJSONFile
-from scheduler_testbed.simulation.mc import MonteCarloRunner
+from punchclock.common.utilities import loadJSONFile
+from punchclock.simulation.mc import MonteCarloRunner
 
 # %% Load MC Config
 mc_config_path = "tests/simulation/data/test_mc_config"

@@ -8,7 +8,7 @@ from numpy import array, concatenate, pi, shape, sqrt, zeros
 from numpy.linalg import norm
 
 # Punch Clock Imports
-from scheduler_testbed.common.constants import getConstants
+from punchclock.common.constants import getConstants
 
 # %% Setup
 consts = getConstants()
@@ -33,7 +33,9 @@ sat_x0 = concatenate((sat_r0_eci, sat_v0_eci), axis=1)
 
 sat_agents = []
 for i, id in enumerate(sat_ids):
-    sat_agents.append({"sat_num": id, "sat_name": id, "init_eci": list(sat_x0[i, :])})
+    sat_agents.append(
+        {"sat_num": id, "sat_name": id, "init_eci": list(sat_x0[i, :])}
+    )
 # %% Ground stations
 ground_ids = ["A", "B"]
 lats = [0, 0]

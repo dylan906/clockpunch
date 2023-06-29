@@ -1,7 +1,7 @@
 """Tests for norm_metric.py."""
 # %% Imports
 # Punch Clock Imports
-from scheduler_testbed.reward_funcs.norm_metric import NormalizedMetric
+from punchclock.reward_funcs.norm_metric import NormalizedMetric
 
 # %% Test initialization
 print("\nTest initialization...")

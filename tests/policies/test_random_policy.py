@@ -5,7 +5,7 @@ from gymnasium.spaces import Box, Dict, MultiDiscrete
 from numpy import Inf
 
 # Punch Clock Imports
-from scheduler_testbed.policies.random_policy import RandomPolicy
+from punchclock.policies.random_policy import RandomPolicy
 
 # %% Build action/obs spaces
 num_sensors = 2

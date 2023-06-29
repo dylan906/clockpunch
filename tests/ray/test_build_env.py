@@ -11,10 +11,10 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.utils import check_env
 
 # Punch Clock Imports
-from scheduler_testbed.common.constants import getConstants
-from scheduler_testbed.common.transforms import ecef2eci
-from scheduler_testbed.nets.action_mask_model import MyActionMaskModel
-from scheduler_testbed.ray.build_env import buildEnv, genConfigFile
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci
+from punchclock.nets.action_mask_model import MyActionMaskModel
+from punchclock.ray.build_env import buildEnv, genConfigFile
 
 # %% Set test environment params
 print("\nSet env params...")

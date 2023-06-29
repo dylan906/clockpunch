@@ -19,8 +19,8 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from torch import tensor
 
 # Punch Clock Imports
-from scheduler_testbed.environment.wrappers import FlatDict
-from scheduler_testbed.nets.action_mask_model import MyActionMaskModel
+from punchclock.environment.wrappers import FlatDict
+from punchclock.nets.action_mask_model import MyActionMaskModel
 
 # %% Test params
 print("\nTest params...")

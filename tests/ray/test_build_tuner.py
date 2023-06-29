@@ -21,10 +21,10 @@ from ray.tune.stopper import MaximumIterationStopper
 from torch import tensor
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import loadJSONFile, printNestedDict
-from scheduler_testbed.nets.action_mask_model import MyActionMaskModel
-from scheduler_testbed.ray.build_env import buildEnv
-from scheduler_testbed.ray.build_tuner import (
+from punchclock.common.utilities import loadJSONFile, printNestedDict
+from punchclock.nets.action_mask_model import MyActionMaskModel
+from punchclock.ray.build_env import buildEnv
+from punchclock.ray.build_tuner import (
     _getDefaults,
     _getExperimentName,
     appendNewKeys,

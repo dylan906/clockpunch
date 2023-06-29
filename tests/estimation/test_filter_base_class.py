@@ -7,12 +7,12 @@ from __future__ import annotations
 from numpy import array, eye, ndarray, random
 
 # Punch Clock Imports
-from scheduler_testbed.dynamics.dynamics_classes import (
+from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from scheduler_testbed.estimation.filter_base_class import Filter
-from scheduler_testbed.estimation.ukf_v2 import UnscentedKalmanFilter
+from punchclock.estimation.filter_base_class import Filter
+from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
 
 
 # %% Define Test Parameters

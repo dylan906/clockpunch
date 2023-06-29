@@ -4,18 +4,18 @@
 from numpy import arange, array, sqrt
 
 # Punch Clock Imports
-from scheduler_testbed.common.agents import Sensor, Target
-from scheduler_testbed.common.constants import getConstants
-from scheduler_testbed.common.transforms import ecef2eci
-from scheduler_testbed.dynamics.dynamics_classes import (
+from punchclock.common.agents import Sensor, Target
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci
+from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from scheduler_testbed.environment.env_utils import (
+from punchclock.environment.env_utils import (
     forecastVisMap,
     getVisMapEstOrTruth,
 )
-from scheduler_testbed.estimation.ez_ukf import ezUKF
+from punchclock.estimation.ez_ukf import ezUKF
 
 # %% Build agents for testing
 sat_dynamics = SatDynamicsModel()

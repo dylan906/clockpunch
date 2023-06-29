@@ -10,8 +10,8 @@ from ray.rllib.policy.policy import Policy
 from ray.tune import Tuner
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import loadJSONFile
-from scheduler_testbed.ray.restore_tuner import restoreTuner
+from punchclock.common.utilities import loadJSONFile
+from punchclock.ray.restore_tuner import restoreTuner
 
 # %% Load json file
 # path to the folder this script is contained

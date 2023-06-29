@@ -18,15 +18,15 @@ from ray.rllib.algorithms import ppo
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
-from scheduler_testbed.environment.wrappers import (
+from punchclock.environment.wrappers import (
     ActionMask,
     FlatDict,
     getWrapperList,
 )
-from scheduler_testbed.policies.greedy_cov_v2 import GreedyCovariance
-from scheduler_testbed.policies.random_policy import RandomPolicy
-from scheduler_testbed.ray.build_env import buildEnv
-from scheduler_testbed.simulation.sim_runner import (
+from punchclock.policies.greedy_cov_v2 import GreedyCovariance
+from punchclock.policies.random_policy import RandomPolicy
+from punchclock.ray.build_env import buildEnv
+from punchclock.simulation.sim_runner import (
     SimResults,
     SimRunner,
     concatenateStates,

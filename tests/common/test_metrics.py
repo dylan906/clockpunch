@@ -6,7 +6,7 @@
 from numpy import array, diag, eye, ones, zeros
 
 # Punch Clock Imports
-from scheduler_testbed.common.metrics import (
+from punchclock.common.metrics import (
     TaskingMetricTracker,
     meanVarUncertainty,
 )

@@ -11,9 +11,9 @@ from numpy import append, array, linspace
 from numpy.linalg import norm
 
 # Punch Clock Imports
-from scheduler_testbed.common.constants import getConstants
-from scheduler_testbed.common.transforms import ecef2eci, eci2ecef
-from scheduler_testbed.dynamics.dynamics import (
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci, eci2ecef
+from punchclock.dynamics.dynamics import (
     a2body,
     satelliteDynamics,
     terrestrialDynamics,

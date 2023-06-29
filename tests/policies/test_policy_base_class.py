@@ -4,8 +4,8 @@
 import gymnasium as gym
 
 # Punch Clock Imports
-from scheduler_testbed.environment.wrappers import MakeDict
-from scheduler_testbed.policies.policy_base_class_v2 import CustomPolicy
+from punchclock.environment.wrappers import MakeDict
+from punchclock.policies.policy_base_class_v2 import CustomPolicy
 
 
 # %% Function for transforming obs wrapper

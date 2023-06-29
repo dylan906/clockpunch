@@ -6,8 +6,8 @@ from numpy import pi
 from numpy.linalg import norm
 
 # Punch Clock Imports
-from scheduler_testbed.common.transforms import eci2ecef
-from scheduler_testbed.simulation.sim_utils import (
+from punchclock.common.transforms import eci2ecef
+from punchclock.simulation.sim_utils import (
     buildCustomOrRayPolicy,
     genInitStates,
     saturateCOEs,

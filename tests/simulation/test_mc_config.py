@@ -9,14 +9,14 @@ from copy import deepcopy
 from numpy.random import default_rng
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import loadJSONFile
-from scheduler_testbed.policies.policy_builder import (
+from punchclock.common.utilities import loadJSONFile
+from punchclock.policies.policy_builder import (
     buildCustomPolicy,
     buildSpaceConfig,
 )
-from scheduler_testbed.ray.build_env import buildEnv
-from scheduler_testbed.simulation.mc_config import MonteCarloConfig
-from scheduler_testbed.simulation.sim_utils import buildCustomOrRayPolicy
+from punchclock.ray.build_env import buildEnv
+from punchclock.simulation.mc_config import MonteCarloConfig
+from punchclock.simulation.sim_utils import buildCustomOrRayPolicy
 
 # %% Load env config
 print("\nLoad environment config...")

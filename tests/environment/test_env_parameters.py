@@ -9,8 +9,8 @@ from copy import deepcopy
 from numpy import asarray, eye, ones
 
 # Punch Clock Imports
-from scheduler_testbed.common.agents import Sensor, Target
-from scheduler_testbed.environment.env_parameters import SSASchedulerParams
+from punchclock.common.agents import Sensor, Target
+from punchclock.environment.env_parameters import SSASchedulerParams
 
 # %% Test buildRewardFunc
 print("\nTest buildRewardFunc...")

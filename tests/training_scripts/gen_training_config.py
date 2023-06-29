@@ -4,7 +4,7 @@
 from numpy import diag, pi
 
 # Punch Clock Imports
-from scheduler_testbed.ray.build_env import genConfigFile
+from punchclock.ray.build_env import genConfigFile
 
 # from ray import tune
 

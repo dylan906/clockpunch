@@ -10,8 +10,8 @@ from numpy import array, zeros
 from numpy.random import rand, seed
 
 # Punch Clock Imports
-from scheduler_testbed.common.utilities import isActionValid
-from scheduler_testbed.policies.action_selection import (
+from punchclock.common.utilities import isActionValid
+from punchclock.policies.action_selection import (
     argmaxTieBreak,
     epsGreedy,
     epsGreedyMask,

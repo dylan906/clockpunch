@@ -8,7 +8,7 @@ from numpy import array
 from numpy.random import randint
 
 # Punch Clock Imports
-from scheduler_testbed.policies.policy_utils import (
+from punchclock.policies.policy_utils import (
     appendSubsidyRow,
     multipleAssignmentCost,
     noAssignmentCost,

@@ -6,7 +6,7 @@ import torch
 from torch.nn import MaxPool1d
 
 # Punch Clock Imports
-from scheduler_testbed.nets.basic_nn import MultiDiscreteFeedForward
+from punchclock.nets.basic_nn import MultiDiscreteFeedForward
 
 # %% Setup
 

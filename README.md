@@ -13,4 +13,4 @@
 ## Troubleshooting
 
 - If a test is mysteriously stopped while running, check if it is stuck at a `matplotlib` command. If so, launch *XLaunch* if it's not already running.
-- To update the registration info (name, entry point) of the Gym environment, remember to update the register command in `scheduler_testbed/__init__.py`
+- To update the registration info (name, entry point) of the Gym environment, remember to update the register command in `punchclock/__init__.py`

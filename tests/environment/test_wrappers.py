@@ -14,11 +14,11 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
 # Punch Clock Imports
-from scheduler_testbed.common.math import getCircOrbitVel
-from scheduler_testbed.common.transforms import ecef2eci, lla2ecef
-from scheduler_testbed.environment.env import SSAScheduler
-from scheduler_testbed.environment.env_parameters import SSASchedulerParams
-from scheduler_testbed.environment.wrappers import (
+from punchclock.common.math import getCircOrbitVel
+from punchclock.common.transforms import ecef2eci, lla2ecef
+from punchclock.environment.env import SSAScheduler
+from punchclock.environment.env_parameters import SSASchedulerParams
+from punchclock.environment.wrappers import (
     ActionMask,
     FilterCovElements,
     FlatDict,

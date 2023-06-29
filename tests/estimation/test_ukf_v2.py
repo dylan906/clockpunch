@@ -2,18 +2,28 @@
 # %% Imports
 # Third Party Imports
 from matplotlib import pyplot as plt
-from numpy import arange, array, concatenate, diag, eye, invert, ndarray, ones, where
+from numpy import (
+    arange,
+    array,
+    concatenate,
+    diag,
+    eye,
+    invert,
+    ndarray,
+    ones,
+    where,
+)
 from numpy.random import normal, rand
 
 # Punch Clock Imports
-from scheduler_testbed.common.constants import getConstants
-from scheduler_testbed.common.transforms import ecef2eci
-from scheduler_testbed.dynamics.dynamics_classes import (
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci
+from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from scheduler_testbed.estimation.ukf_v2 import UnscentedKalmanFilter
+from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
 
 
 # %% utility function
@@ -126,7 +136,9 @@ truth_state = simple_dynamics.propagate(
     end_time=time_final,
     start_state=truth_state,
 )
-measurement = passThruMeasurement(state=truth_state) + rand(truth_state.shape[0]) - 0.5
+measurement = (
+    passThruMeasurement(state=truth_state) + rand(truth_state.shape[0]) - 0.5
+)
 print(f"propagated truth state = {truth_state}")
 print(f"measurement of truth state = {measurement}")
 
@@ -150,7 +162,9 @@ print(f"Innovation covariance = \n{simp_ukf.innov_cvr}")
 print(f"cross covariance =\n{simp_ukf.cross_cvr}")
 print(f"kalman_gain =\n{simp_ukf.kalman_gain}")
 print(f"updated state covariance (est_p) =\n{simp_ukf.est_p}")
-print(f"innovation (residual between y and predicted y) = {simp_ukf.innovation}")
+print(
+    f"innovation (residual between y and predicted y) = {simp_ukf.innovation}"
+)
 print(f"normalized innovation squared (NIS) = {simp_ukf.nis}")
 print(f"est_x = {simp_ukf.est_x}")
 
@@ -208,7 +222,9 @@ for i in range(time, time + 100):
         start_state=truth_state,
     )
     measurement = (
-        passThruMeasurement(state=truth_state) + rand(truth_state.shape[0]) - 0.5
+        passThruMeasurement(state=truth_state)
+        + rand(truth_state.shape[0])
+        - 0.5
     )
     simp_ukf.predict(i + 1)
     simp_ukf.update(measurement=measurement)

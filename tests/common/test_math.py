@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from numpy import linspace
 
 # Punch Clock Imports
-from scheduler_testbed.common.math import logistic, saturate
+from punchclock.common.math import logistic, saturate
 
 # %% Test logistic function
 print("\nTest logistic function...")
