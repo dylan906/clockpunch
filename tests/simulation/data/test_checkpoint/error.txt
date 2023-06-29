@@ -1,0 +1,49 @@
+Failure # 1 (occurred at 2023-03-24_14-35-26)
+Traceback (most recent call last):
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/tune/execution/ray_trial_executor.py", line 1070, in get_next_executor_event
+    future_result = ray.get(ready_future)
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/_private/client_mode_hook.py", line 105, in wrapper
+    return func(*args, **kwargs)
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/_private/worker.py", line 2311, in get
+    raise value
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::PPO.__init__()[39m (pid=63909, ip=10.128.8.30, repr=PPO)
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/evaluation/worker_set.py", line 239, in _setup
+    self.add_workers(
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/evaluation/worker_set.py", line 612, in add_workers
+    raise result.get()
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/utils/actor_manager.py", line 473, in __fetch_result
+    result = ray.get(r)
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=64111, ip=10.128.8.30, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x2abd7df71a00>)
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/evaluation/rollout_worker.py", line 585, in __init__
+    self.env = env_creator(copy.deepcopy(self.env_context))
+  File "/home/dylanrpenn/punchclock/scheduler_testbed/ray/build_env.py", line 112, in buildEnv
+    env_params = SSASchedulerParams(**scheduler_config)
+  File "/home/dylanrpenn/punchclock/scheduler_testbed/environment/env_parameters.py", line 324, in __init__
+    num_windows = self._calcAccessWindows(
+  File "/home/dylanrpenn/punchclock/scheduler_testbed/environment/env_parameters.py", line 549, in _calcAccessWindows
+    avail = ScheduleTree(list_of_sensors + list_of_targets, time_propagate)
+  File "/home/dylanrpenn/punchclock/scheduler_testbed/schedule_tree/schedule_tree.py", line 57, in __init__
+    ] = self.calcIntervalTree(list_of_agents, time)
+  File "/home/dylanrpenn/punchclock/scheduler_testbed/schedule_tree/schedule_tree.py", line 133, in calcIntervalTree
+    rise_set_tree, v = getVisHist(
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/satvis/vis_history.py", line 85, in getVisHist
+    _, _, new_tree = zeroCrossingFit(
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/satvis/visibility_func.py", line 230, in zeroCrossingFit
+    tree.add(temp)
+  File "/home/dylanrpenn/.conda/envs/punch/lib/python3.8/site-packages/intervaltree/intervaltree.py", line 324, in add
+    raise ValueError(
+ValueError: IntervalTree: Null Interval objects not allowed in IntervalTree: Interval(65.98861183365771, 44.33623077947155, {'target_id': '5017', 'sensor_id': 'S1002'})
+
+During handling of the above exception, another exception occurred:
+
+[36mray::PPO.__init__()[39m (pid=63909, ip=10.128.8.30, repr=PPO)
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/algorithms/algorithm.py", line 441, in __init__
+    super().__init__(
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/tune/trainable/trainable.py", line 169, in __init__
+    self.setup(copy.deepcopy(self.config))
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/algorithms/algorithm.py", line 566, in setup
+    self.workers = WorkerSet(
+  File "/home/dylanrpenn/.local/lib/python3.8/site-packages/ray/rllib/evaluation/worker_set.py", line 191, in __init__
+    raise e.args[0].args[2]
+ValueError: IntervalTree: Null Interval objects not allowed in IntervalTree: Interval(65.98861183365771, 44.33623077947155, {'target_id': '5017', 'sensor_id': 'S1002'})
+

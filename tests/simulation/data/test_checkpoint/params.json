@@ -1,0 +1,301 @@
+{
+  "env": "SSAScheduler",
+  "env_config": {
+    "agent_params": {
+      "fixed_sensors": [
+        [
+          6378.1363,
+          0.0,
+          0.0,
+          0.0,
+          0.46369050901000003,
+          0.0
+        ],
+        [
+          4510.0234290620765,
+          4510.023429062076,
+          0.0,
+          -0.32787870329281293,
+          0.327878703292813,
+          0.0
+        ],
+        [
+          4510.0234290620765,
+          0.0,
+          4510.023429062076,
+          0.0,
+          0.327878703292813,
+          0.0
+        ]
+      ],
+      "fixed_targets": null,
+      "num_sensors": 3,
+      "num_targets": 20,
+      "sensor_dist": null,
+      "sensor_dist_frame": null,
+      "sensor_dist_params": null,
+      "sensor_dynamics": "terrestrial",
+      "target_dist": "uniform",
+      "target_dist_frame": "COE",
+      "target_dist_params": [
+        [
+          6678.1363,
+          7178.1363
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1.5707963267948966
+        ],
+        [
+          0,
+          6.283185307179586
+        ],
+        [
+          0,
+          6.283185307179586
+        ],
+        [
+          0,
+          6.283185307179586
+        ]
+      ],
+      "target_dynamics": "satellite"
+    },
+    "constructor_params": {
+      "wrappers": [
+        {
+          "wrapper": "filter_observation",
+          "wrapper_config": {
+            "filter_keys": [
+              "vis_map_est",
+              "est_cov"
+            ]
+          }
+        },
+        {
+          "wrapper": "rescale_dict_obs",
+          "wrapper_config": {
+            "rescale_config": {
+              "est_cov": 0.0001
+            }
+          }
+        },
+        {
+          "wrapper": "action_mask"
+        },
+        {
+          "wrapper": "flat_dict"
+        }
+      ]
+    },
+    "filter_params": {
+      "Q": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1e-05,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1e-05
+        ]
+      ],
+      "R": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "p_init": [
+        [
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.1,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1
+        ]
+      ]
+    },
+    "horizon": 288,
+    "reward_params": {
+      "metric": "est_cov",
+      "norm_denominator": 1,
+      "obs_or_info": "obs",
+      "penalties": {
+        "multi_assignment": 0,
+        "non_vis_assignment": 2
+      },
+      "preprocessors": [
+        {
+          "config": {
+            "indices_or_sections": 2,
+            "section_to_keep": 0
+          },
+          "preprocessor": "crop_array"
+        },
+        "sum_cols",
+        "mean",
+        {
+          "config": {
+            "L": 1,
+            "k": -0.001,
+            "x0": 5000
+          },
+          "preprocessor": "logistic"
+        }
+      ],
+      "reward_func": "NormalizedMetric",
+      "subsidies": {
+        "active_action": 0.1,
+        "inaction": 0
+      }
+    },
+    "time_step": 100
+  },
+  "framework": "torch",
+  "horizon": null,
+  "ignore_worker_failures": true,
+  "log_level": "DEBUG",
+  "lr": 1e-05,
+  "model": {
+    "custom_model": "action_mask_model",
+    "custom_model_config": {
+      "no_masking": false
+    },
+    "fcnet_activation": "tanh",
+    "fcnet_hiddens": [
+      90,
+      45
+    ]
+  },
+  "num_gpus": 0,
+  "num_workers": 19
+}

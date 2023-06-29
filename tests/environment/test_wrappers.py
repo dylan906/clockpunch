@@ -1,0 +1,334 @@
+"""Tests for wrappers.py."""
+# %% Imports
+from __future__ import annotations
+
+# Standard Library Imports
+from copy import deepcopy
+
+# Third Party Imports
+import gymnasium as gym
+from gymnasium.spaces.utils import flatten
+from gymnasium.wrappers.filter_observation import FilterObservation
+from numpy import array, diag, float32, int64
+from ray.rllib.examples.env.random_env import RandomEnv
+from ray.rllib.utils import check_env
+
+# Punch Clock Imports
+from scheduler_testbed.common.math import getCircOrbitVel
+from scheduler_testbed.common.transforms import ecef2eci, lla2ecef
+from scheduler_testbed.environment.env import SSAScheduler
+from scheduler_testbed.environment.env_parameters import SSASchedulerParams
+from scheduler_testbed.environment.wrappers import (
+    ActionMask,
+    FilterCovElements,
+    FlatDict,
+    FlattenMultiDiscrete,
+    FloatObs,
+    MakeDict,
+    RescaleDictObs,
+    getNumWrappers,
+    getWrapperList,
+)
+
+# %% Build environment
+# satellite initial conditions-- uniform distribution
+ref_vel = getCircOrbitVel(8000)
+sat_ICs_kernel = array(
+    [
+        [8000, 8000],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [ref_vel, ref_vel],
+        [0, 0],
+    ],
+)
+# sensor initial conditions-- 2 equatorial terrestrial sensors spaces 90deg
+sens_a = ecef2eci(lla2ecef([0, 0, 0]), 0)
+sens_b = ecef2eci(lla2ecef([3.14 / 2, 0, 0]), 0)
+sensor_ICs = array([sens_a, sens_b])
+
+# agent parameters
+agent_params = {
+    "num_sensors": 2,
+    "num_targets": 4,
+    "sensor_starting_num": 1000,
+    "target_starting_num": 5000,
+    "sensor_dynamics": "terrestrial",
+    "target_dynamics": "satellite",
+    "sensor_dist": None,
+    "target_dist": "uniform",
+    "sensor_dist_frame": None,
+    "target_dist_frame": "ECI",
+    "sensor_dist_params": None,
+    "target_dist_params": sat_ICs_kernel,
+    "fixed_sensors": sensor_ICs,
+    "fixed_targets": None,
+    "init_num_tasked": None,
+    "init_last_time_tasked": None,
+}
+# filter parameters
+diag_matrix = diag([1, 1, 1, 0.01, 0.01, 0.01])
+filter_params = {
+    "Q": 0.001 * diag_matrix,
+    "R": 0.01 * diag_matrix,
+    "p_init": 1 * diag_matrix,
+}
+
+reward_params = {
+    "reward_func": "Threshold",
+    "obs_or_info": "obs",
+    "metric": "obs_staleness",
+    "preprocessors": ["max"],
+    "metric_value": 5000,
+}
+
+# environment parameters
+env_params = {
+    "time_step": 100,
+    "horizon": 10,
+    "agent_params": agent_params,
+    "filter_params": filter_params,
+    "reward_params": reward_params,
+}
+
+env_builder = SSASchedulerParams(**env_params)
+env = SSAScheduler(env_builder)
+env.reset()
+act_sample = env.action_space.sample()
+
+# %% Test hide covariance wrapper
+env.reset()
+print("\nTest FilterCovElements...")
+env_pos = FilterCovElements(env, "position")
+check_env(env_pos)
+[obs, _, _, _, _] = env_pos.step(act_sample)
+print(f"obs = {obs}")
+
+env_vel = FilterCovElements(env, "velocity")
+check_env(env_vel)
+[obs, _, _, _, _] = env_vel.step(act_sample)
+print(f"obs = {obs}")
+# %% Test FloatObs
+print("\nTest FloatObs...")
+# Copy original environment and add a dict to obs space to test nested-dict handling
+copy_env = deepcopy(env)
+copy_env.observation_space["a_dict"] = gym.spaces.Dict(
+    {
+        "param_int": gym.spaces.Box(0, 1, shape=(2, 2), dtype=int64),
+        "param_float": gym.spaces.Box(0, 1, shape=(2, 2), dtype=float32),
+    }
+)
+# Test wrapper instantiation
+env_float = FloatObs(copy_env)
+# env should have ints
+# env_float.unwrapped should have ints
+# env_float should have floats
+print(f"original env obs space = {copy_env.observation_space}")
+print(f"unwrapped obs space = {env_float.unwrapped.observation_space}")
+print(f"wrapped obs space ={env_float.observation_space}")
+
+# Test .observation()
+obs = copy_env.observation_space.sample()
+obs_float = env_float.observation(obs)
+print(f"original obs = {obs}")
+print(f"wrapped observation = {obs_float}")
+print(
+    f"wrapped obs in wrapped obs space? "
+    f"{env_float.observation_space.contains(obs_float)}"
+)
+# %% Test ActionMask
+print("\nTest ActionMask...")
+env.reset()
+env_masked = ActionMask(env)
+
+print(f"observation_space = {env_masked.observation_space}")
+obs = env_masked.observation_space.sample()
+print(f"obs.keys() = {obs.keys()}")
+print(f"obs['action_mask'].shape = {obs['action_mask'].shape}")
+print(f"type(obs['observations']) = {type(obs['observations'])}")
+print(f"'observations' length = {len(obs['observations'])}")
+# Check to make sure obs is contained in observation_space
+print(f"obs in observation_space: {env_masked.observation_space.contains(obs)}")
+act = env_masked.action_space.sample()
+print(f"act in action_space: {env_masked.action_space.contains(act)}")
+
+[obs, _, _, _, _] = env_masked.step(act)
+
+# check env conforms to GYM API
+check_env(env_masked)
+
+# test with action mask turned off
+env_masked_off = ActionMask(env=env, action_mask_on=False)
+[obs, _, _, _, _] = env_masked_off.step(act_sample)
+print("Now with action mask off...")
+print(f"obs['action_mask'] = {obs['action_mask']}")
+print(
+    f"obs in observation_space: {env_masked_off.observation_space.contains(obs)}"
+)
+
+
+# %% Test FlatDict
+print("\nTest FlatDict...")
+# create a separate test env that has a nested dict obs space
+env_deep_dict = RandomEnv(
+    {
+        "observation_space": gym.spaces.Dict(
+            {
+                "a": gym.spaces.Dict(
+                    {
+                        "aa": gym.spaces.Box(0, 1, shape=[2, 3]),
+                        "ab": gym.spaces.MultiDiscrete([1, 1, 1]),
+                    }
+                ),
+                "b": gym.spaces.MultiDiscrete([2, 3, 2]),
+            }
+        ),
+        "action_space": gym.spaces.MultiDiscrete([3, 4, 3]),
+    }
+)
+env_flat = FlatDict(env=env_deep_dict)
+
+[obs, _, _, _, _] = env_flat.step(act_sample)
+print(f"post-step obs = {obs}")
+
+obs = env_deep_dict.observation_space.sample()
+print(f"unwrapped obs = {obs}")
+new_obs = env_flat.observation(obs=obs)
+print(f"wrapped obs = {new_obs}")
+check_env(env_flat)
+
+# %% Test MakeDict
+print("\nTest MakeDict...")
+env_cartpole = gym.make("CartPole-v1")
+env_cartpole_dict = MakeDict(env=env_cartpole)
+print(f"env_cartpole_dict = {type(env_cartpole_dict)}")
+print(f"obs = {env_cartpole_dict.observation_space.sample()}")
+
+
+# %% Test FlattenMultiDiscrete
+print("\nTest FlattenMultiDiscrete...")
+box_env = FlattenMultiDiscrete(env=env)
+print(f"box_env = {box_env}")
+print(f"box_env.action_space = {box_env.action_space}")
+
+box_act = array([1, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+print(f"box action = {box_act}")
+print(
+    f"box_act in box_env.action_space: {box_env.action_space.contains(box_act)}"
+)
+MD_act = box_env.action(box_act)
+print(f"wrapped action = {MD_act}")
+print(
+    f"action in unwrapped env action_space: {env.action_space.contains(MD_act)}"
+)
+
+[obs, _, _, _, _] = box_env.step(box_act)
+print(f"obs from step = {obs}")
+
+# Try bad action (more 1s than allowed)
+print("\nTest improperly formatted input action...")
+box_act_bad = array([1, 1, 0, 0, 0, 0, 0, 0, 0, 1])
+print(f"box_act_bad = {box_act_bad}")
+print(
+    f"box_act_bad in box_env.action_space: {box_env.action_space.contains(box_act_bad)}"
+)
+try:
+    MD_act = box_env.action(box_act_bad)
+except Exception as err:
+    print(err)
+
+# %% Test Rescale obs
+print("\nTest RescaleDictObs...")
+print("Test baseline case")
+rescale_env = RescaleDictObs(env=env, rescale_config={"est_cov": 1e-4})
+print(f"rescale_env = {rescale_env}")
+
+unscaled_obs = rescale_env.observation_space.sample()
+scaled_obs = rescale_env.observation(obs=unscaled_obs)
+print(f"pre-scaled obs = {unscaled_obs}")
+print(f"post-scaled obs = {scaled_obs}")
+
+# Test with empty config
+print("Test with default (empty) config")
+rescale_env = RescaleDictObs(env=env)
+print(f"rescale_env = {rescale_env}")
+
+unscaled_obs = rescale_env.observation_space.sample()
+scaled_obs = rescale_env.observation(obs=unscaled_obs)
+print(f"pre-scaled obs = {unscaled_obs}")
+print(f"post-scaled obs = {scaled_obs}")
+
+# Check non-dict observation space
+print("Check non-dict observation space")
+env_rand_box = RandomEnv(
+    {
+        "observation_space": gym.spaces.Box(low=1, high=2, shape=(1,)),
+        "action_space": gym.spaces.Box(low=1, high=2, shape=(1,)),
+    }
+)
+try:
+    rescale_env = RescaleDictObs(env_rand_box)
+except Exception as err:
+    print(err)
+
+# Check dict obs space, but non-Box entry
+print("Check non-Box entry")
+env_non_box = RandomEnv(
+    {
+        "observation_space": gym.spaces.Dict(
+            {"state_a": gym.spaces.MultiDiscrete([2, 2, 2])}
+        ),
+        "action_space": gym.spaces.Box(low=1, high=2, shape=(1,)),
+    }
+)
+try:
+    rescale_env = RescaleDictObs(env_non_box, {"state_a": 2})
+except Exception as err:
+    print(err)
+# %% Test multiple wrappers
+print("\nTest multiple wrappers...")
+# Wrap with FilterObservation to allow just est_cov and vis_map_est through, then
+# wrap FilterCovElements to eliminate 3 covariance states, then wrap action masking.
+
+env_multi_wrapped = FilterObservation(
+    env=env, filter_keys=["est_cov", "vis_map_est"]
+)
+env_multi_wrapped = FilterCovElements(
+    env=env_multi_wrapped, pos_vel_flag="position"
+)
+env_multi_wrapped = ActionMask(env=env_multi_wrapped)
+env_multi_wrapped = FloatObs(env=env_multi_wrapped)
+env_multi_wrapped = FlatDict(env=env_multi_wrapped)
+env_multi_wrapped = FlattenMultiDiscrete(env=env_multi_wrapped)
+env_multi_wrapped.reset()
+# check_env(env_multi_wrapped)
+
+# get MD action sample then flatten. If we just sample from the multi-wrapped
+# env then we are sampling from a Box space, which won't be contained in MD.
+act_sample = flatten(env.action_space, env.action_space.sample())
+print(f"action sample = {act_sample}")
+
+[obs, _, _, _, _] = env_multi_wrapped.step(act_sample)
+
+print(f"observation_space = {env_multi_wrapped.observation_space}")
+print(f"obs = {obs}")
+# Check to make sure obs is contained in observation_space
+print(
+    f"obs in observation_space: {env_multi_wrapped.observation_space.contains(obs)}"
+)
+# %% Test getNumWrappers
+print("\nTest getNumWrappers()...")
+out = getNumWrappers(env_multi_wrapped)
+print(f"Number of wrappers (wrapped environment) = {out}")
+
+base_env = deepcopy(env)
+out = getNumWrappers(base_env)
+print(f"Number of wrappers (base environment) = {out}")
+
+# %% Test getWrapperList
+print("\nTest getWrapperList()...")
+wrappers = getWrapperList(env=env_multi_wrapped)
+print(f"wrappers = {wrappers}")
+# %% Done
+print("done")

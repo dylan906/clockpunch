@@ -1,0 +1,54 @@
+"""Test for math.py module."""
+# %% Imports
+from __future__ import annotations
+
+# Third Party Imports
+from matplotlib import pyplot as plt
+from numpy import linspace
+
+# Punch Clock Imports
+from scheduler_testbed.common.math import logistic, saturate
+
+# %% Test logistic function
+print("\nTest logistic function...")
+
+k = 1
+log_in_long = linspace(-10, 10, 100)
+log_out_long = logistic(log_in_long, k=k)
+
+# test point values of logistic function
+log_in1 = 1
+log_out1 = logistic(log_in1, k=k)
+print(f"log_out = {log_out1}")
+log_in2 = 8
+log_out2 = logistic(log_in2, k=k)
+print(f"log_out = {log_out2}")
+
+plt.style.use("default")
+fig, ax = plt.subplots()
+ax.plot(log_in_long, log_out_long)
+ax.plot(log_in1, log_out1, marker="D")
+ax.plot(log_in2, log_out2, marker="*")
+ax.legend(["continuous", "point 1", "point 2"])
+
+# %% Test Saturate
+print("\nTest saturate...")
+# Test with different combinations of min/max threshold
+vals = [1, 0, 1, 0]
+mins = [-100, None, -100]
+maxs = [0, 0, None]
+print(f"vals = {vals}")
+for mint, maxt in zip(mins, maxs):
+    print(f"min_t = {mint}")
+    print(f"max_t = {maxt}")
+
+    saturated_vals = saturate(
+        vals,
+        setpoint=0,
+        min_threshold=mint,
+        max_threshold=maxt,
+    )
+    print(f"saturated_vals = {saturated_vals}")
+# %% Done
+plt.show()
+print("done")
