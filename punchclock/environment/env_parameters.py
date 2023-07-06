@@ -18,7 +18,7 @@ from punchclock.dynamics.dynamics_classes import (
 )
 from punchclock.estimation.ez_ukf import ezUKF
 from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
-from punchclock.reward_funcs.norm_metric import NormalizedMetric
+from punchclock.reward_funcs.norm_metric import GenericReward
 from punchclock.reward_funcs.reward_base_class import RewardFunc
 
 # from punchclock.policies.threshold import Threshold
@@ -623,7 +623,9 @@ class SSASchedulerParams:
         # Add to list of recognized reward functions as more are built.
         reward_func_map = {
             "Threshold": Threshold,
-            "NormalizedMetric": NormalizedMetric,
+            "GenericReward": GenericReward,
+            # NormalizedMetric is for backward compatibility (pre v0.5.1)
+            "NormalizedMetric": GenericReward,
         }
 
         # get reward function name
