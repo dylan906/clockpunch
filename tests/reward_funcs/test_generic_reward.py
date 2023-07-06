@@ -1,7 +1,7 @@
-"""Tests for norm_metric.py."""
+"""Tests for generic_reward.py."""
 # %% Imports
 # Punch Clock Imports
-from punchclock.reward_funcs.norm_metric import GenericReward
+from punchclock.reward_funcs.generic_reward import GenericReward
 
 # %% Test initialization
 print("\nTest initialization...")

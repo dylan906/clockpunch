@@ -18,7 +18,7 @@ from punchclock.dynamics.dynamics_classes import (
 )
 from punchclock.estimation.ez_ukf import ezUKF
 from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
-from punchclock.reward_funcs.norm_metric import GenericReward
+from punchclock.reward_funcs.generic_reward import GenericReward
 from punchclock.reward_funcs.reward_base_class import RewardFunc
 
 # from punchclock.policies.threshold import Threshold

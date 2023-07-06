@@ -1,4 +1,4 @@
-"""NormalizedMetric reward function."""
+"""GenericReward reward function."""
 # %% Imports
 from __future__ import annotations
 
@@ -126,6 +126,7 @@ class GenericReward(RewardFunc):
 
     def backwardCompatibleArg(self, preprocessors: list, kwargs: dict):
         """Append a division by a constant to preprocessors if old style arg used."""
+
         if "norm_denominator" in kwargs:
             preprocessors.extend(
                 [
