@@ -40,6 +40,7 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         num_outputs: int,
         model_config: dict,
         name: str,
+        no_masking: bool = False,
         **kwargs,
     ):
         """Initialize action masking model.
@@ -92,9 +93,10 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
 
         # disable action masking --> will likely lead to invalid actions
         custom_config = model_config.get("custom_model_config", {})
-        self.no_masking = False
-        if "no_masking" in custom_config:
-            self.no_masking = custom_config["no_masking"]
+        self.no_masking = no_masking
+        # self.no_masking = False
+        # if "no_masking" in custom_config:
+        #     self.no_masking = custom_config["no_masking"]
 
     def forward(
         self,

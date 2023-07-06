@@ -121,9 +121,10 @@ print(f"state = {state}")
 print("\nTest masking disabled...")
 
 model_config = {
-    "custom_model_config": {
-        "no_masking": True,
-    },
+    # "custom_model_config": {
+    #     "no_masking": True,
+    # },
+    "no_masking": True,
     "fcnet_hiddens": [15, 20],
     "fcnet_activation": "relu",
 }
@@ -272,7 +273,7 @@ def checkForNonVisTaskings(flat_action, action_mask):
 action = md_env.action_space.sample()
 for _ in range(5):
     # step MultiDiscrete environment, then manually flatten mask
-    [ob, _, _, _] = md_env.step(action)
+    [ob, _, _, _, _] = md_env.step(action)
     ob_flat = wrapOb(ob)
     # algo is based on flattened obs["action_mask"], so expects a flat ob
     action = algo.compute_single_action(ob_flat, explore=False)
