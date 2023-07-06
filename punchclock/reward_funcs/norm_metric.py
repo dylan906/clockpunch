@@ -15,8 +15,8 @@ from punchclock.reward_funcs.reward_utils import lookupPreprocessor
 
 
 # %% NormalizedMetric reward function
-class NormalizedMetric(RewardFunc):
-    """Reward takes the form of preprocess(metric)/norm_denominator.
+class GenericReward(RewardFunc):
+    """Pass a metric though a list of preprocessors.
 
     Preprocess is a list of functions. Metric is a value from either an observation
     or info frame.
@@ -26,10 +26,10 @@ class NormalizedMetric(RewardFunc):
         self,
         obs_or_info: str,
         metric: str,
-        norm_denominator: float = 1,
         preprocessors: list[str | Callable | dict] = None,
         penalties: dict = None,
         subsidies: dict = None,
+        **kwargs,
     ):
         """Initialize a NormalizedMetric reward function.
 
@@ -38,9 +38,7 @@ class NormalizedMetric(RewardFunc):
                 environment observation or info frame. Assumes observation and
                 info frames are dicts.
             metric (`str`): The name of the metric from an observation or info
-                frame that is desired to be kept above/below a threshold.
-            norm_denominator (`float`, optional): The value with which to divide
-                the preprocessed metric by. Defaults to 1.
+                frame to be passed through preprocessors.
             preprocessors (`list[str  |  Callable  |  dict`], optional): Function(s)
                 to apply to metric before dividing by norm_denominator. If list
                 is longer than 1 entry, the preprocessors will be applied in the
@@ -55,9 +53,15 @@ class NormalizedMetric(RewardFunc):
                 See reward_utils for recognized preprocessors. Defaults to None.
             penalties (`dict`, optional): See rewardFunc. Defaults to None.
             subsidies (`dict`, optional): See rewardFunc. Defaults to None.
+            kwargs: For backward compatibility, accepts "norm_denominator" as a
+                kwarg. Append a division by norm_denominator to preprocessors.
         """
         super().__init__(penalties=penalties, subsidies=subsidies)
         assert isinstance(preprocessors, list), "preprocessors must be a list"
+
+        assert isinstance(preprocessors, list), "preprocessors must be a list"
+
+        preprocessors = self.backwardCompatibleArg(preprocessors, kwargs)
 
         if obs_or_info == "obs":
             self.use_obs = True
@@ -66,10 +70,6 @@ class NormalizedMetric(RewardFunc):
 
         self.metric = metric
 
-        assert norm_denominator != 0, "norm_denominator cannot be 0"
-        self.norm_denominator = norm_denominator
-
-        assert isinstance(preprocessors, list), "preprocessors must be a list"
         preprocessor_funcs = [
             lookupPreprocessor(entry) for entry in preprocessors
         ]
@@ -95,7 +95,7 @@ class NormalizedMetric(RewardFunc):
         """
         metrics = self.getMetrics(obs, info)
         processed_metrics = self.preprocess(metrics)
-        reward = processed_metrics / self.norm_denominator
+        reward = processed_metrics
 
         return reward
 
@@ -123,3 +123,16 @@ class NormalizedMetric(RewardFunc):
                 out = func(out)
 
         return out
+
+    def backwardCompatibleArg(self, preprocessors: list, kwargs: dict):
+        """Append a division by a constant to preprocessors if old style arg used."""
+        if "norm_denominator" in kwargs:
+            preprocessors.extend(
+                [
+                    {
+                        "preprocessor": "divide",
+                        "config": {"x2": kwargs["norm_denominator"]},
+                    }
+                ]
+            )
+        return preprocessors
