@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that. 
 
+## [unreleased] - 20YY-MM-DD
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Fixed
+
+### Removed
+
 ## [0.6.0] - 2023-07-06
 
 ### Added
