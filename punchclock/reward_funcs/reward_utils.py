@@ -7,7 +7,18 @@ from functools import partial
 from typing import Callable
 
 # Third Party Imports
-from numpy import max, mean, median, min, ndarray, split, sum, trace
+from numpy import (
+    divide,
+    max,
+    mean,
+    median,
+    min,
+    multiply,
+    ndarray,
+    split,
+    sum,
+    trace,
+)
 
 # Punch Clock Imports
 from punchclock.common.math import linear, logistic
@@ -29,6 +40,8 @@ def lookupPreprocessor(func_name: str | dict | Callable) -> Callable:
         "crop_array": cropArray,
         "linear": linear,
         "logistic": logistic,
+        "multiply": multiplyWrapper,
+        "divide": divideWrapper,
     }
 
     if isinstance(func_name, str):
@@ -53,6 +66,18 @@ def sumCols(x):
 def sumRows(x):
     """Sum rows of a 2d matrix."""
     return sum(x, axis=1)
+
+
+# divideWrapper and multipleWrapper are needed because numpy.divide and .multiply
+# use positional args only (not kwargs).
+def divideWrapper(x1: ndarray | float | int, x2: float | int):
+    """Divide two numbers."""
+    return divide(x1, x2)
+
+
+def multiplyWrapper(x1: ndarray | float | int, x2: float | int):
+    """Multiply two numbers."""
+    return multiply(x1, x2)
 
 
 # %% Complex functions

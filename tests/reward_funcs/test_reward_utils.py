@@ -4,12 +4,7 @@
 from numpy.random import rand
 
 # Punch Clock Imports
-from punchclock.reward_funcs.reward_utils import (
-    cropArray,
-    lookupPreprocessor,
-    sumCols,
-    sumRows,
-)
+from punchclock.reward_funcs.reward_utils import cropArray, lookupPreprocessor
 
 # %% Test lookupPreprocessor
 print("\nTest lookupPreprocessor...")
@@ -24,6 +19,10 @@ func_names = [
         },
     },
     sum,
+    {
+        "preprocessor": "divide",
+        "config": {"x1": 1},
+    },
 ]
 
 for name in func_names:
