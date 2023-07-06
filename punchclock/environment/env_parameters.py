@@ -624,7 +624,7 @@ class SSASchedulerParams:
         reward_func_map = {
             "Threshold": Threshold,
             "GenericReward": GenericReward,
-            # NormalizedMetric is for backward compatibility (pre v0.5.1)
+            # NormalizedMetric is for backward compatibility (pre v0.6.0)
             "NormalizedMetric": GenericReward,
         }
 
