@@ -12,12 +12,12 @@
                 "sensor_dist": null,
                 "target_dist": "normal",
                 "sensor_dist_frame": null,
-                "target_dist_frame": "ECI",
+                "target_dist_frame": "COE",
                 "sensor_dist_params": null,
                 "target_dist_params": [
                     [
-                        10000,
-                        100
+                        5000,
+                        200
                     ],
                     [
                         0,
@@ -25,19 +25,19 @@
                     ],
                     [
                         0,
-                        0
+                        3.141592653589793
                     ],
                     [
                         0,
-                        0
-                    ],
-                    [
-                        8,
-                        0.1
+                        6.283185307179586
                     ],
                     [
                         0,
-                        0
+                        6.283185307179586
+                    ],
+                    [
+                        0,
+                        6.283185307179586
                     ]
                 ],
                 "fixed_sensors": [
