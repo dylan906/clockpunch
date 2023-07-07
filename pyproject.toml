@@ -21,6 +21,7 @@ dependencies = [
     "cuda-python==11.7.1",
     "scipy>=1.9",
     "satvis==0.2.1",
+    "TensorFlow==2.12",
     "tensorflow_probability>=0.19", # an undefined dependency of Ray
     "pygame==2.2.0",
     "pandas==2.0.2",
@@ -32,7 +33,6 @@ dev = [
     "pylint",
     "pytest",
     "tensorboard",
-    "TensorFlow==2.12",
     "flake8-bugbear==22.4.25",
     "flake8-builtins==1.5.3",
     "flake8-docstrings==1.6.0",
