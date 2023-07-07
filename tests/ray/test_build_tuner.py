@@ -119,6 +119,7 @@ print(
 # config["param_space"]["model"]["_disable_preprocessor_api"] = True
 
 # Set algo configs (put all configs in dict for easier looping through tests)
+print("Build algo configs...")
 algo_configs = {}
 algo_configs["custom_env"] = (
     ppo.PPOConfig()
@@ -159,6 +160,7 @@ algo_configs["full_custom"] = (
 )
 
 # build algos from algo configs
+print("Build algos...")
 algos = {k: v.build() for (k, v) in algo_configs.items()}
 
 # Check that observations flow through algo policies correctly. Use sample observation
@@ -167,10 +169,10 @@ algos = {k: v.build() for (k, v) in algo_configs.items()}
 # copying the custom env observation and action spaces).
 
 raw_ob = test_env.observation_space.sample()
-print(f"raw observation = {raw_ob}")
+print(f"    raw observation = {raw_ob}")
 
 actions = {k: v.compute_single_action(raw_ob) for (k, v) in algos.items()}
-print(f"algo actions = {actions}")
+print(f"    algo actions = {actions}")
 
 results = {}
 for k, v in algos.items():
