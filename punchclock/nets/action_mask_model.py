@@ -55,6 +55,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
                     "fcnet_hiddens" (`list[int]`): Fully connected hidden layers.
                 }
             name (`str`): Name of model.
+            no_masking (`bool`, optional): If True, disables action masking. Defaults
+                to False.
 
         To disable action masking, set:
             model_config["custom_model_config"]["no_masking"] = True.
@@ -92,11 +94,7 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         self.value_head = nn.Linear(last_layer_size, 1)
 
         # disable action masking --> will likely lead to invalid actions
-        custom_config = model_config.get("custom_model_config", {})
         self.no_masking = no_masking
-        # self.no_masking = False
-        # if "no_masking" in custom_config:
-        #     self.no_masking = custom_config["no_masking"]
 
     def forward(
         self,

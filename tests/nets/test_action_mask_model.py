@@ -124,7 +124,7 @@ model_config = {
     # "custom_model_config": {
     #     "no_masking": True,
     # },
-    "no_masking": True,
+    # "no_masking": True,
     "fcnet_hiddens": [15, 20],
     "fcnet_activation": "relu",
 }
@@ -134,6 +134,7 @@ model = MyActionMaskModel(
     num_outputs=num_outputs,
     model_config=model_config,
     name=name,
+    # no_masking=False,
 )
 
 print(f"model.no_masking = {model.no_masking}")
@@ -167,7 +168,7 @@ rand_env = RandomEnv(
 rand_model = MyActionMaskModel(
     obs_space=rand_env.observation_space,
     action_space=rand_env.action_space,
-    model_config={"fcnet_hiddens": [10, 5]},
+    model_config={"fcnet_hiddens": [10, 5], "custom_model_config": {}},
     name="my_model",
     num_outputs=obs_space["action_mask"].shape[0],
 )
@@ -199,10 +200,12 @@ config = (
         },
     )
     .training(
-        # the ActionMaskModel retrieves the invalid actions and avoids them
+        # The ActionMaskModel retrieves the invalid actions and avoids them.
+        # When using .training() input, `no_masking` is input via `custom_model_config`
+        # subdict.
         model={
             "custom_model": MyActionMaskModel,
-            "custom_model_config": {},
+            "custom_model_config": {"no_masking": False},
             "fcnet_hiddens": [10, 5],
         },
     )
