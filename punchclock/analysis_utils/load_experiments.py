@@ -46,7 +46,9 @@ def loadExpResults(
     best_results = []
     for _, exp_path in enumerate(experiment_paths):
         print(f"Loading results from {exp_path}")
-        restored_tuner = tune.Tuner.restore(exp_path, resume_unfinished=False)
+        restored_tuner = tune.Tuner.restore(
+            exp_path, trainable="PPO", resume_unfinished=False
+        )
         result_grid = restored_tuner.get_results()
 
         # Check if there have been errors
