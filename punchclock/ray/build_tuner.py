@@ -121,9 +121,7 @@ def buildTuner(
         "num_gpus": 0,
     }
 
-    param_space = appendNewKeys(
-        base_dict=param_space, new_dict=config["param_space"]
-    )
+    param_space.update(config["param_space"])
 
     # %% Tune config
     # algo_config = PPOConfig()
@@ -162,20 +160,6 @@ def buildTuner(
     print("Tuner instantiated")
 
     return tuner
-
-
-def appendNewKeys(base_dict: dict, new_dict: dict):
-    """Append keys from `new_dict` to `base_dict`.
-
-    Args:
-        base_dict (`dict`): The dict that will have key-value pairs appended to it.
-        new_dict (`dict`): Contains key-value pairs to append to `base_dict`.
-    """
-    for key, val in zip(new_dict.keys(), new_dict.values()):
-        if key not in base_dict.keys():
-            base_dict[key] = val
-
-    return base_dict
 
 
 def _getDefaults(

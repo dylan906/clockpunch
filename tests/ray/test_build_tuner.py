@@ -27,7 +27,6 @@ from punchclock.ray.build_env import buildEnv
 from punchclock.ray.build_tuner import (
     _getDefaults,
     _getExperimentName,
-    appendNewKeys,
     buildTuner,
 )
 
@@ -44,21 +43,6 @@ print(f"file path: {file_path}")
 
 config = loadJSONFile(file_name=file_path)
 
-# %% Test appendNewKeys
-print("\nTest appendNewKeys...")
-dict1 = {
-    "key1": 0,
-    "key2": "g",
-}
-dict2 = {
-    "key1": 4,
-    "key3": "foo",
-}
-print(f"dict1 = {dict1}")
-print(f"dict2 = {dict2}")
-
-out_dict = appendNewKeys(base_dict=dict1, new_dict=dict2)
-print(f"out_dict = {out_dict}")
 # %% Test _getDefaults
 print("\nTest _getDefaults...")
 [num_cpus, param_space_out] = _getDefaults(
