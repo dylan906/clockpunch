@@ -80,7 +80,7 @@ def buildTuner(
     printNestedDict(config)
 
     # %% Register environment builder (via Ray, not Gym) and action mask model
-    register_env("SSAScheduler", buildEnv)
+    register_env("ssa_env", buildEnv)
     ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
 
     # %% Initialize ray
@@ -114,7 +114,7 @@ def buildTuner(
 
     param_space = {
         "framework": "torch",
-        "env": "SSAScheduler",
+        "env": "ssa_env",
         "horizon": None,  # environment has its own horizon
         "ignore_worker_failures": True,
         "log_level": "DEBUG",
