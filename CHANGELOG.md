@@ -15,6 +15,7 @@ I'm trying to get better about that.
 ### Deprecated
 
 ### Fixed
+- Fixed bug in `builtTuner()` that prevented environment from building in Ray 0.2.5 (#3).
 
 ### Removed
 
