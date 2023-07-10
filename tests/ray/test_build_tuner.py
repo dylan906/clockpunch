@@ -97,6 +97,7 @@ print("\nInterface tests...")
 # register env and model; build environments
 register_env("my_env", buildEnv)
 ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
+
 test_env = buildEnv(env_config=config["param_space"]["env_config"])
 print(f"observations space = {test_env.observation_space}")
 print(f"action space = {test_env.action_space}")
