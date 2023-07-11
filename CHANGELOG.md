@@ -9,6 +9,7 @@ I'm trying to get better about that.
 ## [unreleased] - 20YY-MM-DD
 
 ### Added
+- Added MinMax wrapper that scales every entry in a gym.Dict observation space by sklearn.MinMaxScaler (#4).
 
 ### Changed
 
