@@ -71,7 +71,7 @@ class FilterCovElements(gym.ObservationWrapper):
 
 
 class FloatObs(gym.ObservationWrapper):
-    """Convert any `int`s in the observation space to `int`s."""
+    """Convert any ints in the observation space to floats."""
 
     def __init__(self, env: SSAScheduler):
         super().__init__(env)
