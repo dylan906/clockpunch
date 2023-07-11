@@ -1,1 +1,275 @@
-{"num_cpus": null, "trainable": "PPO", "param_space": {"env_config": {"horizon": 10, "agent_params": {"num_sensors": 2, "num_targets": 4, "sensor_dynamics": "terrestrial", "target_dynamics": "satellite", "sensor_dist": null, "target_dist": "normal", "sensor_dist_frame": null, "target_dist_frame": "COE", "sensor_dist_params": null, "target_dist_params": [[5000, 200], [0, 0], [0, 3.141592653589793], [0, 6.283185307179586], [0, 6.283185307179586], [0, 6.283185307179586]], "fixed_sensors": [[6378.1363, 0.0, 0.0, 0.0, 0.46369050901000003, 0.0], [0.0, 6378.1363, 0.0, -0.46369050901000003, 0.0, 0.0]], "fixed_targets": null}, "filter_params": {"Q": [[0.001, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.001, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.001, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1e-05, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1e-05, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1e-05]], "R": [[0.1, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.1, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.1, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.001, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.001, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.001]], "p_init": [[10.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 10.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 10.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.1, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.1, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]}, "reward_params": {"reward_func": "Threshold", "obs_or_info": "obs", "metric": "num_tasked", "preprocessors": ["min"], "metric_value": 3, "inequality": ">", "penalty": 1}, "time_step": 100, "constructor_params": {"wrappers": [{"wrapper": "filter_observation", "wrapper_config": {"filter_keys": ["vis_map_est", "num_tasked", "est_cov"]}}, {"wrapper": "action_mask"}, {"wrapper": "flat_dict"}]}}, "model": {"custom_model": "action_mask_model", "fcnet_activation": "relu", "fcnet_hiddens": [30, 20]}, "lr": 5e-05}, "tune_config": {}, "run_config": {"stop": {"timesteps_total": 10}, "name": "exp_name", "local_dir": "tests/ray"}}
+{
+    "num_cpus": null,
+    "trainable": "PPO",
+    "param_space": {
+        "env_config": {
+            "horizon": 10,
+            "agent_params": {
+                "num_sensors": 2,
+                "num_targets": 4,
+                "sensor_dynamics": "terrestrial",
+                "target_dynamics": "satellite",
+                "sensor_dist": null,
+                "target_dist": "normal",
+                "sensor_dist_frame": null,
+                "target_dist_frame": "COE",
+                "sensor_dist_params": null,
+                "target_dist_params": [
+                    [
+                        5000,
+                        200
+                    ],
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        3.141592653589793
+                    ],
+                    [
+                        0,
+                        6.283185307179586
+                    ],
+                    [
+                        0,
+                        6.283185307179586
+                    ],
+                    [
+                        0,
+                        6.283185307179586
+                    ]
+                ],
+                "fixed_sensors": [
+                    [
+                        6378.1363,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.46369050901000003,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        6378.1363,
+                        0.0,
+                        -0.46369050901000003,
+                        0.0,
+                        0.0
+                    ]
+                ],
+                "fixed_targets": null
+            },
+            "filter_params": {
+                "Q": [
+                    [
+                        0.001,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.001,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.001,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1e-05,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        1e-05,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        1e-05
+                    ]
+                ],
+                "R": [
+                    [
+                        0.1,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.1,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.1,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.001,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.001,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.001
+                    ]
+                ],
+                "p_init": [
+                    [
+                        10.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        10.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        10.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.1,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.1,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.1
+                    ]
+                ]
+            },
+            "reward_params": {
+                "reward_func": "Threshold",
+                "obs_or_info": "obs",
+                "metric": "num_tasked",
+                "preprocessors": [
+                    "min"
+                ],
+                "metric_value": 3,
+                "inequality": ">",
+                "penalty": 1
+            },
+            "time_step": 100,
+            "constructor_params": {
+                "wrappers": [
+                    {
+                        "wrapper": "filter_observation",
+                        "wrapper_config": {
+                            "filter_keys": [
+                                "vis_map_est",
+                                "num_tasked",
+                                "est_cov"
+                            ]
+                        }
+                    },
+                    {
+                        "wrapper": "rescale_dict_obs",
+                        "wrapper_config": {
+                            "rescale_config": {
+                                "est_cov": 0.0001,
+                                "num_tasked": 1
+                            }
+                        }
+                    },
+                    {
+                        "wrapper": "action_mask"
+                    },
+                    {
+                        "wrapper": "flat_dict"
+                    }
+                ]
+            }
+        },
+        "model": {
+            "custom_model": "action_mask_model",
+            "fcnet_activation": "relu",
+            "fcnet_hiddens": [
+                30,
+                20
+            ]
+        },
+        "lr": 5e-05
+    },
+    "tune_config": {},
+    "run_config": {
+        "stop": {
+            "timesteps_total": 10
+        },
+        "name": "exp_name",
+        "local_dir": "tests/ray"
+    }
+}
