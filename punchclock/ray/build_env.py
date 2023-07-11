@@ -21,7 +21,7 @@ from punchclock.environment.wrappers import (
     ActionMask,
     FlatDict,
     FloatObs,
-    RescaleDictObs,
+    LinScaleDictObs,
 )
 
 # %% Functions
@@ -88,6 +88,14 @@ def buildEnv(env_config: dict) -> gym.Env:
     if "wrappers" not in env_config["constructor_params"].keys():
         env_config["constructor_params"]["wrappers"] = []
 
+    if "rescale_dict_obs" in [
+        wpr["wrapper"] for wpr in env_config["constructor_params"]["wrappers"]
+    ]:
+        warnings.warn(
+            """ Replace 'rescale_dict_obs' with 'linscale_dict_obs';
+                'rescale_dict_obs' will be deprecated."""
+        )
+
     # If an observation filter was set, make sure vis_map_est won't get filtered
     # out (if vis_map_est was not provided in the list of states to wrapper).
     wrapper_names = [
@@ -102,8 +110,8 @@ def buildEnv(env_config: dict) -> gym.Env:
         if "vis_map_est" not in filt_obs["wrapper_config"]["filter_keys"]:
             filt_obs["wrapper_config"]["filter_keys"].append("vis_map_est")
             warnings.warn(
-                "'vis_map_est' not included in filter_observation config.\
-            Appending to list of filters."
+                """'vis_map_est' not included in filter_observation config.
+            Appending to list of filters."""
             )
     # %% Build base environment
     # separate filter config from env config
@@ -123,7 +131,9 @@ def buildEnv(env_config: dict) -> gym.Env:
         "float_obs": FloatObs,
         "action_mask": ActionMask,
         "flat_dict": FlatDict,
-        "rescale_dict_obs": RescaleDictObs,
+        "linscale_dict_obs": LinScaleDictObs,
+        # "rescale_dict_obs" here for backward compatibility
+        "rescale_dict_obs": LinScaleDictObs,
         # TODO: flatten_MD not supported yet; debugging still needs to be done
         # "flatten_MD": FlattenMultiDiscrete,
     }

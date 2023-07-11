@@ -314,7 +314,7 @@ class FlattenMultiDiscrete(gym.ActionWrapper):
 
 
 # %% Rescale obs
-class RescaleDictObs(gym.ObservationWrapper):
+class LinScaleDictObs(gym.ObservationWrapper):
     """Rescale selected entries in a `Dict` observation space.
 
     Items in unwrapped observation that have common keys with rescale_config are
@@ -343,7 +343,7 @@ class RescaleDictObs(gym.ObservationWrapper):
         env: gym.Env,
         rescale_config: dict = {},
     ):
-        """Wrap an environment with RescaleDictObs.
+        """Wrap an environment with LinScaleDictObs.
 
         Args:
             env (`gym.Env`): Observation space must be a `gymDict`.
@@ -352,7 +352,7 @@ class RescaleDictObs(gym.ObservationWrapper):
                 observation space is same as unwrapped. Defaults to {}.
         """
         assert isinstance(env.observation_space, gym.spaces.Dict), (
-            f"The input environment to RescaleDictObs() must have a `gym.spaces.Dict`"
+            f"The input environment to LinScaleDictObs() must have a `gym.spaces.Dict`"
             f" observation space."
         )
 
@@ -369,7 +369,7 @@ class RescaleDictObs(gym.ObservationWrapper):
             if key in rescale_config.keys():
                 assert isinstance(
                     space, Box
-                ), f"RescaleDictObs only works with Dict[Box] spaces."
+                ), f"LinScaleDictObs only works with Dict[Box] spaces."
 
                 new_low = space.low * rescale_config[key]
                 new_high = space.high * rescale_config[key]

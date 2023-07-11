@@ -24,8 +24,8 @@ from punchclock.environment.wrappers import (
     FlatDict,
     FlattenMultiDiscrete,
     FloatObs,
+    LinScaleDictObs,
     MakeDict,
-    RescaleDictObs,
     getNumWrappers,
     getWrapperList,
 )
@@ -239,9 +239,9 @@ except Exception as err:
     print(err)
 
 # %% Test Rescale obs
-print("\nTest RescaleDictObs...")
+print("\nTest LinScaleDictObs...")
 print("Test baseline case")
-rescale_env = RescaleDictObs(env=env, rescale_config={"est_cov": 1e-4})
+rescale_env = LinScaleDictObs(env=env, rescale_config={"est_cov": 1e-4})
 print(f"rescale_env = {rescale_env}")
 
 unscaled_obs = rescale_env.observation_space.sample()
@@ -251,7 +251,7 @@ print(f"post-scaled obs = {scaled_obs}")
 
 # Test with empty config
 print("Test with default (empty) config")
-rescale_env = RescaleDictObs(env=env)
+rescale_env = LinScaleDictObs(env=env)
 print(f"rescale_env = {rescale_env}")
 
 unscaled_obs = rescale_env.observation_space.sample()
@@ -268,7 +268,7 @@ env_rand_box = RandomEnv(
     }
 )
 try:
-    rescale_env = RescaleDictObs(env_rand_box)
+    rescale_env = LinScaleDictObs(env_rand_box)
 except Exception as err:
     print(err)
 
@@ -283,7 +283,7 @@ env_non_box = RandomEnv(
     }
 )
 try:
-    rescale_env = RescaleDictObs(env_non_box, {"state_a": 2})
+    rescale_env = LinScaleDictObs(env_non_box, {"state_a": 2})
 except Exception as err:
     print(err)
 # %% Test multiple wrappers
