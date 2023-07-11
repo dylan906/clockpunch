@@ -11,6 +11,7 @@ import gymnasium as gym
 from gymnasium.spaces import Box, MultiDiscrete, flatten_space, unflatten
 from gymnasium.spaces.utils import flatten
 from numpy import append, float32, inf, int64, ndarray, ones
+from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
 from punchclock.environment.env import SSAScheduler
@@ -225,8 +226,8 @@ class FlatDict(gym.ObservationWrapper):
         """
         assert isinstance(
             env.observation_space, gym.spaces.Dict
-        ), f"The input environment to FlatDict() must have a `gym.spaces.Dict` \
-        observation space."
+        ), f"""The input environment to FlatDict() must have a `gym.spaces.Dict` 
+        observation space."""
         super().__init__(env)
 
         items = {}
@@ -395,6 +396,68 @@ class LinScaleDictObs(gym.ObservationWrapper):
                 new_obs[key] = val * self.rescale_config[key]
 
         return new_obs
+
+
+class MinMaxScaleDictObs(gym.ObservationWrapper):
+    """MinMax scale entries in a dict observation space.
+
+    Each value in the observation space is scaled by
+        X_scaled = X_std * (max - min) + min.
+
+    See sklearn.preprocessing.MinMaxScaler for algorithm details.
+    """
+
+    def __init__(self, env: gym.Env):
+        assert isinstance(
+            env.observation_space, gym.spaces.Dict
+        ), f"""The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict` 
+        observation space."""
+
+        for space in env.observation_space.spaces.values():
+            assert isinstance(
+                space, gym.spaces.Box
+            ), f"""All spaces in Dict observation space must be a `gym.spaces.Box`."""
+
+        super().__init__(env)
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Rescale each entry in obs by MinMax algorithm.
+
+        Args:
+            obs (OrderedDict): Values must be arrays.
+
+        Returns:
+            OrderedDict: Scaled version of obs. Keys are same.
+        """
+        # MinMaxScaler scales along the 0th dimension (vertical). Dict values are
+        # not guaranteed to be 2d or, if 1d, vertical. So need to flip horizontal
+        # arrays prior to transforming via MinMaxScaler.
+        new_obs = {}
+        for k, v in obs.items():
+            v, flip = self.transposeHorizontalArray(v)
+            scaler = MinMaxScaler().fit(v)
+            new_v = self.unTransposeArray(scaler.transform(v), flip)
+            new_obs[k] = new_v
+
+        return new_obs
+
+    def transposeHorizontalArray(self, x: ndarray) -> tuple[ndarray, bool]:
+        """Transpose 1d horizontal array, do nothing otherwise.
+
+        Returns a tuple where the first value is the the array, and the 2nd value
+        is a flag that is True if the input array was transposed.
+        """
+        transposed = False
+        if x.shape[0] == 1:
+            x = x.transpose()
+            transposed = True
+        return x, transposed
+
+    def unTransposeArray(self, x: ndarray, trans: bool) -> ndarray:
+        """Transpose x if trans is True; return x."""
+        if trans is True:
+            x = x.transpose()
+        return x
 
 
 def getNumWrappers(env: gym.Env, num: int = 0) -> int:

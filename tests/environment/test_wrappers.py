@@ -26,6 +26,7 @@ from punchclock.environment.wrappers import (
     FloatObs,
     LinScaleDictObs,
     MakeDict,
+    MinMaxScaleDictObs,
     getNumWrappers,
     getWrapperList,
 )
@@ -97,7 +98,7 @@ env = SSAScheduler(env_builder)
 env.reset()
 act_sample = env.action_space.sample()
 
-# %% Test hide covariance wrapper
+# %% Test filter covariance elements wrapper
 env.reset()
 print("\nTest FilterCovElements...")
 env_pos = FilterCovElements(env, "position")
@@ -109,6 +110,7 @@ env_vel = FilterCovElements(env, "velocity")
 check_env(env_vel)
 [obs, _, _, _, _] = env_vel.step(act_sample)
 print(f"obs = {obs}")
+
 # %% Test FloatObs
 print("\nTest FloatObs...")
 # Copy original environment and add a dict to obs space to test nested-dict handling
@@ -137,7 +139,7 @@ print(
     f"wrapped obs in wrapped obs space? "
     f"{env_float.observation_space.contains(obs_float)}"
 )
-# %% Test ActionMask
+# %% Test ActionMask wrapper
 print("\nTest ActionMask...")
 env.reset()
 env_masked = ActionMask(env)
@@ -286,6 +288,11 @@ try:
     rescale_env = LinScaleDictObs(env_non_box, {"state_a": 2})
 except Exception as err:
     print(err)
+
+# %% Test MinMaxScaleDict wrapper
+env_minmax = MinMaxScaleDictObs(env=env)
+obs = env_minmax.observation(obs=env.observation_space.sample())
+
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")
 # Wrap with FilterObservation to allow just est_cov and vis_map_est through, then
