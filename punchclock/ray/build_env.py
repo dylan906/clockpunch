@@ -22,6 +22,7 @@ from punchclock.environment.wrappers import (
     FlatDict,
     FloatObs,
     LinScaleDictObs,
+    MinMaxScaleDictObs,
 )
 
 # %% Functions
@@ -134,6 +135,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "linscale_dict_obs": LinScaleDictObs,
         # "rescale_dict_obs" here for backward compatibility
         "rescale_dict_obs": LinScaleDictObs,
+        "minmaxscale_dict_obs": MinMaxScaleDictObs,
         # TODO: flatten_MD not supported yet; debugging still needs to be done
         # "flatten_MD": FlattenMultiDiscrete,
     }
