@@ -658,3 +658,48 @@ def getWrapperList(env: gym.Env, wrappers: list = None) -> list:
         wrappers = getWrapperList(env.env, wrappers)
 
     return wrappers
+
+
+class SelectiveDictProcessor:
+    """Apply a function to a subset of items in a dict.
+
+    Attributes:
+        keys (list): All the keys that func is applied to when self.applyFunc()
+            is called. The func is applied to the value assocaited with the key
+            (not the key itself).
+        func (Callable): The function that is applied to the specified items.
+    """
+
+    def __init__(self, func: Callable, keys: list[str]):
+        """Initialize SelectiveDictProcessor.
+
+        Args:
+            func (Callable): Function will be applied identically to input keys.
+            keys (list[str]): List of keys in input dict to self.applyFunc().
+        """
+        assert isinstance(func, Callable)
+        assert isinstance(keys, list)
+        assert all(isinstance(key, str) for key in keys)
+        self.keys = keys
+        self.func = func
+
+    def applyFunc(self, in_dict: dict, **kwargs) -> dict:
+        """Applies function to previously defined items in in_dict.
+
+        Args:
+            in_dict (dict): Must include keys specified when SelectiveDictProcessor
+                was instantiated.
+
+        Returns:
+            dict: Same keys as in_dict. Some/all values (as specified at instantiation)
+                have self.function applied to them.
+        """
+        processed_dict = {}
+        for k, v in in_dict.items():
+            if k in self.keys:
+                processed_dict[k] = self.func(v, **kwargs)
+
+        out_dict = deepcopy(in_dict)
+        out_dict.update(processed_dict)
+
+        return out_dict
