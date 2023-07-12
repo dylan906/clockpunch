@@ -10,7 +10,17 @@ from copy import deepcopy
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, MultiDiscrete, flatten_space, unflatten
 from gymnasium.spaces.utils import flatten
-from numpy import append, float32, inf, int64, multiply, ndarray, ones, split
+from numpy import (
+    append,
+    float32,
+    inf,
+    int64,
+    multiply,
+    ndarray,
+    ones,
+    split,
+    zeros,
+)
 from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
@@ -427,6 +437,18 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
             ), f"""All spaces in Dict observation space must be a `gym.spaces.Box`."""
 
         super().__init__(env)
+
+        # Update wrapper observation_shape. Set all lows/highs to 0/1.
+        # NOTE: Any subspace with dtype==int will be changed to float.
+        new_obs_space = {}
+        for k, space in env.observation_space.spaces.items():
+            new_space = Box(
+                low=zeros(space.low.shape),
+                high=ones(space.high.shape),
+                shape=space.shape,
+            )
+            new_obs_space.update({k: new_space})
+        self.observation_space = Dict(new_obs_space)
         return
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
