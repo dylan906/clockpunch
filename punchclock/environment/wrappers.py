@@ -22,8 +22,8 @@ class FilterCovElements(gym.ObservationWrapper):
     """Hide either position or velocity covariances in SSAScheduler observation.
 
     Observation is a dict with key "est_cov" being a (6, M) array, where the 6 elements
-        are position (:3) and velocity (3:) covariances, respectively, and M is the
-        number of covariance estimates.
+        are position (:3) and velocity (3:) covariance diagonals, respectively,
+        and M is the number of covariance estimates.
     """
 
     def __init__(self, env: SSAScheduler, pos_vel_flag: str):
@@ -32,8 +32,16 @@ class FilterCovElements(gym.ObservationWrapper):
         Args:
             env (`SSAScheduler`): An instance `SSAScheduler` gym environment.
             pos_vel_flag (`str`): ("position" | "velocity") Denotes which elements
-            of covariance diagonals to keep in observation.
+                of covariance diagonals to keep in observation.
         """
+        assert isinstance(
+            env.observation_space, gym.spaces.Dict
+        ), f"""The input environment to FilterCovElements() must have a `gym.spaces.Dict`
+            observation space."""
+        assert (
+            "est_cov" in env.observation_space.spaces
+        ), f"""The key 'est_cov' must be included in env.observation_space.spaces"""
+
         # Initialize bare environment
         super().__init__(env)
 
@@ -54,8 +62,8 @@ class FilterCovElements(gym.ObservationWrapper):
         Args:
             obs (`OrderedDict`): Must contain "est_cov" as a key, with value being a
                 (6, M) array, where the 6 elements are position (:3) and velocity
-                (3:) covariances, respectively, and M is the number of covariance
-                estimates.
+                (3:) covariance diagonals, respectively, and M is the number of
+                covariance estimates.
 
         Returns:
             `OrderedDict`: Same as input obs, but with modified `est_cov`.
