@@ -419,6 +419,7 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
             ), f"""All spaces in Dict observation space must be a `gym.spaces.Box`."""
 
         super().__init__(env)
+        return
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Rescale each entry in obs by MinMax algorithm.
