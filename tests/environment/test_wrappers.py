@@ -9,7 +9,7 @@ from copy import deepcopy
 import gymnasium as gym
 from gymnasium.spaces.utils import flatten
 from gymnasium.wrappers.filter_observation import FilterObservation
-from numpy import array, diag, float32, int64
+from numpy import array, diag, float32, int64, sum
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
@@ -27,6 +27,8 @@ from punchclock.environment.wrappers import (
     LinScaleDictObs,
     MakeDict,
     MinMaxScaleDictObs,
+    SelectiveDictProcessor,
+    SplitArrayObs,
     getNumWrappers,
     getWrapperList,
 )
@@ -292,6 +294,19 @@ except Exception as err:
 # %% Test MinMaxScaleDict wrapper
 env_minmax = MinMaxScaleDictObs(env=env)
 obs = env_minmax.observation(obs=env.observation_space.sample())
+
+# %% Test SplitArrayObs
+env_split = SplitArrayObs(
+    env=env,
+    keys=["est_cov"],
+    new_keys=[["est_cov_pos", "est_cov_vel"]],
+    indices_or_sections=[2],
+)
+obs_presplit = env.observation_space.sample()
+obs_split = env_split.observation(obs=obs_presplit)
+print(f"pre-split obs['est_cov'] = \n{obs_presplit['est_cov']}")
+print(f"post-split obs['est_cov_pos'] = \n{obs_split['est_cov_pos']}")
+print(f"post-split obs['est_cov_vel'] = \n{obs_split['est_cov_vel']}")
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")

@@ -3,21 +3,22 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from collections import OrderedDict
+from collections import Callable, OrderedDict
 from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, MultiDiscrete, flatten_space, unflatten
+from gymnasium.spaces import Box, Dict, MultiDiscrete, flatten_space, unflatten
 from gymnasium.spaces.utils import flatten
-from numpy import append, float32, inf, int64, ndarray, ones
+from numpy import append, float32, inf, int64, multiply, ndarray, ones, split
 from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
 from punchclock.environment.env import SSAScheduler
+from punchclock.reward_funcs.reward_utils import cropArray
 
 
-# %% Wrapper for covariance diagonals
+# %% Wrappers
 class FilterCovElements(gym.ObservationWrapper):
     """Hide either position or velocity covariances in SSAScheduler observation.
 
@@ -36,8 +37,7 @@ class FilterCovElements(gym.ObservationWrapper):
         """
         assert isinstance(
             env.observation_space, gym.spaces.Dict
-        ), f"""The input environment to FilterCovElements() must have a `gym.spaces.Dict`
-            observation space."""
+        ), f"""Input environment must have a `gym.spaces.Dict` observation space."""
         assert (
             "est_cov" in env.observation_space.spaces
         ), f"""The key 'est_cov' must be included in env.observation_space.spaces"""
@@ -469,6 +469,166 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         return x
 
 
+class SplitArrayObs(gym.ObservationWrapper):
+    """Split array entries in a Dict observation space into multiple entries.
+
+    Example:
+        wrapped_env = SplitArrayObs(env, keys=["state_a"],
+            new_keys=["state_a1", "state_a2",],
+            indices_or_sections=[2],
+            )
+
+        unwrapped_obs = {
+            "state_a": array([1, 2, 3, 4])
+        }
+
+        wrapped_obs = wrapped_env.observation(unwrapped_obs)
+
+        # output
+        wrapped_obs = {
+            "state_a1": array([1, 2]),
+            "state_a2": array([3, 4])
+        }
+
+    See numpy.split for details on indices_or_sections and axes args.
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        keys: list[str],
+        new_keys: list[list[str]],
+        indices_or_sections: list[int | ndarray],
+        axes: list[int] = [0],
+    ):
+        """Initialize SplitArrayObs wrapper.
+
+        Args:
+            env (gym.Env): Must have a Dict observation space.
+            keys (list[str]): (A-long) List of keys in unwrapped observation to
+                be replaced with new_keys.
+            new_keys (list[list[str]]): (A-long) Nested list of new keys to replace
+                original keys with. Outer level must be A-long, inner level lengths
+                must be consistent with indices_or_sections.
+            indices_or_sections (list[int  |  ndarray]): (A-long | 1-long) Number
+                of segments to split arrays into. See numpy.split for details.
+                If 1-long, all arrays will be split into same number of segments.
+            axes (list[int], optional): (A-long | 1-long) Axes to perform array
+                splits on. See numpy.split for details. If 1-long, all arrays will
+                be split on same axis. Defaults to [0].
+        """
+        # Type and size checking
+        assert isinstance(
+            env.observation_space, Dict
+        ), f"""Input environment must have a `gym.spaces.Dict` observation space."""
+        assert len(keys) == len(new_keys), "len(keys) must equal len(new_keys)"
+        assert (len(indices_or_sections) == len(keys)) or (
+            len(indices_or_sections) == 1
+        ), "len(indices_or_sections) must be 1 or same as len(keys)"
+        assert (len(axes) == len(keys)) or (
+            len(axes) == 1
+        ), """len(axes) must be 1 or same as len(keys)"""
+        assert all(
+            [k in env.observation_space.spaces for k in keys]
+        ), """All entries in keys must be in unwrapped observation space."""
+        relevant_spaces = [env.observation_space.spaces[k] for k in keys]
+        assert all(
+            [isinstance(space, Box) for space in relevant_spaces]
+        ), """All spaces specified in keys must be Box spaces in unwrapped environment."""
+
+        # Defaults
+        if len(indices_or_sections) == 1:
+            indices_or_sections = [
+                indices_or_sections[0] for i in range(len(keys))
+            ]
+        if len(axes) == 1:
+            axes = [axes[0] for i in range(len(keys))]
+
+        # %% Set attributes
+        super().__init__(env)
+        self.keys = keys
+        self.new_keys = new_keys
+        self.indices_or_sections = indices_or_sections
+        self.axes = axes
+        self.key_map = {k: v for (k, v) in zip(keys, new_keys)}
+
+        # Redefine env.observation_space
+        self.observation_space = self.buildNewObsSpace(
+            self.key_map,
+            env.observation_space,
+            indices_or_sections,
+            axes,
+        )
+
+    def buildNewObsSpace(
+        self,
+        key_map: dict,
+        obs_space: gym.spaces.Dict,
+        indices_or_sections: list[int | ndarray],
+        axes: list[int],
+    ) -> Dict:
+        """Redefine wrapped env observation space."""
+        # New observation space will have more items than old (unwrapped) observation
+        # space. Need to add new items and make sure they are the correct size
+        # (which will be different than unwrapped).
+        new_obs_space = Dict(
+            {k: deepcopy(v) for (k, v) in self.observation_space.items()}
+        )
+        for (key, new_keys), iors, ax in zip(
+            key_map.items(),
+            indices_or_sections,
+            axes,
+        ):
+            original_subspace = obs_space[key]
+            original_high = original_subspace.high[0, 0]
+            original_low = original_subspace.low[0, 0]
+            original_dtype = original_subspace.dtype
+            split_subspaces = split(
+                original_subspace.sample(),
+                indices_or_sections=indices_or_sections,
+                axis=ax,
+            )
+            for space, nk in zip(split_subspaces, new_keys):
+                space_shape = space.shape
+                new_obs_space[nk] = Box(
+                    low=original_low,
+                    high=original_high,
+                    shape=space_shape,
+                    dtype=original_dtype,
+                )
+            new_obs_space.spaces.pop(key)
+
+        return new_obs_space
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Get wrapped observation.
+
+        Args:
+            obs (OrderedDict): Has original (unwrapped) keys.
+
+        Returns:
+            OrderedDict: Replaces some unwrapped keys (as specified during instantiation)
+                with new keys (also as specified during instantiation).
+        """
+        # Deepcopy is needed so original obs isn't modified
+        new_obs = deepcopy(obs)
+        for (key, new_keys), i, axis in zip(
+            self.key_map.items(),
+            self.indices_or_sections,
+            self.axes,
+        ):
+            # After splitting observation, the ob is now a list of multiple arrays.
+            # So we assign each array to a new item in the new obs dict. Also have
+            # to delete the replaced key.
+            split_ob = split(obs[key], indices_or_sections=i, axis=axis)
+            ob = {k: v for (k, v) in zip(new_keys, split_ob)}
+            new_obs.pop(key)
+            new_obs.update(ob)
+
+        return new_obs
+
+
+# %% Utils
 def getNumWrappers(env: gym.Env, num: int = 0) -> int:
     """Get the number of wrappers around a Gym environment.
 
