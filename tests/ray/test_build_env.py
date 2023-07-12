@@ -76,7 +76,7 @@ constructor_params = {
             },
         },
         {
-            "wrapper": "rescale_dict_obs",
+            "wrapper": "linscale_dict_obs",
             "wrapper_config": {
                 "rescale_config": {
                     "est_cov": 1e-4,
