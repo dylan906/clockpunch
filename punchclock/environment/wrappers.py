@@ -20,6 +20,7 @@ from numpy import (
     multiply,
     ndarray,
     ones,
+    reshape,
     split,
     zeros,
 )
@@ -425,14 +426,44 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         # MinMaxScaler scales along the 0th dimension (vertical). Dict values are
         # not guaranteed to be 2d or, if 1d, vertical. So need to flip horizontal
         # arrays prior to transforming via MinMaxScaler.
+        # If a 1d array is handed in, need to convert to 2s for MinMaxScaler to
+        # work. Then need to convert back to 1d before passing back out.
+        # Convert dtypes to float32 to match observation_space (float32 is default
+        # dtype for gym Box spaces).
+
         new_obs = {}
         for k, v in obs.items():
+            v, reshaped = self.make2d(v)
             v, flip = self.transposeHorizontalArray(v)
             scaler = MinMaxScaler().fit(v)
             new_v = self.unTransposeArray(scaler.transform(v), flip)
+            new_v = self.make1d(new_v, reshaped)
+            new_v = new_v.astype(float32)
             new_obs[k] = new_v
 
+        # check that new observation is in bounds
+        assert self.observation_space.contains(new_obs)
+
         return new_obs
+
+    def make2d(self, x: ndarray) -> tuple[ndarray, bool]:
+        """Make a 1d array into a 2d array with a singleton 0th dimension.
+
+        Do nothing to 2d arrays.
+        """
+        reshaped = False
+        if x.ndim == 1:
+            x = x.reshape((-1, 1))
+            reshaped = True
+
+        return x, reshaped
+
+    def make1d(self, x: ndarray, reshaped: bool) -> ndarray:
+        """Make an array 1d if reshaped == True, do nothing otherwise."""
+        if reshaped is True:
+            x = x.reshape((-1))
+
+        return x
 
     def transposeHorizontalArray(self, x: ndarray) -> tuple[ndarray, bool]:
         """Transpose 1d horizontal array, do nothing otherwise.
