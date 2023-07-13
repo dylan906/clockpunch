@@ -623,27 +623,40 @@ def getWrapperList(env: gym.Env, wrappers: list = None) -> list:
 
 
 class SelectiveDictProcessor:
-    """Apply a function to a subset of items in a dict.
+    """Apply functions to a subset of items in a dict.
 
     Attributes:
-        keys (list): All the keys that func is applied to when self.applyFunc()
-            is called. The func is applied to the value assocaited with the key
-            (not the key itself).
-        func (Callable): The function that is applied to the specified items.
+        keys (list): All the keys that are operated on when self.applyFunc()
+            is called. Each function is applied to the value associated with the
+            key (not the key itself).
+        funcs (list[Callable]): The functions that are applied to the items specified
+            by keys.
+        key_func_map (dict): The mapping of keys to funcs. Funcs are mapped to
+            keys by the input order of the lists used at instantiation.
     """
 
-    def __init__(self, func: Callable, keys: list[str]):
+    def __init__(self, funcs: list[Callable], keys: list[str]):
         """Initialize SelectiveDictProcessor.
 
         Args:
-            func (Callable): Function will be applied identically to input keys.
+            funcs (list[Callable]): Entries are paired with keys and applied
+                correspondingly.
             keys (list[str]): List of keys in input dict to self.applyFunc().
+
+        The i-th func is applied to the i-th key value.
+
+        If a funcs has only 1 entry, then the same function is applied to all
+            keys.
         """
-        assert isinstance(func, Callable)
+        assert isinstance(funcs, list)
         assert isinstance(keys, list)
         assert all(isinstance(key, str) for key in keys)
+        if len(funcs) == 1:
+            funcs = [funcs[0] for i in range(len(keys))]
+
         self.keys = keys
-        self.func = func
+        self.funcs = funcs
+        self.key_func_map = {k: f for (k, f) in zip(keys, funcs)}
 
     def applyFunc(self, in_dict: dict, **kwargs) -> dict:
         """Applies function to previously defined items in in_dict.
@@ -654,12 +667,13 @@ class SelectiveDictProcessor:
 
         Returns:
             dict: Same keys as in_dict. Some/all values (as specified at instantiation)
-                have self.function applied to them.
+                have self.funcs applied to them.
         """
         processed_dict = {}
         for k, v in in_dict.items():
             if k in self.keys:
-                processed_dict[k] = self.func(v, **kwargs)
+                # processed_dict[k] = self.funcs(v, **kwargs)
+                processed_dict[k] = self.key_func_map[k](v, **kwargs)
 
         out_dict = deepcopy(in_dict)
         out_dict.update(processed_dict)
