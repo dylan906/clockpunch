@@ -43,6 +43,9 @@ print(f"file path: {file_path}")
 
 config = loadJSONFile(file_name=file_path)
 
+# %% Add _disable_preprocessor_api to config
+# config["param_space"]["model"]["_disable_preprocessor_api"] = True
+
 # %% Test _getDefaults
 print("\nTest _getDefaults...")
 [num_cpus, param_space_out] = _getDefaults(
