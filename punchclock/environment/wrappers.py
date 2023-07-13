@@ -435,8 +435,10 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         for k, v in obs.items():
             v, reshaped = self.make2d(v)
             v, flip = self.transposeHorizontalArray(v)
-            scaler = MinMaxScaler().fit(v)
-            new_v = self.unTransposeArray(scaler.transform(v), flip)
+            # set clip=True to prevent occasional out-of-bounds returns from
+            # fit_transformation.
+            scaled_data = MinMaxScaler(clip=True).fit_transform(v)
+            new_v = self.unTransposeArray(scaled_data, flip)
             new_v = self.make1d(new_v, reshaped)
             new_v = new_v.astype(float32)
             new_obs[k] = new_v
