@@ -600,7 +600,7 @@ class SplitArrayObs(gym.ObservationWrapper):
             original_dtype = original_subspace.dtype
             split_subspaces = split(
                 original_subspace.sample(),
-                indices_or_sections=indices_or_sections,
+                indices_or_sections=iors,
                 axis=ax,
             )
             for space, nk in zip(split_subspaces, new_keys):
