@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from collections import Callable, OrderedDict
+from collections import OrderedDict
+from collections.abc import Callable
 from copy import deepcopy
+from functools import partial
 
 # Third Party Imports
 import gymnasium as gym
@@ -108,7 +110,7 @@ class ActionMask(gym.ObservationWrapper):
         """Wrapped observation space is a dict with "observations" and "action_mask" keys.
 
         Args:
-            env (`SSAScheduler`): Unwrapped environment with `Dict` observation
+            env (`SSAScheduler`): Unwrapped environment with Dict observation
                 space that includes (at a minimum) "vis_map_est".
             action_mask_on (`bool`, optional): Whether or not to mask actions.
                 Defaults to True.
@@ -168,34 +170,55 @@ class ActionMask(gym.ObservationWrapper):
 
 # %% Wrapper for flattening part of observation space
 class FlatDict(gym.ObservationWrapper):
-    """Flatten entries of a `Dict` observation space, leaving the top level unaffected.
+    """Flatten entries of a Dict observation space, leaving the top level unaffected.
 
-    Unwrapped environment must have a `Dict` observation space.
+    Unwrapped environment must have a Dict observation space.
+
+    Can selectively flatten entries in a Dict observation space with the keys
+        arg.
     """
 
     def __init__(
         self,
         env: gym.Env,
+        keys: list[str] = [],
     ):
-        """Flatten sub-levels of a `Dict` observation space.
+        """Flatten sub-levels of a Dict observation space.
 
         Args:
-            env (`gym.Env`): An environment with a `Dict` observation space.
+            env (gym.Env): An environment with a Dict observation space.
+            keys (list[str], optional): List of sub-levels to flatten. If empty,
+                all sub-levels are flattened. Defaults to [].
         """
         assert isinstance(
             env.observation_space, gym.spaces.Dict
         ), f"""The input environment to FlatDict() must have a `gym.spaces.Dict` 
         observation space."""
+        assert isinstance(keys, list), f"keys must be a list."
         super().__init__(env)
 
-        items = {}
-        for key, val in env.observation_space.items():
-            items[key] = flatten_space(val)
+        # replace empty list of keys with all keys by default
+        if len(keys) == 0:
+            keys = list(env.observation_space.spaces.keys())
 
-        self.observation_space = gym.spaces.Dict(**items)
+        # Each space is flattened by the same basic function, gym.spaces.utils.flatten,
+        # but with a different arg for "space". So make a unique partial function
+        # for each space. This way, only the new observation (space) needs to be
+        # passed into the flatten function each time, instead of both the observation
+        # and the original space.
+        relevant_spaces = [env.observation_space.spaces[k] for k in keys]
+        flatten_funcs = [partial(flatten, s) for s in relevant_spaces]
+        self.preprocessor = SelectiveDictProcessor(flatten_funcs, keys)
+
+        # Redefine the observation space with new flattened spaces.
+        space_preprocessor = SelectiveDictProcessor([flatten_space], keys)
+        new_obs_space = space_preprocessor.applyFunc(
+            env.observation_space.spaces
+        )
+        self.observation_space = gym.spaces.Dict(new_obs_space)
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
-        """Flatten items in `Dict` observation space, leaving top level intact.
+        """Flatten items in Dict observation space, leaving top level intact.
 
         Args:
             obs (`OrderedDict`): Observation
@@ -203,9 +226,8 @@ class FlatDict(gym.ObservationWrapper):
         Returns:
             `gym.spaces.Dict`: All entries below top level are flattened.
         """
-        obs_new = {}
-        for key, val in obs.items():
-            obs_new[key] = flatten(self.env.observation_space[key], val)
+        obs_new = self.preprocessor.applyFunc(obs)
+        obs_new = OrderedDict(obs_new)
 
         return obs_new
 
@@ -274,7 +296,7 @@ class FlattenMultiDiscrete(gym.ActionWrapper):
 
 # %% Rescale obs
 class LinScaleDictObs(gym.ObservationWrapper):
-    """Rescale selected entries in a `Dict` observation space.
+    """Rescale selected entries in a Dict observation space.
 
     Items in unwrapped observation that have common keys with rescale_config are
     multiplied by values in rescale_config.
