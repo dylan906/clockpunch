@@ -292,6 +292,18 @@ except Exception as err:
 env_minmax = MinMaxScaleDictObs(env=env)
 obs = env_minmax.observation(obs=env.observation_space.sample())
 
+# Test with 1d obs
+rand_env = RandomEnv(
+    {
+        "observation_space": gym.spaces.Dict(
+            {"a": gym.spaces.Box(0, 10, shape=[3])},
+        ),
+        "action_space": gym.spaces.Box(0, 1),
+    }
+)
+rand_minmax_env = MinMaxScaleDictObs(rand_env)
+new_obs = rand_minmax_env.observation(rand_env.observation_space.sample())
+
 # %% Test SplitArrayObs
 env_split = SplitArrayObs(
     env=env,
