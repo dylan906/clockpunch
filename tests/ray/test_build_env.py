@@ -75,15 +75,7 @@ constructor_params = {
                 "filter_keys": ["vis_map_est", "num_tasked", "est_cov"]
             },
         },
-        {
-            "wrapper": "linscale_dict_obs",
-            "wrapper_config": {
-                "rescale_config": {
-                    "est_cov": 1e-4,
-                    "num_tasked": 1,
-                },
-            },
-        },
+        {"wrapper": "minmaxscale_dict_obs"},
         {"wrapper": "action_mask"},
         {"wrapper": "flat_dict"},
     ]
