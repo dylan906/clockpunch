@@ -20,7 +20,6 @@ from punchclock.environment.env import SSAScheduler
 from punchclock.environment.env_parameters import SSASchedulerParams
 from punchclock.environment.wrappers import (
     ActionMask,
-    FilterCovElements,
     FlatDict,
     FlattenMultiDiscrete,
     FloatObs,
@@ -99,19 +98,6 @@ env_builder = SSASchedulerParams(**env_params)
 env = SSAScheduler(env_builder)
 env.reset()
 act_sample = env.action_space.sample()
-
-# %% Test filter covariance elements wrapper
-env.reset()
-print("\nTest FilterCovElements...")
-env_pos = FilterCovElements(env, "position")
-check_env(env_pos)
-[obs, _, _, _, _] = env_pos.step(act_sample)
-print(f"obs = {obs}")
-
-env_vel = FilterCovElements(env, "velocity")
-check_env(env_vel)
-[obs, _, _, _, _] = env_vel.step(act_sample)
-print(f"obs = {obs}")
 
 # %% Test FloatObs
 print("\nTest FloatObs...")

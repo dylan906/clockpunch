@@ -29,66 +29,6 @@ from punchclock.reward_funcs.reward_utils import cropArray
 
 
 # %% Wrappers
-class FilterCovElements(gym.ObservationWrapper):
-    """Hide either position or velocity covariances in SSAScheduler observation.
-
-    Observation is a dict with key "est_cov" being a (6, M) array, where the 6 elements
-        are position (:3) and velocity (3:) covariance diagonals, respectively,
-        and M is the number of covariance estimates.
-    """
-
-    def __init__(self, env: SSAScheduler, pos_vel_flag: str):
-        """Initialize wrapped environment.
-
-        Args:
-            env (`SSAScheduler`): An instance `SSAScheduler` gym environment.
-            pos_vel_flag (`str`): ("position" | "velocity") Denotes which elements
-                of covariance diagonals to keep in observation.
-        """
-        assert isinstance(
-            env.observation_space, gym.spaces.Dict
-        ), f"""Input environment must have a `gym.spaces.Dict` observation space."""
-        assert (
-            "est_cov" in env.observation_space.spaces
-        ), f"""The key 'est_cov' must be included in env.observation_space.spaces"""
-
-        # Initialize bare environment
-        super().__init__(env)
-
-        # save position/velocity flag
-        self.pos_vel_flag = pos_vel_flag
-
-        # Modify observation space (same regardless of `pos_vel_flag` value)
-        observation_space = deepcopy(env.observation_space)
-        num_targets = observation_space["est_cov"].shape[1]
-        observation_space["est_cov"] = gym.spaces.Box(
-            -inf, inf, (3, num_targets)
-        )
-        self.observation_space = observation_space
-
-    def observation(self, obs: OrderedDict) -> OrderedDict:
-        """Filter covariance elements of observation.
-
-        Args:
-            obs (`OrderedDict`): Must contain "est_cov" as a key, with value being a
-                (6, M) array, where the 6 elements are position (:3) and velocity
-                (3:) covariance diagonals, respectively, and M is the number of
-                covariance estimates.
-
-        Returns:
-            `OrderedDict`: Same as input obs, but with modified `est_cov`.
-
-        Notes:
-            - If obs does not contain "est_cov", output is same as input.
-        """
-        if self.pos_vel_flag == "position":
-            obs["est_cov"] = obs["est_cov"][:3, :]
-        elif self.pos_vel_flag == "velocity":
-            obs["est_cov"] = obs["est_cov"][3:, :]
-
-        return obs
-
-
 class FloatObs(gym.ObservationWrapper):
     """Convert any ints in the observation space to floats."""
 
