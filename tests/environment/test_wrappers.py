@@ -32,6 +32,17 @@ from punchclock.environment.wrappers import (
     getWrapperList,
 )
 
+# %% Test SelectiveDictProcessor
+in_dict = {
+    "a": [1, 2, 3],
+    "b": [4, 5, 6],
+    "c": [1, 2, 3],
+}
+sdp = SelectiveDictProcessor([sum], ["a", "b"])
+out_dict = sdp.applyFunc(in_dict)
+print(f"in_dict = {in_dict}")
+print(f"out_dict = {out_dict}")
+
 # %% Build environment
 # satellite initial conditions-- uniform distribution
 ref_vel = getCircOrbitVel(8000)
@@ -343,14 +354,3 @@ wrappers = getWrapperList(env=env_multi_wrapped)
 print(f"wrappers = {wrappers}")
 # %% Done
 print("done")
-
-# %% Test SelectiveDictProcessor
-in_dict = {
-    "a": [1, 2, 3],
-    "b": [4, 5, 6],
-    "c": [1, 2, 3],
-}
-sdp = SelectiveDictProcessor(sum, ["a", "b"])
-out_dict = sdp.applyFunc(in_dict)
-print(f"in_dict = {in_dict}")
-print(f"out_dict = {out_dict}")
