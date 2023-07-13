@@ -296,14 +296,17 @@ print(f"post-split obs['est_cov_vel'] = \n{obs_split['est_cov_vel']}")
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")
-# Wrap with FilterObservation to allow just est_cov and vis_map_est through, then
-# wrap FilterCovElements to eliminate 3 covariance states, then wrap action masking.
-
 env_multi_wrapped = FilterObservation(
     env=env, filter_keys=["est_cov", "vis_map_est"]
 )
-env_multi_wrapped = FilterCovElements(
-    env=env_multi_wrapped, pos_vel_flag="position"
+env_multi_wrapped = SplitArrayObs(
+    env=env_multi_wrapped,
+    keys=["est_cov"],
+    new_keys=[["est_cov_pos", "est_cov_vel"]],
+    indices_or_sections=[2],
+)
+env_multi_wrapped = FilterObservation(
+    env=env_multi_wrapped, filter_keys=["vis_map_est", "est_cov_pos"]
 )
 env_multi_wrapped = ActionMask(env=env_multi_wrapped)
 env_multi_wrapped = FloatObs(env=env_multi_wrapped)
