@@ -441,8 +441,17 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
             new_v = new_v.astype(float32)
             new_obs[k] = new_v
 
-        # check that new observation is in bounds
-        assert self.observation_space.contains(new_obs)
+        # check that new observation is in bounds and ID key with problem
+        if self.observation_space.contains(new_obs) == False:
+            contains_report = checkDictSpaceContains(
+                self.observation_space, new_obs
+            )
+            bad_keys = not_contained = [
+                k for (k, v) in contains_report.items() if v == False
+            ]
+            raise Exception(
+                f"Observation not in observation space. Check keys: \n {bad_keys}"
+            )
 
         return new_obs
 
@@ -732,3 +741,23 @@ class SelectiveDictProcessor:
         out_dict.update(processed_dict)
 
         return out_dict
+
+
+def checkDictSpaceContains(
+    space: gym.spaces.Dict, in_dict: dict | OrderedDict
+) -> dict:
+    """Check the values of a dict for being contained in values of a gym.spaces.Dict.
+
+    Args:
+        space (gym.spaces.Dict): Each value is called as value.contains().
+        in_dict (dict | OrderedDict): Keys must match space.
+
+    Returns:
+        dict: A mapping of True/False, where True indicates the value of in_dict
+            is contained in the corresponding value of space.
+    """
+    report = {}
+    for k, v in in_dict.items():
+        report[k] = space[k].contains(v)
+
+    return report
