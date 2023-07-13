@@ -1,7 +1,9 @@
 """Issue 7 reproduction script."""
 # %% Imports
 # Third Party Imports
+from gymnasium.spaces import Box, Dict, MultiDiscrete
 from ray.rllib.algorithms import ppo
+from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
@@ -17,20 +19,46 @@ config = loadJSONFile("issues/iss7/iss7_config.json")
 register_env("my_env", buildEnv)
 ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
 
-
+# build test env
+# algo_config = (
+#     ppo.PPOConfig()
+#     .training(model={**config["param_space"]["model"]})
+#     .environment(
+#         env="my_env",
+#         env_config=config["param_space"]["env_config"],
+#     )
+#     .framework("torch")
+# )
+# env = buildEnv(config["param_space"]["env_config"])
+env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "observations": Box(0, 1, shape=(3,)),
+                "action_mask": Box(0, 1, shape=(3,), dtype=int),
+            }
+        ),
+        "action_space": MultiDiscrete([3]),
+    }
+)
+# build algo
 algo_config = (
     ppo.PPOConfig()
-    .training(model={**config["param_space"]["model"]})
+    .training(
+        model={**config["param_space"]["model"]},
+    )
     .environment(
-        env="my_env",
-        env_config=config["param_space"]["env_config"],
+        env=RandomEnv,
+        env_config={
+            "observation_space": env.observation_space,
+            "action_space": env.action_space,
+        },
     )
     .framework("torch")
 )
-
 algo = algo_config.build()
 
-env = buildEnv(config["param_space"]["env_config"])
+# test algo
 obs = env.observation_space.sample()
 action = algo.compute_single_action(obs)
 results = algo.training_step()
