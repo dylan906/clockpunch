@@ -231,13 +231,9 @@
                         "wrapper_config": {
                             "filter_keys": [
                                 "vis_map_est",
-                                "num_tasked",
                                 "est_cov"
                             ]
                         }
-                    },
-                    {
-                        "wrapper": "minmaxscale_dict_obs"
                     },
                     {
                         "wrapper": "action_mask"
@@ -249,7 +245,6 @@
             }
         },
         "model": {
-            "custom_model": "action_mask_model",
             "fcnet_activation": "relu",
             "fcnet_hiddens": [
                 30,
