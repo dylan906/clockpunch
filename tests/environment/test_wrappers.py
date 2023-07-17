@@ -7,6 +7,7 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
+from gymnasium.spaces import Box, Dict, Discrete
 from gymnasium.spaces.utils import flatten
 from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy import array, diag, float32, inf, int64, sum
@@ -354,6 +355,18 @@ saw_wr_obs = saw.observation(saw_uw_obs)
 print(f"unwrapped obs 2 = {saw_uw_obs['est_cov']}")
 print(f"wrapped obs 2 = {saw_wr_obs['est_cov']}")
 
+# Test with 3d observation space
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"a": Box(0, 1, shape=[2, 3, 4])}),
+        "action_space": Discrete(1),
+    },
+)
+saw_rand = SumArrayWrapper(env=rand_env, keys=["a"], axis=0)
+sawrand_uw_obs = rand_env.observation_space.sample()
+sawrand_wr_obs = saw_rand.observation(sawrand_uw_obs)
+print(f"unwrapped obs rand = \n{sawrand_uw_obs['a']}")
+print(f"wrapped obs rand = \n{sawrand_wr_obs['a']}")
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")
 env_multi_wrapped = FilterObservation(
