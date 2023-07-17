@@ -835,10 +835,11 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
                 del new_shape[axis]
                 new_shape = array(new_shape)
 
-            # Assumes all entries of space have same mins and maxes
+            # Even if unwrapped space has bounded lows/highs, summing means that
+            # wrapped obs space will have unbounded lows/highs
             obs_space[k] = Box(
-                low=v.low[0, 0],
-                high=v.high[0, 0],
+                low=-inf,
+                high=inf,
                 shape=new_shape,
             )
 
