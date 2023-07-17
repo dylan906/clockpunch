@@ -73,7 +73,7 @@ print(
 print("Test getMeasurement...")
 e = Target(
     sat_dynamics,
-    id=2,
+    agent_id=2,
     init_eci_state=array([1, 2, 3, 4, 5, 6]),
     filter=deepcopy(my_filter),
 )
@@ -93,7 +93,7 @@ no_noise_filter = UnscentedKalmanFilter(
 )
 e1 = Target(
     sat_dynamics,
-    id=2,
+    agent_id=2,
     init_eci_state=array([1, 2, 3, 4, 5, 6]),
     filter=no_noise_filter,
 )
@@ -110,12 +110,12 @@ x0_ecef = array([[7000, 0, 0, 0, 0, 0]]).transpose()
 x0_eci = ecef2eci(x0_ecef, 0)
 ag_ground = Sensor(
     StaticTerrestrial(),
-    id="A",
+    agent_id="A",
     init_eci_state=x0_eci,
 )
 ag_space = Sensor(
     SatDynamicsModel(),
-    id="B",
+    agent_id="B",
     init_eci_state=array([[8000, 1000, 0, 8, 0, 0]]).transpose(),
 )
 
@@ -142,7 +142,7 @@ print("\nFilter tests...")
 print("  functionality test")
 b = Target(
     sat_dynamics,
-    id=2,
+    agent_id=2,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
     filter=deepcopy(my_filter),
     time=0,
@@ -202,7 +202,7 @@ print("\nTest num_window_left decrement...")
 
 c = Target(
     sat_dynamics,
-    id=2,
+    agent_id=2,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
     filter=deepcopy(my_filter),
     num_windows_left=2,

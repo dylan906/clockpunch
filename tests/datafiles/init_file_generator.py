@@ -32,9 +32,13 @@ for i, r0 in enumerate(sat_r0_eci):
 sat_x0 = concatenate((sat_r0_eci, sat_v0_eci), axis=1)
 
 sat_agents = []
-for i, id in enumerate(sat_ids):
+for i, agent_id in enumerate(sat_ids):
     sat_agents.append(
-        {"sat_num": id, "sat_name": id, "init_eci": list(sat_x0[i, :])}
+        {
+            "sat_num": agent_id,
+            "sat_name": agent_id,
+            "init_eci": list(sat_x0[i, :]),
+        }
     )
 # %% Ground stations
 ground_ids = ["A", "B"]
@@ -42,9 +46,11 @@ lats = [0, 0]
 lons = [0, 20 * pi / 180]
 alts = [0, 0]
 ground_agents = []
-for id, lat, lon, alt in zip(ground_ids, lats, lons, alts):
-    print(id, lat, lon, alt)
-    ground_agents.append({"id": id, "lat": lat, "lon": lon, "alt": alt})
+for agent_id, lat, lon, alt in zip(ground_ids, lats, lons, alts):
+    print(agent_id, lat, lon, alt)
+    ground_agents.append(
+        {"agent_id": agent_id, "lat": lat, "lon": lon, "alt": alt}
+    )
 # %% Combine and save
 agents = sat_agents + ground_agents
 path_name = "tests/datafiles/"

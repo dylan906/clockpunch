@@ -421,7 +421,7 @@ class SSASchedulerParams:
                 generated.
             dynamics_type (`str`): "terrestrial" | "satellite"
             id_start (`int`): Number at which IDs will start being assigned as
-                agent names (goes into Agent.id)
+                agent names (goes into Agent.agent_id)
             sensor_target (`str`): "sensor" | "target"
             list_of_filters (`list[UKF]`): Only used if sensor_target =="target".
                 Defaults to None.
@@ -458,7 +458,7 @@ class SSASchedulerParams:
             # keys must match argument names of `Sensor` class.
             keys = [
                 "dynamics_model",
-                "id",
+                "agent_id",
                 "init_eci_state",
             ]
 
@@ -473,7 +473,7 @@ class SSASchedulerParams:
             # keys must match argument names of `Target` class.
             keys = [
                 "dynamics_model",
-                "id",
+                "agent_id",
                 "init_eci_state",
                 "filter",
                 "init_num_tasked",
@@ -538,7 +538,7 @@ class SSASchedulerParams:
                 the same time (the typical case).
         """
         # get list of target ids
-        target_ids = [targ.id for targ in list_of_targets]
+        target_ids = [targ.agent_id for targ in list_of_targets]
 
         # propagate motion in ScheduleTree at 100sec steps, unless horizon time is
         # shorter, in which case pick some fraction of horizon.

@@ -50,33 +50,33 @@ dummy_filter = UnscentedKalmanFilter(
 list_of_agents = [
     Target(
         SatDynamicsModel(),
-        id=1,
+        agent_id=1,
         init_eci_state=array([[7000, 0, 0, 0, 8, 0]]).transpose(),
         filter=deepcopy(dummy_filter),
         time=1,
     ),
     Sensor(
         SatDynamicsModel(),
-        id="A",
+        agent_id="A",
         init_eci_state=array([[8000, 0, 0, 0, 8, 0]]).transpose(),
         time=1,
     ),
     Sensor(
         StaticTerrestrial(),
-        id="B",
+        agent_id="B",
         init_eci_state=array([[7000, 0, 0, 0, 0, 0]]).transpose(),
         time=1,
     ),
     Target(
         SatDynamicsModel(),
-        id=2,
+        agent_id=2,
         init_eci_state=array([[7000, 1000, 0, 0, -8, 0]]).transpose(),
         filter=deepcopy(dummy_filter),
         time=1,
     ),
     Target(
         SatDynamicsModel(),
-        id=3,
+        agent_id=3,
         init_eci_state=array([[7500, 0, 0, 0, 8, 0]]).transpose(),
         filter=deepcopy(dummy_filter),
         time=1,

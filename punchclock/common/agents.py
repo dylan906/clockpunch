@@ -24,7 +24,7 @@ class Agent:
     def __init__(
         self,
         dynamics_model: DynamicsModel,
-        id: Any,
+        agent_id: Any,
         init_eci_state: ndarray,
         time: float = 0,
     ):
@@ -32,7 +32,7 @@ class Agent:
 
         Args:
             dynamics_model (`DynamicsModel`): _description_
-            id (`any`): Unique identifier.
+            agent_id (`any`): Unique identifier.
             init_eci_state (`ndarray`): [6 x 1] ECI state array (km)
                 [I, J, K, dI, dJ, dK]
             time (`float`, optional): Agent time at start of simulation.
@@ -43,7 +43,7 @@ class Agent:
         ), "init_eci_state must be a ndarray"
 
         self.dynamics = dynamics_model
-        self.id = id
+        self.agent_id = agent_id
         self.time = time
         self.eci_state = init_eci_state.reshape([init_eci_state.size, 1])
 
@@ -96,7 +96,7 @@ class Target(Agent):
     def __init__(
         self,
         dynamics_model: DynamicsModel,
-        id: Any,
+        agent_id: Any,
         init_eci_state: ndarray,
         filter: Filter,
         time: float = 0,
@@ -108,7 +108,7 @@ class Target(Agent):
 
         Args:
             dynamics_model (`DynamicsModel`): _description_
-            id (_type_): Unique identifier.
+            agent_id (_type_): Unique identifier.
             init_eci_state (`ndarray`): [6 x 1] ECI state array (km, km/s) [I, J,
                 K, dI, dJ, dK]
             filter (`Filter`): Filter used for state estimation.
@@ -125,7 +125,7 @@ class Target(Agent):
                 with observation covariance, which is an attribute of the filter.
                 Measurement covariance is constant.
         """
-        super().__init__(dynamics_model, id, init_eci_state, time)
+        super().__init__(dynamics_model, agent_id, init_eci_state, time)
         self.filter = filter
         self.num_tasked = init_num_tasked
         self.last_time_tasked = npfloat32(init_last_time_tasked)
@@ -197,7 +197,7 @@ class Sensor(Agent):
     def __init__(
         self,
         dynamics_model: DynamicsModel,
-        id: Any,
+        agent_id: Any,
         init_eci_state: ndarray,
         time: float = 0,
     ):
@@ -205,8 +205,8 @@ class Sensor(Agent):
 
         Args:
             dynamics_model (`DynamicsModel`):_description_
-            id (_type_): _description_
+            agent_id (_type_): _description_
             init_eci_state (`ndarray`): _description_
             time (`float`): Agent time at start of simulation.
         """
-        super().__init__(dynamics_model, id, init_eci_state, time)
+        super().__init__(dynamics_model, agent_id, init_eci_state, time)

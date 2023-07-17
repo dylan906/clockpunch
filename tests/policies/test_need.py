@@ -128,7 +128,7 @@ ukf = ezUKF(
 )
 targ = Target(
     SatDynamicsModel(),
-    id=2,
+    agent_id=2,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
     filter=deepcopy(ukf),
     time=0,

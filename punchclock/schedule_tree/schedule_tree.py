@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from copy import deepcopy
 from typing import Any
 
 # Third Party Imports
@@ -64,10 +65,10 @@ class ScheduleTree:
         self.x_targets = x_targets
 
         self.target_list = [
-            agent.id for agent in list_of_agents if type(agent) is Target
+            agent.agent_id for agent in list_of_agents if type(agent) is Target
         ]
         self.sensor_list = [
-            agent.id for agent in list_of_agents if type(agent) is Sensor
+            agent.agent_id for agent in list_of_agents if type(agent) is Sensor
         ]
 
         self.num_targets = len(self.target_list)
@@ -138,8 +139,18 @@ class ScheduleTree:
 
         # calculate visibility over state history
         # convert list_of_agents to 2 lists of dicts for getVisHist compatibility
-        targets_dict = [a.__dict__ for a in list_of_agents if type(a) is Target]
-        sensors_dict = [a.__dict__ for a in list_of_agents if type(a) is Sensor]
+        targets_dict = deepcopy(
+            [a.__dict__ for a in list_of_agents if type(a) is Target]
+        )
+        sensors_dict = deepcopy(
+            [a.__dict__ for a in list_of_agents if type(a) is Sensor]
+        )
+
+        # replace "agent_id" with "id" in keys for compatibility with getVisHist
+        for d in targets_dict:
+            d["id"] = d.pop("agent_id")
+        for d in sensors_dict:
+            d["id"] = d.pop("agent_id")
 
         rise_set_tree, v = getVisHist(
             targets_dict,
@@ -158,7 +169,7 @@ class ScheduleTree:
         return rise_set_tree, v, x_sensors, x_targets
 
     def getTargAtInt(self, interval_num: int) -> Any:
-        """Get target id at given visibility interval.
+        """Get target agent_id at given visibility interval.
 
         Args:
             interval_num (`int`): Visibility interval index (starts at 0).
@@ -171,7 +182,7 @@ class ScheduleTree:
         return target_id
 
     def getSensAtInt(self, interval_num: int) -> Any:
-        """Get sensor id at given visibility interval.
+        """Get sensor agent_id at given visibility interval.
 
         Args:
             interval_num (`int`): Visibility interval index (starts at 0).

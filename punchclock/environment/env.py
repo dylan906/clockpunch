@@ -15,10 +15,7 @@ from numpy import array, asarray, diagonal, float32, int64, ndarray, ones, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
-from punchclock.common.metrics import (
-    TaskingMetricTracker,
-    meanVarUncertainty,
-)
+from punchclock.common.metrics import TaskingMetricTracker, meanVarUncertainty
 from punchclock.common.utilities import actionSpace2Array
 from punchclock.environment.env_parameters import SSASchedulerParams
 from punchclock.environment.env_utils import getVisMapEstOrTruth
@@ -147,10 +144,10 @@ class SSAScheduler(gym.Env):
         # %% Derived attributes (more complex)
         # lists of sensor and target names
         self.sensor_ids = [
-            agent.id for agent in self.agents if type(agent) is Sensor
+            agent.agent_id for agent in self.agents if type(agent) is Sensor
         ]
         self.target_ids = [
-            agent.id for agent in self.agents if type(agent) is Target
+            agent.agent_id for agent in self.agents if type(agent) is Target
         ]
 
         # Initialize metrics tracker (tracks unique targets tracked, non-visible
@@ -522,10 +519,10 @@ class SSAScheduler(gym.Env):
         for i, row in enumerate(actions_array):
             # print(row)
             if 1 in row:
-                # print(f"tasking target {list_of_targets[i].id}")
+                # print(f"tasking target {list_of_targets[i].agent_id}")
                 list_of_targets[i].updateNonPhysical(task=True)
             else:
-                # print(f"Non-tasking target {list_of_targets[i].id}")
+                # print(f"Non-tasking target {list_of_targets[i].agent_id}")
                 # if not tasked, still update non-physical states
                 list_of_targets[i].updateNonPhysical(task=False)
 
