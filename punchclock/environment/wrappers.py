@@ -344,6 +344,14 @@ class LinScaleDictObs(gym.ObservationWrapper):
 
         self.rescale_config = rescale_config
 
+        mult_funcs = [
+            partial(self.multWrap, mult=m) for m in rescale_config.values()
+        ]
+
+        self.processor = SelectiveDictProcessor(
+            funcs=mult_funcs, keys=list(rescale_config.keys())
+        )
+
         # Loop through all items in observation_space, check if they are specified
         # by rescale_config, and then rescale the limits of the space. This only
         # works for Box environments, so check if the entries in observation_space
@@ -373,12 +381,12 @@ class LinScaleDictObs(gym.ObservationWrapper):
             `OrderedDict`: Rescaled input observations, as specified by
                 self.rescale_config.
         """
-        new_obs = deepcopy(obs)
-        for key, val in obs.items():
-            if key in self.rescale_config.keys():
-                new_obs[key] = val * self.rescale_config[key]
-
+        new_obs = self.processor.applyFunc(deepcopy(obs))
         return new_obs
+
+    def multWrap(self, x: float, mult: float) -> float:
+        """Wrapper for multiplcation."""
+        return x * mult
 
 
 class MinMaxScaleDictObs(gym.ObservationWrapper):
