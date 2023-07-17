@@ -345,8 +345,14 @@ print("\nTest SumArrayWrapper...")
 saw = SumArrayWrapper(env=env, keys=["est_cov"])
 saw_uw_obs = env.observation_space.sample()
 saw_wr_obs = saw.observation(saw_uw_obs)
-print(f"unwrapped obs = {saw_uw_obs['est_cov']}")
-print(f"wrapped obs = {saw_wr_obs['est_cov']}")
+print(f"unwrapped obs 1 = {saw_uw_obs['est_cov']}")
+print(f"wrapped obs 1 = {saw_wr_obs['est_cov']}")
+
+saw = SumArrayWrapper(env=env, keys=["est_cov"], axis=0)
+saw_uw_obs = env.observation_space.sample()
+saw_wr_obs = saw.observation(saw_uw_obs)
+print(f"unwrapped obs 2 = {saw_uw_obs['est_cov']}")
+print(f"wrapped obs 2 = {saw_wr_obs['est_cov']}")
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")

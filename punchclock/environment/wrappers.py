@@ -14,6 +14,7 @@ from gymnasium.spaces import Box, Dict, MultiDiscrete, flatten_space, unflatten
 from gymnasium.spaces.utils import flatten
 from numpy import (
     append,
+    array,
     float32,
     inf,
     int64,
@@ -829,8 +830,12 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
                 # corner case for sum of all elements of array
                 new_shape = (1,)
             else:
-                new_shape = list(v.shape).pop(axis)
+                # Get new shape by deleting axis-th index of v.shape
+                new_shape = list(v.shape)
+                del new_shape[axis]
+                new_shape = array(new_shape)
 
+            # Assumes all entries of space have same mins and maxes
             obs_space[k] = Box(
                 low=v.low[0, 0],
                 high=v.high[0, 0],
