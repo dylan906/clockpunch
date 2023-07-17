@@ -47,7 +47,7 @@ class SSASchedulerParams:
             have ICs generated in a uniform distribution in the ECI frame, while
             target ICs can be generated with a normal distribution in the COE frame.
         - The dict `filter_params` defines UKFs for all targets. All targets are
-            build with an identical filter structure.
+            build with an identical target_filter structure.
 
     Notation:
         M = number of sensors.
@@ -284,7 +284,7 @@ class SSASchedulerParams:
             )
 
         # ---Generate filters---
-        # each filter has same basic structure, but with initial estimates close to
+        # each target_filter has same basic structure, but with initial estimates close to
         # initial state
         target_filters = self.genFilters(
             target_ICs,
@@ -364,7 +364,7 @@ class SSASchedulerParams:
                 dynamics. Initial state estimates are centered on true initial
                 states, with Gaussian random noise added.
         """
-        # Convert filter params to arrays if lists are provided; skip if params
+        # Convert target_filter params to arrays if lists are provided; skip if params
         # are floats.
         if type(filter_params["Q"]) is list:
             filter_params["Q"] = asarray(filter_params["Q"])
@@ -475,7 +475,7 @@ class SSASchedulerParams:
                 "dynamics_model",
                 "agent_id",
                 "init_eci_state",
-                "filter",
+                "target_filter",
                 "init_num_tasked",
                 "init_last_time_tasked",
             ]

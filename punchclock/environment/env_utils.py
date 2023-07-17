@@ -39,12 +39,14 @@ def getVisMapEstOrTruth(
         target_times = [a.time for a in list_of_agents if isinstance(a, Target)]
     else:
         target_times = [
-            a.filter.time for a in list_of_agents if isinstance(a, Target)
+            a.target_filter.time
+            for a in list_of_agents
+            if isinstance(a, Target)
         ]
     assert allEqual(
         sensor_times + target_times
     ), "Sensor and target times are not equal. If truth_flag == False, target \
-        filter times are not equal to sensor times."
+        target_filter times are not equal to sensor times."
 
     RE = getConstants()["earth_radius"]
 
@@ -78,7 +80,7 @@ def getVisMapEstOrTruth(
         target_states = (
             asarray(
                 [
-                    agent.filter.est_x
+                    agent.target_filter.est_x
                     for agent in list_of_agents
                     if type(agent) is Target
                 ]
@@ -127,8 +129,8 @@ def forecastVisMap(
         time_now = ag.time
         if isinstance(ag, Target) and (estimate is True):
             # Get estimates states for targets (if estimate is True)
-            ag.filter.predict(time_now + time_step)
-            x_targets.append(ag.filter.pred_x)
+            ag.target_filter.predict(time_now + time_step)
+            x_targets.append(ag.target_filter.pred_x)
         elif isinstance(ag, Target) and (estimate is False):
             # Get true states for targets (if estimate is False)
             ag.propagate(time_now + time_step)

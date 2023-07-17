@@ -32,7 +32,7 @@ class SSAScheduler(gym.Env):
                     at time t. The 0-dim elements are position (km) and velocity
                     (km/s) in ECI frame. For sensors, this is the true state; for
                     targets this is the estimated state.
-                "est_cov": `ndarray[float]` (6, N), # Diagonals of filter's estimate
+                "est_cov": `ndarray[float]` (6, N), # Diagonals of target_filter's estimate
                     covariance matrix at time t.
                 "vis_map_est": `ndarray[int]` (N, M) # Visibility map at time t.
                     Values are binary (0/1). 1 indicates the sensor-target pair
@@ -237,7 +237,7 @@ class SSAScheduler(gym.Env):
                     state of agents. The 0-dim elements are position (km) and velocity
                     (km/s) in ECI frame.
                 "est_cov": `ndarray[float]` (6, self.num_targets), # Diagonals
-                    of filter's estimate covariance matrix.
+                    of target_filter's estimate covariance matrix.
                 "vis_map_est": `ndarray[int]` (self.num_targets, self.num_sensors)
                     # Values are binary (0/1). 1 indicates the sensor-target pair
                     # can see each other.
@@ -444,7 +444,9 @@ class SSAScheduler(gym.Env):
         # NOTE: The diagonals are already recorded in `observation`, but storing
         # in `info` to save off-diagonals.
         covariance_list = [
-            agent.filter.est_p for agent in self.agents if type(agent) is Target
+            agent.target_filter.est_p
+            for agent in self.agents
+            if type(agent) is Target
         ]
         # "est_cov" is (N, 6, 6) array. Convert to float32 to prevent float64 types
         # when mixed ints/float32s are returned from agents.
@@ -505,7 +507,7 @@ class SSAScheduler(gym.Env):
                 pair action.
 
         Target will be tasked the same if there are multiple 1s in a row or a single
-            1 in a row. Meaning, the non-physical states of the agent (ie: filter
+            1 in a row. Meaning, the non-physical states of the agent (ie: target_filter
             estimates) will evolve the same whether one or multiple sensors are
             tasked to the target.
         """
@@ -545,7 +547,7 @@ class SSAScheduler(gym.Env):
         # for targets get estimated state; for sensors get true state
         for agent in self.agents:
             if type(agent) is Target:
-                state = agent.filter.est_x
+                state = agent.target_filter.est_x
             elif type(agent) is Sensor:
                 state = agent.eci_state
             eci_state_list.append(state)

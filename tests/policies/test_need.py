@@ -130,7 +130,7 @@ targ = Target(
     SatDynamicsModel(),
     agent_id=2,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
-    filter=deepcopy(ukf),
+    target_filter=deepcopy(ukf),
     time=0,
 )
 list_of_targets = [deepcopy(targ) for a in range(num_targets)]

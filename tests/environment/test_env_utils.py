@@ -11,10 +11,7 @@ from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from punchclock.environment.env_utils import (
-    forecastVisMap,
-    getVisMapEstOrTruth,
-)
+from punchclock.environment.env_utils import forecastVisMap, getVisMapEstOrTruth
 from punchclock.estimation.ez_ukf import ezUKF
 
 # %% Build agents for testing
@@ -56,7 +53,7 @@ for i, (dyn, x) in enumerate(zip(dynamics, x_inits)):
 # %% Test getVisMapEstOrTruth
 # Make Target2 state estimate very wrong so that the estimated visibility is different
 # from the true visibility.
-agents[3].filter.est_x = array([7000, 0, 0, 0, sqrt(mu / 7000), 0])
+agents[3].target_filter.est_x = array([7000, 0, 0, 0, sqrt(mu / 7000), 0])
 vis_map = getVisMapEstOrTruth(list_of_agents=agents, truth_flag=True)
 print(f"vis_map (true) = \n{vis_map}")
 vis_map = getVisMapEstOrTruth(list_of_agents=agents, truth_flag=False)

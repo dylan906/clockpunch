@@ -29,7 +29,7 @@ def dummy_measurement_model(state: ndarray):
     return state
 
 
-# filter params
+# target_filter params
 est_x_init = array([[7000, 0, 0, 0, 1, 0]])
 est_p_init = eye(6)
 q = 0.1 * eye(6)
@@ -52,7 +52,7 @@ list_of_agents = [
         SatDynamicsModel(),
         agent_id=1,
         init_eci_state=array([[7000, 0, 0, 0, 8, 0]]).transpose(),
-        filter=deepcopy(dummy_filter),
+        target_filter=deepcopy(dummy_filter),
         time=1,
     ),
     Sensor(
@@ -71,14 +71,14 @@ list_of_agents = [
         SatDynamicsModel(),
         agent_id=2,
         init_eci_state=array([[7000, 1000, 0, 0, -8, 0]]).transpose(),
-        filter=deepcopy(dummy_filter),
+        target_filter=deepcopy(dummy_filter),
         time=1,
     ),
     Target(
         SatDynamicsModel(),
         agent_id=3,
         init_eci_state=array([[7500, 0, 0, 0, 8, 0]]).transpose(),
-        filter=deepcopy(dummy_filter),
+        target_filter=deepcopy(dummy_filter),
         time=1,
     ),
 ]

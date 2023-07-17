@@ -263,19 +263,23 @@ for _ in range(max_steps * 3 + 1):
             f"  num_windows_left = {env._getObs()['num_windows_left']}"
         )
 # %% More thorough reset() test.
-# Make sure that all properties of agent and agent.filter get reset to initial conditions
+# Make sure that all properties of agent and agent.target_filter get reset to initial conditions
 print("\nMore thorough reset test...")
 print(f"backup agent[0] state = {env.reset_params.agents[0].eci_state}")
 print(f"current agent[0] state = {env.agents[0].eci_state}")
 print(
-    f"backup agent[3] filter initial est_x = {env.reset_params.agents[3].filter.est_x}"
+    f"backup agent[3] target_filter initial est_x = {env.reset_params.agents[3].target_filter.est_x}"
 )
-print(f"current agent[3] filter est_x = {env.agents[3].filter.est_x}")
+print(
+    f"current agent[3] target_filter est_x = {env.agents[3].target_filter.est_x}"
+)
 print(f"tracker = {env.tracker.unique_tasks}")
 print("RESET env")
 env.reset()
 print(f"post-reset agent[0] state = {env.agents[0].eci_state}")
-print(f"post-reset agent[3] filter est_x = {env.agents[3].filter.est_x}")
+print(
+    f"post-reset agent[3] target_filter est_x = {env.agents[3].target_filter.est_x}"
+)
 print(f"tracker = {env.tracker.unique_tasks}")
 
 # %% Test step/dynamics in long loop

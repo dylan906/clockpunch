@@ -75,7 +75,7 @@ print(f"mask without inaction = {mask_no_inaction}")
 
 # %% Test filterAgentType
 list_of_agents = [
-    Target("ground", 1, zeros([6]), filter=None),
+    Target("ground", 1, zeros([6]), target_filter=None),
     Sensor("ground", 1, zeros([6])),
 ]
 der = filterAgentsType(list_of_agents, Sensor)

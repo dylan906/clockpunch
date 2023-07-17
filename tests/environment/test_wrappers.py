@@ -80,7 +80,7 @@ agent_params = {
     "init_num_tasked": None,
     "init_last_time_tasked": None,
 }
-# filter parameters
+# target_filter parameters
 diag_matrix = diag([1, 1, 1, 0.01, 0.01, 0.01])
 filter_params = {
     "Q": 0.001 * diag_matrix,

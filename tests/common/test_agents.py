@@ -22,7 +22,7 @@ from punchclock.dynamics.dynamics_classes import (
 from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
 
 # %% Build Filter
-print("Build filter...")
+print("Build target_filter...")
 dummy_dynamics = SatDynamicsModel()
 sat_dynamics = SatDynamicsModel()
 ground_dynamics = StaticTerrestrial()
@@ -75,7 +75,7 @@ e = Target(
     sat_dynamics,
     agent_id=2,
     init_eci_state=array([1, 2, 3, 4, 5, 6]),
-    filter=deepcopy(my_filter),
+    target_filter=deepcopy(my_filter),
 )
 print("Test with noise")
 print(f"    true state = {e.eci_state}")
@@ -95,7 +95,7 @@ e1 = Target(
     sat_dynamics,
     agent_id=2,
     init_eci_state=array([1, 2, 3, 4, 5, 6]),
-    filter=no_noise_filter,
+    target_filter=no_noise_filter,
 )
 print("Test without noise")
 print(f"    true state = {e1.eci_state}")
@@ -144,7 +144,7 @@ b = Target(
     sat_dynamics,
     agent_id=2,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
-    filter=deepcopy(my_filter),
+    target_filter=deepcopy(my_filter),
     time=0,
 )
 print(f"Target: vars(sat target) = \n{vars(b)}\n")
@@ -163,8 +163,8 @@ print("\nrelevant vars(sat target) after nonphysical update with tasking:")
 print(f"target.time = {b.time}")
 print(f"target.num_tasked = {b.num_tasked}")
 print(f"target.last_time_tasked = {b.last_time_tasked}")
-print(f"target.filter.time = {b.filter.time}")
-print(f"target.filter.est_x = \n{b.filter.est_x}")
+print(f"target.target_filter.time = {b.target_filter.time}")
+print(f"target.target_filter.est_x = \n{b.target_filter.est_x}")
 
 # test update nonphysical without tasking
 print("  test updateNonPhyiscal w/o tasking")
@@ -175,8 +175,8 @@ print("\nrelevant vars(sat target) after  nonphysical update without tasking:")
 print(f"target.time = {b.time}")
 print(f"target.num_tasked = {b.num_tasked}")
 print(f"target.last_time_tasked = {b.last_time_tasked}")
-print(f"target.filter.time = {b.filter.time}")
-print(f"target.filter.est_x = \n{b.filter.est_x}")
+print(f"target.target_filter.time = {b.target_filter.time}")
+print(f"target.target_filter.est_x = \n{b.target_filter.est_x}")
 
 # test error catcher
 print("  Test updateNonPhyiscal with bad input")
@@ -193,9 +193,9 @@ print("\nrelevant vars(sat target) after updating dynamics and tasking again:")
 print(f"target.time = {b.time}")
 print(f"target.num_tasked = {b.num_tasked}")
 print(f"target.last_time_tasked = {b.last_time_tasked}")
-print(f"target.filter.time = {b.filter.time}")
+print(f"target.target_filter.time = {b.target_filter.time}")
 print(f"target.eci_state = \n{b.eci_state}")
-print(f"target.filter.est_x = \n{b.filter.est_x}")
+print(f"target.target_filter.est_x = \n{b.target_filter.est_x}")
 
 # %% Test num_windows_left
 print("\nTest num_window_left decrement...")
@@ -204,7 +204,7 @@ c = Target(
     sat_dynamics,
     agent_id=2,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
-    filter=deepcopy(my_filter),
+    target_filter=deepcopy(my_filter),
     num_windows_left=2,
 )
 print(f"num_windows_left = {c.num_windows_left}")

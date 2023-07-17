@@ -133,7 +133,7 @@ print("Wrappers set to []:")
 print(f"env3 = {env3}")
 
 # If an observation_space_filter is designated, but vis_map_est is not included
-# in the list of states to filter, then the env builder should add it and warn
+# in the list of states to target_filter, then the env builder should add it and warn
 # the user.
 constructor_params4 = {
     "wrappers": [
@@ -146,7 +146,7 @@ constructor_params4 = {
 env_config4 = deepcopy(env_config)
 env_config4["constructor_params"] = constructor_params4
 env4 = buildEnv(deepcopy(env_config4))
-print("vis_map_est not included in obs filter:")
+print("vis_map_est not included in obs target_filter:")
 print(f"env4 = {env4}")
 print(f"env4 observation space = {env4.observation_space.spaces}")
 # %% Test repeatability of buildEnv

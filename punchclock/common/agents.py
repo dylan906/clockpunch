@@ -69,9 +69,9 @@ class Agent:
         """
         json_dict = {}
         for attr, attr_val in self.__dict__.items():
-            if attr in ["dynamics", "filter"]:
-                # Save dynamics/filter as a string (avoid having to json-ify Dynamics/Filter
-                # classes).
+            if attr in ["dynamics", "target_filter"]:
+                # Save dynamics/target_filter as a string (avoid having to json-ify
+                # Dynamics/Filter classes).
                 json_dict[attr] = str(attr_val.__class__)
             elif isinstance(attr_val, ndarray):
                 json_dict[attr] = attr_val.tolist()
@@ -98,7 +98,7 @@ class Target(Agent):
         dynamics_model: DynamicsModel,
         agent_id: Any,
         init_eci_state: ndarray,
-        filter: Filter,
+        target_filter: Filter,
         time: float = 0,
         init_num_tasked: int = 0,
         init_last_time_tasked: float = 0,
@@ -111,7 +111,7 @@ class Target(Agent):
             agent_id (_type_): Unique identifier.
             init_eci_state (`ndarray`): [6 x 1] ECI state array (km, km/s) [I, J,
                 K, dI, dJ, dK]
-            filter (`Filter`): Filter used for state estimation.
+            target_filter (`Filter`): Filter used for state estimation.
             time (`float`, optional): Agent time at start of simulation.
             init_num_tasked (`int`, optional): Initial number of times target has
                 been tasked. Defaults to 0.
@@ -122,11 +122,11 @@ class Target(Agent):
 
         Derived attribute:
             meas_cov (`ndarray`): Measurement covariance matrix. Not to be confused
-                with observation covariance, which is an attribute of the filter.
+                with observation covariance, which is an attribute of the target_filter.
                 Measurement covariance is constant.
         """
         super().__init__(dynamics_model, agent_id, init_eci_state, time)
-        self.filter = filter
+        self.target_filter = target_filter
         self.num_tasked = init_num_tasked
         self.last_time_tasked = npfloat32(init_last_time_tasked)
         self.num_windows_left = num_windows_left
@@ -155,15 +155,17 @@ class Target(Agent):
         elif task is False:
             measurement = None
 
-        self.filter.predictAndUpdate(
+        self.target_filter.predictAndUpdate(
             final_time=self.time, measurement=measurement
         )
 
         # `Target.last_time_tasked` can have initial value < 0, whereas
         #   `Filter.last_measurement_time` always initializes as `None`. After the first
         #   measurement is taken, both values stay equal.
-        if self.filter.last_measurement_time is not None:
-            self.last_time_tasked = npfloat32(self.filter.last_measurement_time)
+        if self.target_filter.last_measurement_time is not None:
+            self.last_time_tasked = npfloat32(
+                self.target_filter.last_measurement_time
+            )
 
         if self.num_windows_left is not None:
             if self.num_windows_left == 0:
@@ -179,7 +181,9 @@ class Target(Agent):
         """
         # multivariate_norm needs to have singleton dimension arguments
         true_state = self.eci_state.squeeze()
-        noisy_state = multivariate_normal(true_state, self.filter.r_matrix)
+        noisy_state = multivariate_normal(
+            true_state, self.target_filter.r_matrix
+        )
 
         return noisy_state
 

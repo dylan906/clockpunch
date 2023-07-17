@@ -98,7 +98,7 @@ def buildEnv(env_config: dict) -> gym.Env:
                 'rescale_dict_obs' will be deprecated."""
         )
 
-    # If an observation filter was set, make sure vis_map_est won't get filtered
+    # If an observation target_filter was set, make sure vis_map_est won't get filtered
     # out (if vis_map_est was not provided in the list of states to wrapper).
     wrapper_names = [
         a["wrapper"] for a in env_config["constructor_params"]["wrappers"]
@@ -116,7 +116,7 @@ def buildEnv(env_config: dict) -> gym.Env:
             Appending to list of filters."""
             )
     # %% Build base environment
-    # separate filter config from env config
+    # separate target_filter config from env config
     scheduler_config = deepcopy(env_config)
     scheduler_config.pop("constructor_params")
 
