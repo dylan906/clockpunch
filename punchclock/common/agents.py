@@ -148,12 +148,10 @@ class Target(Agent):
         # If target is tasked,
         #   - increment num_tasked
         #   - generate a measurement
-        #   - set need_obs to 0 (doesn't change anything if already 0)
         if task is True:
             self.num_tasked = self.num_tasked + 1
             # self.last_time_tasked = self.time
             measurement = self.getMeasurement()
-            self.need_obs = 0
         elif task is False:
             measurement = None
 
