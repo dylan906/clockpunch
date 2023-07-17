@@ -23,7 +23,7 @@ ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
 # %% Modify config (custom env)
 run_config = RunConfig(**config["run_config"])
 # Disable preprocessor
-config["param_space"]["model"]["_disable_preprocessor_api"] = True
+# config["param_space"]["model"]["_disable_preprocessor_api"] = True
 
 # %% Random Env
 env_random = RandomEnv(
