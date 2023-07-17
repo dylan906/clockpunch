@@ -337,11 +337,16 @@ sdow = SelectiveDictObsWrapper(
     keys=["est_cov"],
     new_obs_space=new_obs_space,
 )
-print(sdow.observation_space)
+print(f"unwrapped obs space = {env.observation_space['est_cov']}")
+print(f"wrapped obs space = {sdow.observation_space['est_cov']}")
 
 # %% Test SumArrayWrapper
 print("\nTest SumArrayWrapper...")
 saw = SumArrayWrapper(env=env, keys=["est_cov"])
+saw_uw_obs = env.observation_space.sample()
+saw_wr_obs = saw.observation(saw_uw_obs)
+print(f"unwrapped obs = {saw_uw_obs['est_cov']}")
+print(f"wrapped obs = {saw_wr_obs['est_cov']}")
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")
