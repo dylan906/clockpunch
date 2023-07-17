@@ -8,6 +8,7 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.wrappers.filter_observation import FilterObservation
+from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -62,3 +63,16 @@ print(f"Number of wrappers (wrapped environment) = {out}")
 print("\nTest getWrapperList()...")
 wrappers = getWrapperList(env=env_wrapped2)
 print(f"wrappers = {wrappers}")
+
+# %% Test checkDictSpaceContains
+print("\nTest checkDictSpaceContains()...")
+report = checkDictSpaceContains(
+    env.observation_space,
+    {
+        "a": rand(1, 2),
+        "b": env.observation_space["b"].sample(),
+    },
+)
+print(f"Check dict report: {report}")
+# %% done
+print("done")
