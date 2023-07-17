@@ -32,15 +32,15 @@ class SSAScheduler(gym.Env):
                     at time t. The 0-dim elements are position (km) and velocity
                     (km/s) in ECI frame. For sensors, this is the true state; for
                     targets this is the estimated state.
-                "est_cov": `ndarray[float]` (6, N), # Diagonals of target_filter's estimate
-                    covariance matrix at time t.
+                "est_cov": `ndarray[float]` (6, N), # Diagonals of target_filter's
+                    estimate covariance matrix at time t.
                 "vis_map_est": `ndarray[int]` (N, M) # Visibility map at time t.
                     Values are binary (0/1). 1 indicates the sensor-target pair
                     can see each other.
                 "obs_staleness": `ndarray[float]` (1, N),  # The difference between
                     the simulation time and the last time the given target was tasked
                     (sec).
-                "num_windows_left": `ndarray[int]`(1, N),  # Number of observation
+                "num_windows_left": `ndarray[int]`(1, N),  # Number of observation # noqa
                     windows left in scenario for given target.
                 "num_tasked": `ndarray[int]` (1, N),  # Number of times target
                     has been tasked during simulation.
@@ -248,9 +248,8 @@ class SSAScheduler(gym.Env):
                     of observation windows left in scenario for given target.
                 "num_tasked": `ndarray[int]` (1, self.num_targets),  # Number of
                     times target has been tasked during simulation.
-                }
+                } # noqa
         """
-
         # Calculate visibility matrix. Use ._getInfo() to ensure type checks are done.
         info_local = deepcopy(self._getInfo())
         # Get state estimates (and true states of sensors)
