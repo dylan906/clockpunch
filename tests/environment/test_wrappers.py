@@ -28,23 +28,9 @@ from punchclock.environment.wrappers import (
     MakeDict,
     MinMaxScaleDictObs,
     SelectiveDictObsWrapper,
-    SelectiveDictProcessor,
     SplitArrayObs,
     SumArrayWrapper,
-    getNumWrappers,
-    getWrapperList,
 )
-
-# %% Test SelectiveDictProcessor
-in_dict = {
-    "a": [1, 2, 3],
-    "b": [4, 5, 6],
-    "c": [1, 2, 3],
-}
-sdp = SelectiveDictProcessor([sum], ["a", "b"])
-out_dict = sdp.applyFunc(in_dict)
-print(f"in_dict = {in_dict}")
-print(f"out_dict = {out_dict}")
 
 # %% Build environment
 # satellite initial conditions-- uniform distribution
@@ -401,18 +387,6 @@ print(f"obs = {obs}")
 print(
     f"obs in observation_space: {env_multi_wrapped.observation_space.contains(obs)}"
 )
-# %% Test getNumWrappers
-print("\nTest getNumWrappers()...")
-out = getNumWrappers(env_multi_wrapped)
-print(f"Number of wrappers (wrapped environment) = {out}")
 
-base_env = deepcopy(env)
-out = getNumWrappers(base_env)
-print(f"Number of wrappers (base environment) = {out}")
-
-# %% Test getWrapperList
-print("\nTest getWrapperList()...")
-wrappers = getWrapperList(env=env_multi_wrapped)
-print(f"wrappers = {wrappers}")
 # %% Done
 print("done")
