@@ -9,7 +9,7 @@ from copy import deepcopy
 import gymnasium as gym
 from gymnasium.spaces.utils import flatten
 from gymnasium.wrappers.filter_observation import FilterObservation
-from numpy import array, diag, float32, int64, sum
+from numpy import array, diag, float32, inf, int64, sum
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
@@ -26,8 +26,10 @@ from punchclock.environment.wrappers import (
     LinScaleDictObs,
     MakeDict,
     MinMaxScaleDictObs,
+    SelectiveDictObsWrapper,
     SelectiveDictProcessor,
     SplitArrayObs,
+    SumArrayWrapper,
     getNumWrappers,
     getWrapperList,
 )
@@ -316,6 +318,30 @@ obs_split = env_split.observation(obs=obs_presplit)
 print(f"pre-split obs['est_cov'] = \n{obs_presplit['est_cov']}")
 print(f"post-split obs['est_cov_pos'] = \n{obs_split['est_cov_pos']}")
 print(f"post-split obs['est_cov_vel'] = \n{obs_split['est_cov_vel']}")
+
+
+# %% Test SelectiveDictObsWrapper
+print("\nTest SelectiveDictObsWrapper...")
+
+
+def testFunc(x):
+    """Test function."""
+    return sum(x).reshape((1,))
+
+
+new_obs_space = deepcopy(env.observation_space)
+new_obs_space["est_cov"] = gym.spaces.Box(-inf, inf)
+sdow = SelectiveDictObsWrapper(
+    env=env,
+    funcs=[testFunc],
+    keys=["est_cov"],
+    new_obs_space=new_obs_space,
+)
+print(sdow.observation_space)
+
+# %% Test SumArrayWrapper
+print("\nTest SumArrayWrapper...")
+saw = SumArrayWrapper(env=env, keys=["est_cov"])
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")

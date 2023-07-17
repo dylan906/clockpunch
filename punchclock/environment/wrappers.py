@@ -22,6 +22,7 @@ from numpy import (
     ones,
     reshape,
     split,
+    sum,
     zeros,
 )
 from sklearn.preprocessing import MinMaxScaler
@@ -712,9 +713,11 @@ class SelectiveDictProcessor:
         If a funcs has only 1 entry, then the same function is applied to all
             keys.
         """
-        assert isinstance(funcs, list)
-        assert isinstance(keys, list)
-        assert all(isinstance(key, str) for key in keys)
+        assert isinstance(funcs, list), "funcs must be a list of Callables."
+        assert isinstance(keys, list), "keys must be a list."
+        assert all(
+            isinstance(key, str) for key in keys
+        ), "all entries in keys must be strs"
         if len(funcs) == 1:
             funcs = [funcs[0] for i in range(len(keys))]
 
@@ -736,13 +739,101 @@ class SelectiveDictProcessor:
         processed_dict = {}
         for k, v in in_dict.items():
             if k in self.keys:
-                # processed_dict[k] = self.funcs(v, **kwargs)
                 processed_dict[k] = self.key_func_map[k](v, **kwargs)
 
         out_dict = deepcopy(in_dict)
         out_dict.update(processed_dict)
 
         return out_dict
+
+
+class SelectiveDictObsWrapper(gym.ObservationWrapper):
+    """Base class for wrappers that apply a function to a selection of Dict entries."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        funcs: list[Callable],
+        keys: list[str],
+        new_obs_space: gym.spaces.Space,
+    ):
+        super().__init__(env)
+        self.observation_space = new_obs_space
+
+        self.processor = SelectiveDictProcessor(funcs, keys)
+
+        assert self.checkObsSpace(), """Observation not contained in new observation
+        space. Check your observation space and/or observation."""
+
+        return
+
+    def observation(self, obs: OrderedDict) -> dict:
+        new_obs = self.processor.applyFunc(obs)
+        return new_obs
+
+    def checkObsSpace(self) -> bool:
+        obs = self.env.observation_space.sample()
+        wrapped_obs = self.observation(obs)
+        check_result = self.observation_space.contains(wrapped_obs)
+        return check_result
+
+
+class SumArrayWrapper(SelectiveDictObsWrapper):
+    """Sum array(s) along a given dimension for items in a Dict observation space."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        keys: list[str],
+        axis: int | None = None,
+    ):
+        """Initialize wrapper.
+
+        Args:
+            env (gym.Env): A gym environment with a Dict observation space.
+            keys (list[str]): Keys whose values will be summed.
+            axis (int | None, optional): Axis along which to sum key values. If
+                None, all elements of array will be summed. Defaults to None.
+        """
+        funcs = [partial(self.wrapSum, axis=axis)]
+        obs_space = Dict(
+            {k: deepcopy(v) for (k, v) in env.observation_space.items()}
+        )
+        for k in keys:
+            v = obs_space[k]
+            if axis == None:
+                # corner case for sum of all elements of array
+                new_shape = (1,)
+            else:
+                new_shape = list(v.shape).pop(axis)
+
+            obs_space[k] = Box(
+                low=v.low[0, 0],
+                high=v.high[0, 0],
+                shape=new_shape,
+            )
+
+        super().__init__(
+            env=env, funcs=funcs, keys=keys, new_obs_space=obs_space
+        )
+
+    def wrapSum(self, x: ndarray, axis: int | None) -> ndarray:
+        """Wrapper around numpy sum to handle corner case.
+
+        Args:
+            x (ndarray): Array to be summed.
+            axis (int | None): Axis on which to sum x. If None, all entries of
+                x are summed.
+
+        Returns:
+            ndarray: Dimensions depends on value of axis. If axis == None, then
+                return a (1,) ndarray.
+        """
+        if axis == None:
+            sum_out = sum(x, axis).reshape((1,))
+        else:
+            sum_out = sum(x, axis)
+        return sum_out
 
 
 def checkDictSpaceContains(
