@@ -1,4 +1,4 @@
-"""Tests for custody_tracker.py"""
+"""Tests for custody_tracker.py."""
 # %% Imports
 from __future__ import annotations
 
@@ -7,11 +7,16 @@ from numpy import ndarray
 from numpy.random import rand
 
 # Punch Clock Imports
-from punchclock.common.custody_tracker import CustodyPosStd, CustodyTracker
+from punchclock.common.custody_tracker import CovarianceCustody, CustodyTracker
 
 # %% Test custody functions
-print("\nTest CustodyPosStd...")
-custody = CustodyPosStd(cov=rand(2, 6, 6), threshold=0.5)
+print("\nTest checkPosStdCustody...")
+cc = CovarianceCustody(method="PosStd", threshold=0.5)
+custody = cc.updateCustody(cov=rand(2, 6, 6))
+print(f"custody = {custody}")
+
+cc = CovarianceCustody(method="TrCov", threshold=0.5)
+custody = cc.updateCustody(cov=rand(2, 6, 6))
 print(f"custody = {custody}")
 # %% Test Class
 print("\nTest CustodyTracker...")

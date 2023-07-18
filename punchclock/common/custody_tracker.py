@@ -4,11 +4,10 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
-from functools import partial
 from typing import Any, Callable
 
 # Third Party Imports
-from numpy import diagonal, ndarray, ones, sqrt
+from numpy import diagonal, ndarray, ones, sqrt, trace
 
 
 # %% CustodyTracker class
@@ -77,18 +76,26 @@ class CustodyTracker:
 
     def getCustodyFunc(self, config: dict) -> Callable[..., list[bool]]:
         """Get the custody function to be used on self.update()."""
-        custody_func_map = {
-            "positional_std": CustodyPosStd,
-        }
+        # Custody function must output a list of bools, but can take any type input(s)
 
         config_func = config["func"]
         if isinstance(config_func, Callable):
+            # If custom function provided
             custodyFunc = config_func
         else:
-            custodyFunc = partial(
-                custody_func_map[config_func],
-                threshold=config["threshold"],
-            )
+            # supported default functions
+            custody_func_map = {
+                "positional_std": CovarianceCustody(
+                    "PosStd", threshold=config["threshold"]
+                ).updateCustody,
+                "tr_cov": CovarianceCustody(
+                    "TrCov", threshold=config["threshold"]
+                ).updateCustody,
+                "tr_pos_cov": CovarianceCustody(
+                    "TrPosCov", threshold=config["threshold"]
+                ).updateCustody,
+            }
+            custodyFunc = custody_func_map[config_func]
 
         return custodyFunc
 
@@ -127,31 +134,8 @@ class CustodyTracker:
 
 
 # %% Supported custody functions
-def CustodyPosStd(cov: ndarray, threshold: float) -> list[bool]:
-    """Targets are in custody if the max positional principal STD < threshold.
-
-    If the covariance for a single target is
-        cov = array([
-            [4, 0, 0, 0, 0, 0],
-            [0, 5, 0, 0, 0, 0],
-            [0, 0, 9, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 2, 0],
-            [0, 0, 0, 0, 0, 3],
-        ])
-    then the max positional principle STD is
-        value = sqrt(max(diagonal(cov[:3, :3]))) = sqrt(9) = 3
-    If value < threshold, then custody = True. Otherwise, custody = False.
-
-    Args:
-        cov (ndarray): (N, 6, 6) covariance matrix with positional elements in
-            upper-left quadrant.
-        threshold (float): Value to compare STD to with. If STD < threshold,
-            custody = True.
-
-    Returns:
-        list[bool]: Custody status for all targets. Has length N.
-    """
+def checkCovArgs(cov: ndarray):
+    """Generically check if covariance meets shape interface requirements."""
     assert cov.ndim == 3, "cov must be a 3-dimensional array."
     assert (
         cov.shape[1] == 6
@@ -161,14 +145,87 @@ def CustodyPosStd(cov: ndarray, threshold: float) -> list[bool]:
         cov.shape[2] == 6
     ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
     quadrant."""
+    return
 
-    custody = [True for i in range(cov.shape[0])]
-    for i in range(cov.shape[0]):
-        c = cov[i, :, :]
-        c_diags = diagonal(c)
-        std_diags = sqrt(c_diags)
-        pos_std_diags = std_diags[:3]
-        if max(pos_std_diags) > threshold:
-            custody[i] = False
 
-    return custody
+class CovarianceCustody:
+    def __init__(self, method: str, threshold: float):
+        func_map = {
+            "PosStd": self.checkPosStdCustody,
+            "TrCov": self.checkTrCovCustody,
+            "TrPosCov": self.checkTrPosCovCustody,
+        }
+        self.updateFunc = func_map[method]
+        self.threshold = threshold
+        return
+
+    def updateCustody(self, cov: ndarray) -> list[bool]:
+        assert cov.ndim == 3, "cov must be a 3-dimensional array."
+        assert (
+            cov.shape[1] == 6
+        ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
+        quadrant."""
+        assert (
+            cov.shape[2] == 6
+        ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
+        quadrant."""
+        custody = self.updateFunc(cov, self.threshold)
+        return custody
+
+    def checkPosStdCustody(self, cov: ndarray, threshold: float) -> list[bool]:
+        """Targets are in custody if the max positional principal STD < threshold.
+
+        If the covariance for a single target is
+            cov = array([
+                [4, 0, 0, 0, 0, 0],
+                [0, 5, 0, 0, 0, 0],
+                [0, 0, 9, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 2, 0],
+                [0, 0, 0, 0, 0, 3],
+            ])
+        then the max positional principle STD is
+            value = sqrt(max(diagonal(cov[:3, :3]))) = sqrt(9) = 3
+        If value < threshold, then custody = True. Otherwise, custody = False.
+
+        Args:
+            cov (ndarray): (N, 6, 6) covariance matrix with positional elements in
+                upper-left quadrant.
+            threshold (float): Value to compare STD to with. If STD < threshold,
+                custody = True.
+
+        Returns:
+            list[bool]: Custody status for all targets. Has length N.
+        """
+        # checkCovArgs(cov)
+
+        custody = [True for i in range(cov.shape[0])]
+        for i in range(cov.shape[0]):
+            c = cov[i, :, :]
+            c_diags = diagonal(c)
+            std_diags = sqrt(c_diags)
+            pos_std_diags = std_diags[:3]
+            if max(pos_std_diags) > threshold:
+                custody[i] = False
+
+        return custody
+
+    def checkTrCovCustody(self, cov: ndarray, threshold: float) -> list[bool]:
+        custody = [True for i in range(cov.shape[0])]
+        for i in range(cov.shape[0]):
+            c = cov[i, :, :]
+            if trace(c) > threshold:
+                custody[i] = False
+        return custody
+
+    def checkTrPosCovCustody(
+        self,
+        cov: ndarray,
+        threshold: float,
+    ) -> list[bool]:
+        custody = [True for i in range(cov.shape[0])]
+        for i in range(cov.shape[0]):
+            c = cov[i, :3, :3]
+            if trace(c) > threshold:
+                custody[i] = False
+        return custody
