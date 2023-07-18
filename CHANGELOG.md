@@ -12,6 +12,7 @@ I'm trying to get better about that.
 - Added MinMax wrapper that scales every entry in a gym.Dict observation space by sklearn.MinMaxScaler (#4).
 
 ### Changed
+- Changed a couple of low-level attribute names that shadowed `builtin` and appeared throughout repo (#9).
 
 ### Deprecated
 
@@ -20,6 +21,7 @@ I'm trying to get better about that.
 
 ### Removed
 - Removed FilterCovElements wrapper, deprecated by SplitArrayObs and FilterObs (#5).
+- Removed old references to `need_obs` policy (#8). 
 
 ## [0.6.0] - 2023-07-06
 
