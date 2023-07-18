@@ -41,13 +41,13 @@ print(f"custody = {custody}")
 
 
 # Test with custom func
-def customCustodyFunc(x: ndarray) -> list[bool]:
+def customCustodyFunc(x: ndarray, b: bool) -> list[bool]:
     """Test function."""
-    return [True for i in range(x.shape[0])]
+    return [b for i in range(x.shape[0])]
 
 
 ct = CustodyTracker(num_targets=3, config={"func": customCustodyFunc})
-custody = ct.update(obs=rand(3, 6, 6))
+custody = ct.update(obs=rand(3, 6, 6), b=False)
 print(f"custody = {custody}")
 
 # %% done

@@ -45,6 +45,10 @@ class CustodyTracker:
                 targets. Defaults to all True.
 
         If input, target_names and initial_status must have length num_targets.
+
+        If using a custom custody function, recommend using partial() to fix as
+        many arguments as possible. Keyword arguments can be used via
+        CustodyTracker.update(..., `**kwargs`).
         """
         assert num_targets > 0, "num_targets must be >0."
 
@@ -99,7 +103,12 @@ class CustodyTracker:
 
         return custodyFunc
 
-    def update(self, obs: Any, return_map: bool = False) -> list[bool] | dict:
+    def update(
+        self,
+        obs: Any,
+        return_map: bool = False,
+        **kwargs,
+    ) -> list[bool] | dict:
         """Update target custody status (see CustodyTracker.custody_status).
 
         Args:
@@ -108,12 +117,13 @@ class CustodyTracker:
             return_map (bool, optional): If True, returns a dict with custody status
                 mapped to target name. Otherwise, returns a list of custody statuses
                 (True/False). Defaults to False.
+            **kwargs: Used for custom custody functions.
 
         Returns:
             list[bool] | dict: Custody status as a list or a mapping of target
                 names to status.
         """
-        custody_status = self.custodyFunc(obs)
+        custody_status = self.custodyFunc(obs, **kwargs)
 
         assert (
             len(custody_status) == self.num_targets
@@ -149,6 +159,8 @@ def checkCovArgs(cov: ndarray):
 
 
 class CovarianceCustody:
+    """A class of covariance matrix based custody rules."""
+
     def __init__(self, method: str, threshold: float):
         func_map = {
             "PosStd": self.checkPosStdCustody,
