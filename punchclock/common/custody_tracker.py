@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Callable
 
@@ -144,6 +145,55 @@ class CustodyTracker:
 
 
 # %% Supported custody functions
+
+# Prototype Base class
+# class BaseCovCustody(ABC):
+#     def checkCovArgs(self, cov: Any):
+#         """Generically check if covariance meets shape interface requirements."""
+#         assert cov.ndim == 3, "cov must be a 3-dimensional array."
+#         assert (
+#             cov.shape[1] == 6
+#         ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
+#         quadrant."""
+#         assert (
+#             cov.shape[2] == 6
+#         ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
+#         quadrant."""
+
+#     def checkReturns(self, y: Any):
+#         assert isinstance(y, list), "Return value must be a list."
+#         assert all(
+#             isinstance(x, bool) for x in y
+#         ), "All entries in return value must be bools."
+
+#     def __call__(self, cov: ndarray, threshold: float):
+#         self.checkCovArgs(cov)
+#         retval = self._uniqueLogic(cov, threshold)
+#         self.checkReturns(retval)
+#         return retval
+
+#     @abstractmethod
+#     def _uniqueLogic(self, cov: ndarray, threshold: float):
+#         raise NotImplementedError()
+
+
+# class MaxPosStd(BaseCovCustody):
+#     def _uniqueLogic(self, cov: ndarray, threshold: float):
+#         custody = [True for i in range(cov.shape[0])]
+#         for i in range(cov.shape[0]):
+#             c = cov[i, :, :]
+#             c_diags = diagonal(c)
+#             std_diags = sqrt(c_diags)
+#             pos_std_diags = std_diags[:3]
+#             if max(pos_std_diags) > threshold:
+#                 custody[i] = False
+
+#         return custody
+
+
+# calcMaxPosStd = MaxPosStd()
+
+
 def checkCovArgs(cov: ndarray):
     """Generically check if covariance meets shape interface requirements."""
     assert cov.ndim == 3, "cov must be a 3-dimensional array."
@@ -209,8 +259,6 @@ class CovarianceCustody:
         Returns:
             list[bool]: Custody status for all targets. Has length N.
         """
-        # checkCovArgs(cov)
-
         custody = [True for i in range(cov.shape[0])]
         for i in range(cov.shape[0]):
             c = cov[i, :, :]
