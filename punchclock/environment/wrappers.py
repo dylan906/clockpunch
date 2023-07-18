@@ -10,13 +10,23 @@ from functools import partial
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, Dict, MultiDiscrete, flatten_space, unflatten
+from gymnasium.spaces import (
+    Box,
+    Dict,
+    MultiBinary,
+    MultiDiscrete,
+    flatten_space,
+    unflatten,
+)
 from gymnasium.spaces.utils import flatten
 from numpy import (
     append,
     array,
+    diag,
+    diagflat,
     float32,
     inf,
+    int8,
     int64,
     multiply,
     ndarray,
@@ -29,6 +39,7 @@ from numpy import (
 from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
+from punchclock.common.custody_tracker import CustodyTracker
 from punchclock.environment.env import SSAScheduler
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
@@ -786,3 +797,92 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
         else:
             sum_out = sum(x, axis)
         return sum_out
+
+
+class CustodyWrapper(gym.ObservationWrapper):
+    """Add 'custody' as an item to a Dict observation space.
+
+    Custody entry entry is a MultiBinary space with shape (N,), where N is the
+    number of targets. Number of targets is determined by shape of "est_cov"
+    in unwrapped observation space. Does not modify other items in observation
+    space, just adds "custody".
+
+    Unwrapped observation space is required to have "est_cov" as an item, which
+    must be a Box space with shape == (6, N), where the column values are covariance
+    matrix diagonals for the n-th target.
+    """
+
+    def __init__(self, env: gym.Env, config: dict):
+        """Wrap environment with CustodyWrapper observation space wrapper.
+
+        Args:
+            env (gym.Env): Must be Dict with "est_cov" value corresponding to estimated
+                covariance diagonals. Estimated covariance must be (6, N) Box
+                space.
+            config (dict): See CustodyTracker for details.
+        """
+        # Type and shape checking
+        assert (
+            "est_cov" in env.observation_space.spaces
+        ), "est_cov must be in env.observation_space to use wrapper."
+        assert (
+            len(env.observation_space.spaces["est_cov"].shape) == 2
+        ), "est_cov should be a 2d space."
+        assert (
+            env.observation_space.spaces["est_cov"].shape[0] == 6
+        ), "The first dimension of est_cov should be 6."
+
+        # make wrapper
+        super().__init__(env)
+        num_targets = env.num_targets
+        target_names = env.target_ids
+        self.custody_tracker = CustodyTracker(
+            config=config,
+            num_targets=num_targets,
+            target_names=target_names,
+        )
+
+        # update observation space
+        new_space = {**env.observation_space}
+        new_space.update({"custody": MultiBinary(num_targets)})
+        self.observation_space = Dict(new_space)
+
+    def observation(self, obs: OrderedDict) -> dict:
+        """Convert unwrapped observation to wrapped observation.
+
+        Args:
+            obs (OrderedDict): Must have "est_cov" as item.
+
+        Returns:
+            dict: Same as input dict, but with "custody" item appended. Custody
+                is a (N,) binary array where 1 indicates the n-th target is in
+                custody.
+        """
+        new_obs = deepcopy(obs)
+        est_cov2d = obs["est_cov"]
+        est_cov3d = self.covFlat2to3d(est_cov2d)
+        # custody_tracker outputs custody status as a list of bools; convert to
+        # a 1d array of ints. Use int8 for dtype-> this is the default dtype of
+        # MultiBinary space.
+        custody = array(self.custody_tracker.update(est_cov3d)).astype(int8)
+        new_obs.update({"custody": custody})
+
+        assert self.observation_space.contains(new_obs)
+        return new_obs
+
+    def covFlat2to3d(self, cov2d: ndarray) -> ndarray:
+        """Converts an array of covariance diags to 3D array of diagonal matrices.
+
+        Args:
+            cov2d (ndarray): (6, N) Each column is the diagonals of the n-th covariance
+                matrix, where the first 3 entries are positional (I, J, K).
+
+        Returns
+            ndarray: (N, 6, 6) Diagonal matrices where the diagonal values are
+                the columns of cov2d. Off-diagonals are 0.
+        """
+        cov3d = zeros(shape=(cov2d.shape[1], 6, 6))
+        for i in range(cov2d.shape[1]):
+            cov3d[i, :, :] = diag(cov2d[:, i])
+
+        return cov3d
