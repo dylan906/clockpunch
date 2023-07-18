@@ -860,7 +860,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         """
         new_obs = deepcopy(obs)
         est_cov2d = obs["est_cov"]
-        est_cov3d = self.covFlat2to3d(est_cov2d)
+        est_cov3d = self.covFlatTo3d(est_cov2d)
         # custody_tracker outputs custody status as a list of bools; convert to
         # a 1d array of ints. Use int8 for dtype-> this is the default dtype of
         # MultiBinary space.
@@ -870,7 +870,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         assert self.observation_space.contains(new_obs)
         return new_obs
 
-    def covFlat2to3d(self, cov2d: ndarray) -> ndarray:
+    def covFlatTo3d(self, cov2d: ndarray) -> ndarray:
         """Converts an array of covariance diags to 3D array of diagonal matrices.
 
         Args:
