@@ -7,7 +7,7 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, Dict, Discrete
+from gymnasium.spaces import Box, Dict, Discrete, MultiBinary
 from gymnasium.spaces.utils import flatten
 from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy import array, diag, float32, inf, int64, sum
@@ -25,6 +25,7 @@ from punchclock.environment.wrappers import (
     FlatDict,
     FlattenMultiDiscrete,
     FloatObs,
+    IntersectMask,
     LinScaleDictObs,
     MakeDict,
     MinMaxScaleDictObs,
@@ -158,7 +159,23 @@ print(
     f"obs in observation_space: {env_masked_off.observation_space.contains(obs)}"
 )
 
-
+# %% Test IntersectMask
+print("\nTest IntersectMask...")
+env_randmask = RandomEnv(
+    {
+        "observation_space": gym.spaces.Dict(
+            {
+                "observations": Dict(
+                    {"a_key": MultiBinary(4)},
+                ),
+                "action_mask": Box(0, 1, shape=(4,), dtype=int),
+            }
+        )
+    }
+)
+env_doublemask = IntersectMask(env=env_randmask, key="a_key")
+obs_randmask = env_randmask.observation_space.sample()
+obs_doublemask = env_doublemask.observation(obs=obs_randmask)
 # %% Test FlatDict
 print("\nTest FlatDict...")
 # create a separate test env that has a nested dict obs space
@@ -329,7 +346,13 @@ print(f"wrapped obs space = {sdow.observation_space['est_cov']}")
 
 # %% Test CustodyWrapper
 print("\nTest CustodyWrapper...")
-cw = CustodyWrapper(env=env, config=None)
+cw = CustodyWrapper(
+    env=env,
+    config={
+        "func": "max_pos_std",
+        "threshold": 5,
+    },
+)
 print(f"unwrapped obs space = \n{env.observation_space.keys()}")
 print(f"wrapped obs space = \n{cw.observation_space.keys()}")
 obs = env.observation_space.sample()

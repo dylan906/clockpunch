@@ -20,6 +20,7 @@ from gymnasium.spaces import (
 )
 from gymnasium.spaces.utils import flatten
 from numpy import (
+    all,
     append,
     array,
     diag,
@@ -28,6 +29,7 @@ from numpy import (
     inf,
     int8,
     int64,
+    intersect1d,
     multiply,
     ndarray,
     ones,
@@ -185,6 +187,67 @@ class ActionMask(gym.ObservationWrapper):
         )
 
         return obs_new
+
+
+class IntersectMask(gym.ObservationWrapper):
+    """Layer the unwrapped action mask with another mask from the obs space.
+
+    Specify a key from the unwrapped obs space that contains the new mask to layer
+        over observation_space.spaces["action_mask"]. The specified key value must
+        be a MultiBinary space of the same shape as "action_mask".
+    """
+
+    def __init__(self, env: gym.Env, key: str):
+        assert isinstance(
+            env.observation_space, Dict
+        ), "Environment observation space is not a Dict."
+        assert (
+            "action_mask" in env.observation_space.spaces
+        ), "Environment observation space does not contain 'action_mask'."
+        assert (
+            "observations" in env.observation_space.spaces
+        ), "Environment observation space does not contain 'observations'."
+        assert (
+            key in env.observation_space.spaces["observations"].spaces
+        ), f"'{key}' is not in env.observation_space.spaces['observations'].spaces."
+        assert isinstance(
+            env.observation_space.spaces["observations"].spaces[key],
+            MultiBinary,
+        ), f"['observations']['{key}'] must be a gym.spaces.MultiBinary."
+        mask_shape = env.observation_space.spaces["action_mask"].shape
+        layeredmask_shape = (
+            env.observation_space.spaces["observations"].spaces[key].shape
+        )
+        assert (
+            mask_shape == layeredmask_shape
+        ), f"['observations']['{key}'] must be same shape as 'action_mask'"
+
+        super().__init__(env)
+        self.imask_key = key
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Pass unwrapped action mask through another, pre-specified, mask.
+
+        Args:
+            obs (OrderedDict): Must be structured like
+                {
+                    "observations": {
+                        "key": binary_array1,
+                        ...
+                    }
+                    "action_mask": binary_array2,
+                }
+
+        Returns:
+            OrderedDict: Same keys as obs.
+        """
+        x_mask = obs["action_mask"]
+        y_mask = obs["observations"][self.imask_key]
+        new_mask = multiply(x_mask, y_mask)
+
+        new_obs = deepcopy(obs)
+        new_obs["action_mask"] = new_mask
+        return new_obs
 
 
 # %% Wrapper for flattening part of observation space
