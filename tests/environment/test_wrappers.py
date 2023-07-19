@@ -333,6 +333,8 @@ cw = CustodyWrapper(env=env, config=None)
 print(f"unwrapped obs space = \n{env.observation_space.keys()}")
 print(f"wrapped obs space = \n{cw.observation_space.keys()}")
 obs = env.observation_space.sample()
+# Make covariance all positive to be ensure diagonals are properly conditioned.
+obs["est_cov"] = abs(obs["est_cov"])
 print(f"wrapped obs = {cw.observation(obs)['custody']}")
 
 # %% Test SumArrayWrapper
