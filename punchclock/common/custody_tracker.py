@@ -46,6 +46,12 @@ class CustodyTracker:
             initial_status (list[bool], optional): Initial custody status for all
                 targets. Defaults to all True.
 
+        Available preset functions ("func"):
+            "max_pos_std": Maximum positional STD. See MaxPosStd for details.
+            "tr_cov": Trace of covariance. See TrCov for details.
+            "tr_pos_cov": Trace of positional covariance. See TrCov for details.
+            "tr_vel_cov": Trace of velocity covariance. See TrCov for details.
+
         If input, target_names and initial_status must have length num_targets.
 
         If using a custom custody function, recommend using partial() to fix as
@@ -191,8 +197,8 @@ class BaseCovCustody(ABC):
         ), "All entries in return value must be bools."
         assert (
             len(y) == cov.shape[0]
-        ), """Length of return list must be same as 0-th dimension of cov 
-        (len(return) == cov.shape[0])."""
+        ), """Length of return list must be same as 0-th dimension of cov
+         (len(return) == cov.shape[0])."""
 
     def __call__(self, cov: ndarray, threshold: float):
         """Check arguments, run unique logic, and check returns."""
