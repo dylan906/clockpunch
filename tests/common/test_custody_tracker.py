@@ -7,17 +7,27 @@ from numpy import ndarray
 from numpy.random import rand
 
 # Punch Clock Imports
-from punchclock.common.custody_tracker import CovarianceCustody, CustodyTracker
+from punchclock.common.custody_tracker import (  # CovarianceCustody,; TrPosCov,
+    CustodyTracker,
+    MaxPosStd,
+    TrCov,
+)
 
 # %% Test custody functions
 print("\nTest checkPosStdCustody...")
-cc = CovarianceCustody(method="PosStd", threshold=0.5)
-custody = cc.updateCustody(cov=rand(2, 6, 6))
+funcMaxPosStd = MaxPosStd()
+custody = funcMaxPosStd(rand(2, 6, 6), 0.5)
 print(f"custody = {custody}")
 
-cc = CovarianceCustody(method="TrCov", threshold=0.5)
-custody = cc.updateCustody(cov=rand(2, 6, 6))
+test_cov = rand(2, 6, 6)
+funcTrPosCov = TrCov(pos_vel="pos")
+custody = funcTrPosCov(test_cov, 0.5)
 print(f"custody = {custody}")
+
+funcTrPosCov = TrCov(pos_vel="vel")
+custody = funcTrPosCov(test_cov, 0.5)
+print(f"custody = {custody}")
+
 # %% Test Class
 print("\nTest CustodyTracker...")
 # test with defaults
@@ -29,7 +39,7 @@ print(f"custody = {custody}")
 ct = CustodyTracker(
     num_targets=3,
     config={
-        "func": "positional_std",
+        "func": "max_pos_std",
         "threshold": 0.5,
     },
 )
@@ -49,6 +59,7 @@ def customCustodyFunc(x: ndarray, b: bool) -> list[bool]:
 ct = CustodyTracker(num_targets=3, config={"func": customCustodyFunc})
 custody = ct.update(obs=rand(3, 6, 6), b=False)
 print(f"custody = {custody}")
+
 
 # %% done
 print("done")

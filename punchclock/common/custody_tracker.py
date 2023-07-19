@@ -5,6 +5,7 @@ from __future__ import annotations
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from functools import partial
 from typing import Any, Callable
 
 # Third Party Imports
@@ -37,7 +38,7 @@ class CustodyTracker:
                 }.
                 Defaults to:
                 {
-                    "func": "positional_std",
+                    "func": "max_pos_std",
                     "threshold": 1000,
                 }.
             target_names (list, optional): Target names for use in detailed return
@@ -61,7 +62,7 @@ class CustodyTracker:
         if config is None:
             # Default config
             config = {
-                "func": "positional_std",
+                "func": "max_pos_std",
                 "threshold": 1000,
             }
 
@@ -88,17 +89,18 @@ class CustodyTracker:
             # If custom function provided
             custodyFunc = config_func
         else:
-            # supported default functions
+            # supported default functions.
             custody_func_map = {
-                "positional_std": CovarianceCustody(
-                    "PosStd", threshold=config["threshold"]
-                ).updateCustody,
-                "tr_cov": CovarianceCustody(
-                    "TrCov", threshold=config["threshold"]
-                ).updateCustody,
-                "tr_pos_cov": CovarianceCustody(
-                    "TrPosCov", threshold=config["threshold"]
-                ).updateCustody,
+                "max_pos_std": partial(
+                    MaxPosStd(), threshold=config["threshold"]
+                ),
+                "tr_cov": partial(TrCov(), threshold=config["threshold"]),
+                "tr_pos_cov": partial(
+                    TrCov("pos"), threshold=config["threshold"]
+                ),
+                "tr_vel_cov": partial(
+                    TrCov("vel"), threshold=config["threshold"]
+                ),
             }
             custodyFunc = custody_func_map[config_func]
 
@@ -118,7 +120,7 @@ class CustodyTracker:
             return_map (bool, optional): If True, returns a dict with custody status
                 mapped to target name. Otherwise, returns a list of custody statuses
                 (True/False). Defaults to False.
-            **kwargs: Used for custom custody functions.
+            `**kwargs`: Used for custom custody functions.
 
         Returns:
             list[bool] | dict: Custody status as a list or a mapping of target
@@ -144,120 +146,76 @@ class CustodyTracker:
         return out
 
 
-# %% Supported custody functions
+# %% Covariance-based custody functions
+class BaseCovCustody(ABC):
+    """Base class for covariance-based custody functions.
 
-# Prototype Base class
-# class BaseCovCustody(ABC):
-#     def checkCovArgs(self, cov: Any):
-#         """Generically check if covariance meets shape interface requirements."""
-#         assert cov.ndim == 3, "cov must be a 3-dimensional array."
-#         assert (
-#             cov.shape[1] == 6
-#         ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
-#         quadrant."""
-#         assert (
-#             cov.shape[2] == 6
-#         ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
-#         quadrant."""
+    Enforces standardized args/returns for a custody function.
+        - Args must include cov (an (N, 6, 6) array) and threshold (float | int).
+        - Return must be a N-long list of bools.
+        - Child class must have ._customLogic() method.
 
-#     def checkReturns(self, y: Any):
-#         assert isinstance(y, list), "Return value must be a list."
-#         assert all(
-#             isinstance(x, bool) for x in y
-#         ), "All entries in return value must be bools."
+    Example use:
+        childFunc = ChildFuncClass()
+        custody = childFunc(
+            cov=rand(2, 6, 6),
+            threshold=1,
+        )
+        print(custody) # prints a 2-long list of bools
 
-#     def __call__(self, cov: ndarray, threshold: float):
-#         self.checkCovArgs(cov)
-#         retval = self._uniqueLogic(cov, threshold)
-#         self.checkReturns(retval)
-#         return retval
+    Example of correct child class:
+        class CorrectFunc(BaseCovCustody):
+            def _uniqueLogic(self, cov: ndarray, threshold: float):
+                return [True for i in range(cov.shape[0])]
 
-#     @abstractmethod
-#     def _uniqueLogic(self, cov: ndarray, threshold: float):
-#         raise NotImplementedError()
+    Example of incorrect child class (return list is too long):
+        class BadFunc(BaseCovCustody):
+            def _uniqueLogic(self, cov: ndarray, threshold: float):
+                return [True for i in range(cov.shape[0] + 1)]
+    """
 
-
-# class MaxPosStd(BaseCovCustody):
-#     def _uniqueLogic(self, cov: ndarray, threshold: float):
-#         custody = [True for i in range(cov.shape[0])]
-#         for i in range(cov.shape[0]):
-#             c = cov[i, :, :]
-#             c_diags = diagonal(c)
-#             std_diags = sqrt(c_diags)
-#             pos_std_diags = std_diags[:3]
-#             if max(pos_std_diags) > threshold:
-#                 custody[i] = False
-
-#         return custody
-
-
-# calcMaxPosStd = MaxPosStd()
-
-
-def checkCovArgs(cov: ndarray):
-    """Generically check if covariance meets shape interface requirements."""
-    assert cov.ndim == 3, "cov must be a 3-dimensional array."
-    assert (
-        cov.shape[1] == 6
-    ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
-    quadrant."""
-    assert (
-        cov.shape[2] == 6
-    ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
-    quadrant."""
-    return
-
-
-class CovarianceCustody:
-    """A class of covariance matrix based custody rules."""
-
-    def __init__(self, method: str, threshold: float):
-        func_map = {
-            "PosStd": self.checkPosStdCustody,
-            "TrCov": self.checkTrCovCustody,
-            "TrPosCov": self.checkTrPosCovCustody,
-        }
-        self.updateFunc = func_map[method]
-        self.threshold = threshold
-        return
-
-    def updateCustody(self, cov: ndarray) -> list[bool]:
+    def checkCovArgs(self, cov: Any, threshold: Any):
+        """Check if covariance meets shape and type requirements."""
         assert cov.ndim == 3, "cov must be a 3-dimensional array."
+        assert cov.shape[1] == 6, "cov must be a (N, 6, 6) array."
+        assert cov.shape[2] == 6, "cov must be a (N, 6, 6) array."
+        assert isinstance(
+            threshold, (int, float)
+        ), "threshold must be one of [int, float]."
+
+    def checkReturns(self, y: Any, cov: Any):
+        """Check if return list meets type and size requirements."""
+        assert isinstance(y, list), "Return value must be a list."
+        assert all(
+            isinstance(x, bool) for x in y
+        ), "All entries in return value must be bools."
         assert (
-            cov.shape[1] == 6
-        ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
-        quadrant."""
-        assert (
-            cov.shape[2] == 6
-        ), """cov must be a (N, 6, 6) array with positional elements in the upper-left
-        quadrant."""
-        custody = self.updateFunc(cov, self.threshold)
-        return custody
+            len(y) == cov.shape[0]
+        ), """Length of return list must be same as 0-th dimension of cov 
+        (len(return) == cov.shape[0])."""
 
-    def checkPosStdCustody(self, cov: ndarray, threshold: float) -> list[bool]:
-        """Targets are in custody if the max positional principal STD < threshold.
+    def __call__(self, cov: ndarray, threshold: float):
+        """Check arguments, run unique logic, and check returns."""
+        self.checkCovArgs(cov, threshold)
+        retval = self._uniqueLogic(cov, threshold)
+        self.checkReturns(retval, cov)
+        return retval
 
-        If the covariance for a single target is
-            cov = array([
-                [4, 0, 0, 0, 0, 0],
-                [0, 5, 0, 0, 0, 0],
-                [0, 0, 9, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 2, 0],
-                [0, 0, 0, 0, 0, 3],
-            ])
-        then the max positional principle STD is
-            value = sqrt(max(diagonal(cov[:3, :3]))) = sqrt(9) = 3
-        If value < threshold, then custody = True. Otherwise, custody = False.
+    @abstractmethod
+    def _uniqueLogic(self, cov: ndarray, threshold: float):
+        """Required for all child classes."""
+        raise NotImplementedError()
 
-        Args:
-            cov (ndarray): (N, 6, 6) covariance matrix with positional elements in
-                upper-left quadrant.
-            threshold (float): Value to compare STD to with. If STD < threshold,
-                custody = True.
 
-        Returns:
-            list[bool]: Custody status for all targets. Has length N.
+class MaxPosStd(BaseCovCustody):
+    """Target in custody if max position STD is below threshold."""
+
+    def _uniqueLogic(self, cov: ndarray, threshold: float):
+        """Evaluate the function.
+
+        x =  sqrt(max(diagonal(cov[i, :3, :3])))
+
+        custody[i] = True if x < threshold, False otherwise.
         """
         custody = [True for i in range(cov.shape[0])]
         for i in range(cov.shape[0]):
@@ -270,22 +228,54 @@ class CovarianceCustody:
 
         return custody
 
-    def checkTrCovCustody(self, cov: ndarray, threshold: float) -> list[bool]:
-        custody = [True for i in range(cov.shape[0])]
-        for i in range(cov.shape[0]):
-            c = cov[i, :, :]
-            if trace(c) > threshold:
-                custody[i] = False
-        return custody
 
-    def checkTrPosCovCustody(
-        self,
-        cov: ndarray,
-        threshold: float,
-    ) -> list[bool]:
+class TrCov(BaseCovCustody):
+    """Target in custody if trace of covariance is below threshold.
+
+    Optionally use positional or velocity covariance instead of whole matrix.
+    """
+
+    def __init__(self, pos_vel: str = "both"):
+        """Set evaluation mode to position/velocity/both.
+
+        Args:
+            pos_vel (str, optional): ["pos" | "vel" | "both"]. Sets evaluation
+                function to use positional, velocity, or both components of covariance
+                matrix. Positional components are assumed to be upper-left quadrant
+                of covariance matrix. Defaults to "both".
+        """
+        assert pos_vel in [
+            "both",
+            "pos",
+            "vel",
+        ], "pos_vel must be one of 'both', 'pos', or 'vel'."
+
+        # Set array slicing indices to get either upper-left or lower-right 3x3
+        # sub-array from covariance.
+        if pos_vel == "both":
+            self.slice_indices = [None, None]
+        elif pos_vel == "pos":
+            self.slice_indices = [None, 3]
+        elif pos_vel == "vel":
+            self.slice_indices = [3, None]
+
+    def _uniqueLogic(self, cov: ndarray, threshold: float) -> list[bool]:
+        """Evaluate the function.
+
+        x =  tr(cov[i, a:b, a:b])
+
+        custody[i] = True if x < threshold, False otherwise.
+
+        Variables a and b are set at initialization depending on which components
+            (positional, velocity, both) of covariance matrix to use.
+        """
         custody = [True for i in range(cov.shape[0])]
         for i in range(cov.shape[0]):
-            c = cov[i, :3, :3]
+            c = cov[
+                i,
+                self.slice_indices[0] : self.slice_indices[1],
+                self.slice_indices[0] : self.slice_indices[1],
+            ]
             if trace(c) > threshold:
                 custody[i] = False
         return custody
