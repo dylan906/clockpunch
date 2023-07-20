@@ -65,7 +65,6 @@ class FloatObs(gym.ObservationWrapper):
             env.observation_space, Dict
         ), "env.observation_space must be a gymnasium.Dict."
 
-    def __init__(self, env: SSAScheduler):
         super().__init__(env)
         self.observation_space = self._recursiveConvertDictSpace(
             env.observation_space
@@ -137,19 +136,26 @@ class ActionMask(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: SSAScheduler,
+        env: gym.Env,
         action_mask_on: bool = True,
     ):
         """Wrapped observation space has "observations" and "action_mask" keys.
 
         Args:
-            env (`SSAScheduler`): Unwrapped environment with Dict observation
+            env (`gym.Env`): Unwrapped environment with Dict observation
                 space that includes (at a minimum) "vis_map_est".
             action_mask_on (`bool`, optional): Whether or not to mask actions.
                 Defaults to True.
 
         Set `action_mask_on` to False to keep all actions unmasked.
         """
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.Dict."
+        assert (
+            "vis_map_est" in env.observation_space.spaces
+        ), "vis_map_est must be an item in observation_space"
+
         super().__init__(env)
         self.action_mask_on = action_mask_on
         self.mask_space = flatten_space(self.action_space)
@@ -276,20 +282,23 @@ class FlatDict(gym.ObservationWrapper):
     def __init__(
         self,
         env: gym.Env,
-        keys: list[str] = [],
+        keys: list = None,
     ):
         """Flatten sub-levels of a Dict observation space.
 
         Args:
             env (gym.Env): An environment with a Dict observation space.
-            keys (list[str], optional): List of sub-levels to flatten. If empty,
+            keys (list, optional): List of sub-levels to flatten. If empty,
                 all sub-levels are flattened. Defaults to [].
         """
+        if keys is None:
+            keys = []
+
         assert isinstance(
             env.observation_space, gym.spaces.Dict
-        ), f"""The input environment to FlatDict() must have a `gym.spaces.Dict` 
-        observation space."""
-        assert isinstance(keys, list), f"keys must be a list."
+        ), "env.observation_space must be a gymnasium.Dict."
+        assert isinstance(keys, list), "keys must be a list-like."
+
         super().__init__(env)
 
         # replace empty list of keys with all keys by default
@@ -382,24 +391,40 @@ class LinScaleDictObs(gym.ObservationWrapper):
     def __init__(
         self,
         env: gym.Env,
-        rescale_config: dict = {},
+        rescale_config: dict = None,
     ):
         """Wrap an environment with LinScaleDictObs.
 
         Args:
-            env (`gym.Env`): Observation space must be a `gymDict`.
-            rescale_config (`dict`, optional): Keys must be a subset of unwrapped
-                observation space keys. Values must be `float`s. If empty, wrapped
+            env (gym.Env): Observation space must be a gymDict.
+            rescale_config (dict, optional): Keys must be a subset of unwrapped
+                observation space keys. Values must be floats. If empty, wrapped
                 observation space is same as unwrapped. Defaults to {}.
         """
-        assert isinstance(env.observation_space, gym.spaces.Dict), (
-            f"The input environment to LinScaleDictObs() must have a `gym.spaces.Dict`"
-            f" observation space."
-        )
+        # default config
+        if rescale_config is None:
+            rescale_config = {}
+        self.rescale_config = rescale_config
+
+        assert isinstance(
+            env.observation_space, gym.spaces.Dict
+        ), """The input environment to LinScaleDictObs() must have a `gym.spaces.Dict`
+             observation space."""
+        assert all(
+            [
+                k in list(env.observation_space.keys())
+                for k in rescale_config.keys()
+            ]
+        ), "Keys of rescale_config must be a subset of keys in env.observation_space."
+        assert all(
+            [
+                isinstance(env.observation_space[space], Box)
+                for space in rescale_config.keys()
+            ]
+        ), """All spaces in env.observation_space that are specified by rescale_config
+        must be Box type."""
 
         super().__init__(env)
-
-        self.rescale_config = rescale_config
 
         mult_funcs = [
             partial(self.multWrap, mult=m) for m in rescale_config.values()
@@ -410,16 +435,11 @@ class LinScaleDictObs(gym.ObservationWrapper):
         )
 
         # Loop through all items in observation_space, check if they are specified
-        # by rescale_config, and then rescale the limits of the space. This only
-        # works for Box environments, so check if the entries in observation_space
-        # are Box before changing them. Leave all items in observation_space that
-        # are NOT specified in rescale_config as defaults.
+        # by rescale_config, and then rescale the limits of the space. Leave all
+        # items in observation_space that are NOT specified in rescale_config as
+        # defaults.
         for key, space in env.observation_space.items():
             if key in rescale_config.keys():
-                assert isinstance(
-                    space, Box
-                ), f"LinScaleDictObs only works with Dict[Box] spaces."
-
                 new_low = space.low * rescale_config[key]
                 new_high = space.high * rescale_config[key]
 
@@ -593,7 +613,7 @@ class SplitArrayObs(gym.ObservationWrapper):
         keys: list[str],
         new_keys: list[list[str]],
         indices_or_sections: list[int | ndarray],
-        axes: list[int] = [0],
+        axes: list[int] = None,
     ):
         """Initialize SplitArrayObs wrapper.
 
@@ -611,10 +631,20 @@ class SplitArrayObs(gym.ObservationWrapper):
                 splits on. See numpy.split for details. If 1-long, all arrays will
                 be split on same axis. Defaults to [0].
         """
+        # Defaults
+        if len(indices_or_sections) == 1:
+            indices_or_sections = [
+                indices_or_sections[0] for i in range(len(keys))
+            ]
+        if axes is None:
+            axes = [0]
+        if len(axes) == 1:
+            axes = [axes[0] for i in range(len(keys))]
+
         # Type and size checking
         assert isinstance(
             env.observation_space, Dict
-        ), f"""Input environment must have a `gym.spaces.Dict` observation space."""
+        ), "Input environment must have a `gym.spaces.Dict` observation space."
         assert len(keys) == len(new_keys), "len(keys) must equal len(new_keys)"
         assert (len(indices_or_sections) == len(keys)) or (
             len(indices_or_sections) == 1
@@ -628,15 +658,7 @@ class SplitArrayObs(gym.ObservationWrapper):
         relevant_spaces = [env.observation_space.spaces[k] for k in keys]
         assert all(
             [isinstance(space, Box) for space in relevant_spaces]
-        ), """All spaces specified in keys must be Box spaces in unwrapped environment."""
-
-        # Defaults
-        if len(indices_or_sections) == 1:
-            indices_or_sections = [
-                indices_or_sections[0] for i in range(len(keys))
-            ]
-        if len(axes) == 1:
-            axes = [axes[0] for i in range(len(keys))]
+        ), "All spaces specified in keys must be Box spaces in unwrapped environment."
 
         # %% Set attributes
         super().__init__(env)
@@ -795,13 +817,17 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
             axis (int | None, optional): Axis along which to sum key values. If
                 None, all elements of array will be summed. Defaults to None.
         """
+        assert all(
+            [isinstance(env.observation_space.spaces[k], Box) for k in keys]
+        ), "Keys must correspond to Box spaces in env.observation_space."
+
         funcs = [partial(self.wrapSum, axis=axis)]
         obs_space = Dict(
             {k: deepcopy(v) for (k, v) in env.observation_space.items()}
         )
         for k in keys:
             v = obs_space[k]
-            if axis == None:
+            if axis is None:
                 # corner case for sum of all elements of array
                 new_shape = (1,)
             else:
@@ -834,7 +860,7 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
             ndarray: Dimensions depends on value of axis. If axis == None, then
                 return a (1,) ndarray.
         """
-        if axis == None:
+        if axis is None:
             sum_out = sum(x, axis).reshape((1,))
         else:
             sum_out = sum(x, axis)
