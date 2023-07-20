@@ -333,49 +333,6 @@ class MakeDict(gym.ObservationWrapper):
         return obs_new
 
 
-class FlattenMultiDiscrete(gym.ActionWrapper):
-    """Convert `Box` action space to `MultiDiscrete`.
-
-    Converts `Box` action to `MultiDiscrete` action before passing to base environment.
-    Input action must be shape (A * B,) `ndarray` of 0s and 1s and conform to format
-    of a flattened `MultiDiscrete` space, where A is the number of possible actions
-    in a group, and B is the number of groups. Only a single 1 in each group of
-    A entries is allowed.
-
-    Examples:
-        A, B |      input_act     | output_act
-        -----|--------------------|------------
-        2, 2 | [0, 1, 1, 0]       | [1, 0]
-        2, 3 | [1, 0, 1, 0, 0, 1] | [0, 0, 1]
-        3, 2 | [1, 0, 0, 0, 0, 1] | [0, 2]
-    """
-
-    def __init__(self, env):
-        """Environment must have `MultiDiscrete` action space."""
-        super().__init__(env)
-        assert isinstance(env.action_space, MultiDiscrete)
-        self.action_space = flatten_space(env.action_space)
-
-    def action(self, act: ndarray[int]) -> ndarray[int]:
-        """Convert `Box` action to `MultiDiscrete` action.
-
-        Args:
-            act (`ndarray[int]`): Action in `Box` space.
-
-        Returns:
-            `ndarray[int]`: Action in `MultiDiscrete` space.
-        """
-        try:
-            x = unflatten(self.env.action_space, act)
-        except ValueError:
-            # print("Error in unflattening Box action to MultiDiscrete")
-            raise (
-                ValueError("Error in unflattening Box action to MultiDiscrete")
-            )
-
-        return x
-
-
 # %% Rescale obs
 class LinScaleDictObs(gym.ObservationWrapper):
     """Rescale selected entries in a Dict observation space.

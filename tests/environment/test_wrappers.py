@@ -214,38 +214,6 @@ print(f"env_cartpole_dict = {type(env_cartpole_dict)}")
 print(f"obs = {env_cartpole_dict.observation_space.sample()}")
 
 
-# %% Test FlattenMultiDiscrete
-print("\nTest FlattenMultiDiscrete...")
-box_env = FlattenMultiDiscrete(env=env)
-print(f"box_env = {box_env}")
-print(f"box_env.action_space = {box_env.action_space}")
-
-box_act = array([1, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-print(f"box action = {box_act}")
-print(
-    f"box_act in box_env.action_space: {box_env.action_space.contains(box_act)}"
-)
-MD_act = box_env.action(box_act)
-print(f"wrapped action = {MD_act}")
-print(
-    f"action in unwrapped env action_space: {env.action_space.contains(MD_act)}"
-)
-
-[obs, _, _, _, _] = box_env.step(box_act)
-print(f"obs from step = {obs}")
-
-# Try bad action (more 1s than allowed)
-print("\nTest improperly formatted input action...")
-box_act_bad = array([1, 1, 0, 0, 0, 0, 0, 0, 0, 1])
-print(f"box_act_bad = {box_act_bad}")
-print(
-    f"box_act_bad in box_env.action_space: {box_env.action_space.contains(box_act_bad)}"
-)
-try:
-    MD_act = box_env.action(box_act_bad)
-except Exception as err:
-    print(err)
-
 # %% Test Rescale obs
 print("\nTest LinScaleDictObs...")
 print("Test baseline case")
@@ -403,16 +371,12 @@ env_multi_wrapped = FilterObservation(
 env_multi_wrapped = ActionMask(env=env_multi_wrapped)
 env_multi_wrapped = FloatObs(env=env_multi_wrapped)
 env_multi_wrapped = FlatDict(env=env_multi_wrapped)
-env_multi_wrapped = FlattenMultiDiscrete(env=env_multi_wrapped)
 env_multi_wrapped.reset()
 # check_env(env_multi_wrapped)
 
-# get MD action sample then flatten. If we just sample from the multi-wrapped
-# env then we are sampling from a Box space, which won't be contained in MD.
-act_sample = flatten(env.action_space, env.action_space.sample())
-print(f"action sample = {act_sample}")
-
-[obs, _, _, _, _] = env_multi_wrapped.step(act_sample)
+[obs, _, _, _, _] = env_multi_wrapped.step(
+    env_multi_wrapped.action_space.sample()
+)
 
 print(f"observation_space = {env_multi_wrapped.observation_space}")
 print(f"obs = {obs}")
