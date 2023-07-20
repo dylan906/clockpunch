@@ -53,7 +53,17 @@ from punchclock.reward_funcs.reward_utils import cropArray
 
 # %% Wrappers
 class FloatObs(gym.ObservationWrapper):
-    """Convert any ints in the observation space to floats."""
+    """Convert any ints in the Dict observation space to floats.
+
+    Observation space must be a Dict. Recursively searches through observation
+    space for int dtypes.
+    """
+
+    def __init__(self, env: gym.Env):
+        """Wrap environment."""
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.Dict."
 
     def __init__(self, env: SSAScheduler):
         super().__init__(env)
@@ -70,9 +80,11 @@ class FloatObs(gym.ObservationWrapper):
     def _recursiveConvertDictSpace(
         self, obs_space: gym.spaces.Dict
     ) -> OrderedDict:
-        """Loop through a `dict` and convert all `Box` values that have
-        dtype == `int` into `Box`es with dtype = `float`."""
+        """Change all Box dtypes to floats.
 
+        Loop through a dict and convert all Box values that have
+        dtype == int into Boxes with dtype = float.
+        """
         obs_space_new = gym.spaces.Dict({})
         for k, v in obs_space.items():
             # recurse if entry is a Dict
@@ -91,7 +103,7 @@ class FloatObs(gym.ObservationWrapper):
         return obs_space_new
 
     def _recursiveConvertDict(self, obs: OrderedDict) -> OrderedDict:
-        """Convert obs with `int`s to `float`s."""
+        """Convert obs with ints to floats."""
         obs_new = OrderedDict({})
         for k, v in obs.items():
             # recurse if entry is a Dict
@@ -128,7 +140,7 @@ class ActionMask(gym.ObservationWrapper):
         env: SSAScheduler,
         action_mask_on: bool = True,
     ):
-        """Wrapped observation space is a dict with "observations" and "action_mask" keys.
+        """Wrapped observation space has "observations" and "action_mask" keys.
 
         Args:
             env (`SSAScheduler`): Unwrapped environment with Dict observation
@@ -198,6 +210,7 @@ class IntersectMask(gym.ObservationWrapper):
     """
 
     def __init__(self, env: gym.Env, key: str):
+        """Wrap environment with IntersectMask ObservationWrapper."""
         assert isinstance(
             env.observation_space, Dict
         ), "Environment observation space is not a Dict."
@@ -315,7 +328,13 @@ class FlatDict(gym.ObservationWrapper):
 
 
 class MakeDict(gym.ObservationWrapper):
-    """Converts a non-dict observation to a dict."""
+    """Wraps the observation space in a 1-item Dict.
+
+    wrapped_obs_space = Dict({
+        "obs": unwrapped_obs_space
+    })
+
+    """
 
     # Mostly useful for tests.
 
@@ -323,11 +342,13 @@ class MakeDict(gym.ObservationWrapper):
         self,
         env: gym.Env,
     ):
+        """Wrap env."""
         super().__init__(env)
         obs_dict = {"obs": env.observation_space}
         self.observation_space = gym.spaces.Dict(**obs_dict)
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Get wrapped observation."""
         obs_new = {"obs": obs}
 
         return obs_new
@@ -435,6 +456,7 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
     """
 
     def __init__(self, env: gym.Env):
+        """Wrap environment that has a Dict observation space."""
         assert isinstance(
             env.observation_space, gym.spaces.Dict
         ), f"""The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict` 
