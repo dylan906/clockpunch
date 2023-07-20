@@ -138,8 +138,6 @@ def buildEnv(env_config: dict) -> gym.Env:
         "rescale_dict_obs": LinScaleDictObs,
         "minmaxscale_dict_obs": MinMaxScaleDictObs,
         "splitarray_obs": SplitArrayObs,
-        # TODO: flatten_MD not supported yet; debugging still needs to be done
-        # "flatten_MD": FlattenMultiDiscrete,
     }
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
