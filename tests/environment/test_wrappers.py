@@ -8,7 +8,6 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary
-from gymnasium.spaces.utils import flatten
 from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy import array, diag, float32, inf, int64, sum
 from ray.rllib.examples.env.random_env import RandomEnv
@@ -23,7 +22,6 @@ from punchclock.environment.wrappers import (
     ActionMask,
     CustodyWrapper,
     FlatDict,
-    FlattenMultiDiscrete,
     FloatObs,
     IntersectMask,
     LinScaleDictObs,
