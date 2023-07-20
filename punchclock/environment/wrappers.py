@@ -10,30 +10,20 @@ from functools import partial
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import (
-    Box,
-    Dict,
-    MultiBinary,
-    MultiDiscrete,
-    flatten_space,
-    unflatten,
-)
+from gymnasium.spaces import Box, Dict, MultiBinary, flatten_space
 from gymnasium.spaces.utils import flatten
 from numpy import (
     all,
     append,
     array,
     diag,
-    diagflat,
     float32,
     inf,
     int8,
     int64,
-    intersect1d,
     multiply,
     ndarray,
     ones,
-    reshape,
     split,
     sum,
     zeros,
@@ -42,13 +32,10 @@ from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
 from punchclock.common.custody_tracker import CustodyTracker
-from punchclock.environment.env import SSAScheduler
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
-    getNumWrappers,
 )
-from punchclock.reward_funcs.reward_utils import cropArray
 
 
 # %% Wrappers
@@ -479,13 +466,13 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         """Wrap environment that has a Dict observation space."""
         assert isinstance(
             env.observation_space, gym.spaces.Dict
-        ), f"""The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict` 
-        observation space."""
+        ), """The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict`
+         observation space."""
 
         for space in env.observation_space.spaces.values():
             assert isinstance(
                 space, gym.spaces.Box
-            ), f"""All spaces in Dict observation space must be a `gym.spaces.Box`."""
+            ), "All spaces in Dict observation space must be a `gym.spaces.Box`."
 
         super().__init__(env)
 
@@ -532,13 +519,11 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
             new_obs[k] = new_v
 
         # check that new observation is in bounds and ID key with problem
-        if self.observation_space.contains(new_obs) == False:
+        if self.observation_space.contains(new_obs) is False:
             contains_report = checkDictSpaceContains(
                 self.observation_space, new_obs
             )
-            bad_keys = not_contained = [
-                k for (k, v) in contains_report.items() if v == False
-            ]
+            bad_keys = [k for (k, v) in contains_report.items() if v is False]
             raise Exception(
                 f"Observation not in observation space. Check keys: \n {bad_keys}"
             )
