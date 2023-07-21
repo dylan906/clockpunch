@@ -106,6 +106,80 @@ class FloatObs(gym.ObservationWrapper):
         return obs_new
 
 
+# %% NestItems
+class NestItems(gym.ObservationWrapper):
+    """Nest item(s) in a Dict observation space within a Dict."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        new_key: Any = None,
+        keys_to_nest: list = None,
+    ):
+        """Wrap environment with NestItems ObservationWrapper.
+
+        Args:
+            env (gym.Env): Must have a Dict observation space.
+            new_key (Any, optional): The name of the new item that will be added
+                to the top level of the observation space. Defaults to "new_key".
+            keys_to_nest (list, optional): Keys of items in unwrapped observation
+                space that will be combined into a Dict space under new_key. If
+                None, all items in observation space will be nested under single
+                item. Defaults to None.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), "Environment observation space is not a Dict."
+
+        if keys_to_nest is None:
+            # default to nesting all items
+            keys_to_nest = env.observation_space.spaces.keys()
+
+        assert all(
+            [k in env.observation_space.spaces.keys() for k in keys_to_nest]
+        ), "All entries in keys_to_nest must be in observation space."
+        self.keys_to_nest = keys_to_nest
+
+        if new_key is None:
+            new_key = "new_key"
+        self.new_key = new_key
+
+        nested_spaces = {
+            k: env.observation_space.spaces[k] for k in keys_to_nest
+        }
+
+        unnested_spaces = {}
+        for k, v in env.observation_space.items():
+            if k not in keys_to_nest:
+                unnested_spaces[k] = v
+
+        self.observation_space = Dict(
+            {self.new_key: Dict(nested_spaces), **unnested_spaces}
+        )
+
+    def observation(self, obs: dict) -> dict:
+        """Nest item(s) from obs into a new item, leave other items at top.
+
+        Args:
+            obs (dict): Must be a Dict.
+
+        Returns:
+            dict: One or more items from unwrapped observation will be nested under
+                a single item, with key specified on class instantiation.
+        """
+        nested_obs = {}
+        unnested_obs = {}
+        for k, v in obs.items():
+            if k in self.keys_to_nest:
+                nested_obs[k] = v
+            else:
+                unnested_obs[k] = v
+
+        new_obs = {self.new_key: {**nested_obs}, **unnested_obs}
+
+        return new_obs
+
+
 # %% Wrapper for action mask
 class ActionMask(gym.ObservationWrapper):
     """Mask invalid actions based on estimated sensor-target visibility.

@@ -28,6 +28,7 @@ from punchclock.environment.wrappers import (
     LinScaleDictObs,
     MakeDict,
     MinMaxScaleDictObs,
+    NestItems,
     SelectiveDictObsWrapper,
     SplitArrayObs,
     SumArrayWrapper,
@@ -128,6 +129,21 @@ print(
     f"wrapped obs in wrapped obs space? "
     f"{env_float.observation_space.contains(obs_float)}"
 )
+# %% Test NestItems
+print("Test NestItems...")
+env_prenest = RandomEnv(
+    {
+        "observation_space": Dict(
+            {"a": MultiBinary(3), "b": Box(0, 1), "c": Discrete(4)}
+        )
+    }
+)
+env_postnest = NestItems(
+    env=env_prenest, new_key="top_level", keys_to_nest=["a", "c"]
+)
+obs_nested = env_postnest.observation(env_prenest.observation_space.sample())
+assert env_postnest.observation_space.contains(obs_nested)
+
 # %% Test ActionMask wrapper
 print("\nTest ActionMask...")
 env.reset()
