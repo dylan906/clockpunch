@@ -20,6 +20,7 @@ from punchclock.environment.env import SSAScheduler
 from punchclock.environment.env_parameters import SSASchedulerParams
 from punchclock.environment.wrappers import (
     ActionMask,
+    ActionMaskv2,
     CustodyWrapper,
     FlatDict,
     FloatObs,
@@ -156,6 +157,20 @@ print(f"obs['action_mask'] = {obs['action_mask']}")
 print(
     f"obs in observation_space: {env_masked_off.observation_space.contains(obs)}"
 )
+# %% Test ActionMaskv2
+print("\nTest ActionMaskv2...")
+env_premask = RandomEnv(
+    {
+        "observation_space": Dict(
+            {"a": MultiBinary(2), "b": Box(0, 1, shape=(2, 3))}
+        )
+    }
+)
+env_postmask = ActionMaskv2(env=env_premask, key="a")
+obs_mask = env_postmask.observation(env_postmask.observation_space.sample())
+print(f"pre-mask obs space = {env_premask.observation_space}")
+print(f"post-mask obs space = {env_postmask.observation_space}")
+assert env_postmask.observation_space.contains(obs_mask)
 
 # %% Test IntersectMask
 print("\nTest IntersectMask...")

@@ -195,6 +195,69 @@ class ActionMask(gym.ObservationWrapper):
         return obs_new
 
 
+class ActionMaskv2(gym.ObservationWrapper):
+    """Add a new item to a Dict observation space called "mask".
+
+    New item is the existing (unwrapped) item provided on instantiation. The copied
+        item must be a MultiBinary space.
+
+    Example:
+        masker = ActionMaskv2(env, key="a")
+
+        unwrapped_obs = {
+            "a": MultiBinary(2),
+            "b": Box()
+        }
+
+        wrapped_obs = {
+            "a": MultiBinary(2),
+            "b": Box(),
+            "mask": MultiBinary(2)
+        }
+
+    """
+
+    def __init__(self, env: gym.Env, key: Any):
+        """Wrap env observation space.
+
+        Args:
+            env (gym.Env): Must have gym.Dict observation space.
+            key (Any): A key in unwrapped observation space.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), "Environment observation space is not a Dict."
+        assert (
+            key in env.observation_space.spaces
+        ), f"{key} not in env.observation_space.spaces."
+        assert isinstance(
+            env.observation_space.spaces[key], (MultiBinary)
+        ), f"observation_space[{key}] must be MultiBinary."
+
+        super().__init__(env)
+        self.key = key
+        self.observation_space = Dict(
+            {
+                **env.observation_space.spaces,
+                "mask": env.observation_space.spaces[key],
+            }
+        )
+
+    def observation(self, obs: dict) -> dict:
+        """Add "mask" to existing keys of obs that is a copy of another item.
+
+        Args:
+            obs (dict): Must contain self.key.
+
+        Returns:
+            dict: Same as input, but with appended item "mask", which is a copy
+                of another item in obs, as specified on class instantiation.
+        """
+        new_obs = deepcopy(obs)
+        new_obs.update({"mask": obs[self.key]})
+        return new_obs
+
+
 class IntersectMask(gym.ObservationWrapper):
     """Layer the unwrapped action mask with another mask from the obs space.
 
