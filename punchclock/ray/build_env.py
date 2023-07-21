@@ -19,8 +19,10 @@ from punchclock.common.utilities import array2List
 from punchclock.environment.env import SSAScheduler, SSASchedulerParams
 from punchclock.environment.wrappers import (
     ActionMask,
+    CustodyWrapper,
     FlatDict,
     FloatObs,
+    IntersectMask,
     LinScaleDictObs,
     MinMaxScaleDictObs,
     SplitArrayObs,
@@ -138,6 +140,8 @@ def buildEnv(env_config: dict) -> gym.Env:
         "rescale_dict_obs": LinScaleDictObs,
         "minmaxscale_dict_obs": MinMaxScaleDictObs,
         "splitarray_obs": SplitArrayObs,
+        "custody": CustodyWrapper,
+        "intersect_mask": IntersectMask,
     }
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
