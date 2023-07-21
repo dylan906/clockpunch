@@ -7,6 +7,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
+from typing import Any
 
 # Third Party Imports
 import gymnasium as gym
@@ -865,28 +866,36 @@ class CustodyWrapper(gym.ObservationWrapper):
     matrix diagonals for the n-th target.
     """
 
-    def __init__(self, env: gym.Env, config: dict):
+    def __init__(self, env: gym.Env, key: Any, config: dict):
         """Wrap environment with CustodyWrapper observation space wrapper.
 
         Args:
-            env (gym.Env): Must be Dict with "est_cov" value corresponding to estimated
-                covariance diagonals. Estimated covariance must be (6, N) Box
-                space.
-            config (dict): See CustodyTracker for details.
+            env (gym.Env): Must have a Dict observation space with key value
+                corresponding to covariance diagonals.
+            key (Any): A key contained in the observation space. Key's corresponding
+                value must be a (6, N) Box space.
+            config (dict): See CustodyTracker for details. The wrapper derives
+                most of the args to use in CustodyTracker. The only CustodyTracker
+                arg that needs to be provided in config is the arg to
+                CustodyTracker(config).
         """
         # Type and shape checking
         assert (
-            "est_cov" in env.observation_space.spaces
-        ), "est_cov must be in env.observation_space to use wrapper."
+            key in env.observation_space.spaces
+        ), f"{key} must be in env.observation_space to use wrapper."
+        assert isinstance(
+            env.observation_space.spaces[key], Box
+        ), f"{key} must be a gym.Box space."
         assert (
-            len(env.observation_space.spaces["est_cov"].shape) == 2
-        ), "est_cov should be a 2d space."
+            len(env.observation_space.spaces[key].shape) == 2
+        ), f"{key} should be a 2d space."
         assert (
-            env.observation_space.spaces["est_cov"].shape[0] == 6
-        ), "The first dimension of est_cov should be 6."
+            env.observation_space.spaces[key].shape[0] == 6
+        ), f"The first dimension of {key} should be 6."
 
         # make wrapper
         super().__init__(env)
+        self.key = key
         num_targets = env.num_targets
         target_names = env.target_ids
         self.custody_tracker = CustodyTracker(
@@ -904,7 +913,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         """Convert unwrapped observation to wrapped observation.
 
         Args:
-            obs (OrderedDict): Must have "est_cov" as item.
+            obs (OrderedDict): Must have self.key as item.
 
         Returns:
             dict: Same as input dict, but with "custody" item appended. Custody
@@ -912,7 +921,7 @@ class CustodyWrapper(gym.ObservationWrapper):
                 custody.
         """
         new_obs = deepcopy(obs)
-        est_cov2d = obs["est_cov"]
+        est_cov2d = obs[self.key]
         est_cov3d = self.covFlatTo3d(est_cov2d)
         # custody_tracker outputs custody status as a list of bools; convert to
         # a 1d array of ints. Use int8 for dtype-> this is the default dtype of

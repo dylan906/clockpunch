@@ -183,17 +183,21 @@ env_deep_dict = RandomEnv(
             {
                 "a": gym.spaces.Dict(
                     {
-                        "aa": gym.spaces.Box(0, 1, shape=[2, 3]),
-                        "ab": gym.spaces.MultiDiscrete([1, 1, 1]),
+                        "aa": gym.spaces.Box(0, 1, shape=[2, 3], dtype=float),
+                        "ab": gym.spaces.Box(0, 1, shape=[2, 3], dtype=int),
+                        "ac": gym.spaces.MultiDiscrete([1, 1, 1]),
                     }
                 ),
-                "b": gym.spaces.MultiDiscrete([2, 3, 2]),
+                "b": gym.spaces.Box(0, 1, shape=[2, 3], dtype=int),
+                "c": gym.spaces.MultiDiscrete([2, 3, 2]),
             }
         ),
         "action_space": gym.spaces.MultiDiscrete([3, 4, 3]),
     }
 )
 env_flat = FlatDict(env=env_deep_dict)
+print(f"pre-flattend obs space: {env_deep_dict.observation_space}")
+print(f"flattend obs space: {env_flat.observation_space}")
 
 [obs, _, _, _, _] = env_flat.step(act_sample)
 print(f"post-step obs = {obs}")
@@ -314,6 +318,7 @@ print(f"wrapped obs space = {sdow.observation_space['est_cov']}")
 print("\nTest CustodyWrapper...")
 cw = CustodyWrapper(
     env=env,
+    key="est_cov",
     config={
         "func": "max_pos_std",
         "threshold": 5,
