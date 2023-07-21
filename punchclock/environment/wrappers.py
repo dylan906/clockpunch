@@ -195,14 +195,13 @@ class ActionMask(gym.ObservationWrapper):
         return obs_new
 
 
-class ActionMaskv2(gym.ObservationWrapper):
-    """Add a new item to a Dict observation space called "mask".
+class CopyObsItem(gym.ObservationWrapper):
+    """Copy an existing item in a Dict observation space to a new item.
 
-    New item is the existing (unwrapped) item provided on instantiation. The copied
-        item must be a MultiBinary space.
+    New item is the existing (unwrapped) item provided on instantiation.
 
     Example:
-        masker = ActionMaskv2(env, key="a")
+        masker = CopyObsItem(env, key="a", copy_key="new_a")
 
         unwrapped_obs = {
             "a": MultiBinary(2),
@@ -212,49 +211,51 @@ class ActionMaskv2(gym.ObservationWrapper):
         wrapped_obs = {
             "a": MultiBinary(2),
             "b": Box(),
-            "mask": MultiBinary(2)
+            "new_a": MultiBinary(2)
         }
 
     """
 
-    def __init__(self, env: gym.Env, key: Any):
+    def __init__(self, env: gym.Env, key: Any, copy_key: str = None):
         """Wrap env observation space.
 
         Args:
             env (gym.Env): Must have gym.Dict observation space.
             key (Any): A key in unwrapped observation space.
+            copy_key (str, optional): Override new mask item key. Defaults
+                behavior is to append "_copy".
         """
+        if copy_key is None:
+            self.copy_key = str(key) + "_copy"
+
         assert isinstance(
             env.observation_space, Dict
         ), "Environment observation space is not a Dict."
         assert (
             key in env.observation_space.spaces
         ), f"{key} not in env.observation_space.spaces."
-        assert isinstance(
-            env.observation_space.spaces[key], (MultiBinary)
-        ), f"observation_space[{key}] must be MultiBinary."
 
         super().__init__(env)
         self.key = key
         self.observation_space = Dict(
             {
                 **env.observation_space.spaces,
-                "mask": env.observation_space.spaces[key],
+                self.copy_key: env.observation_space.spaces[key],
             }
         )
 
     def observation(self, obs: dict) -> dict:
-        """Add "mask" to existing keys of obs that is a copy of another item.
+        """Add item to existing obs that is a copy of another item.
 
         Args:
             obs (dict): Must contain self.key.
 
         Returns:
-            dict: Same as input, but with appended item "mask", which is a copy
+            dict: Same as input, but with appended item self.copy_key, which is a copy
                 of another item in obs, as specified on class instantiation.
         """
         new_obs = deepcopy(obs)
-        new_obs.update({"mask": obs[self.key]})
+        new_obs.update({self.copy_key: obs[self.key]})
         return new_obs
 
 
