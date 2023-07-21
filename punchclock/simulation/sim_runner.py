@@ -28,11 +28,8 @@ from torch import Tensor, tensor
 # Punch Clock Imports
 from punchclock.common.agents import Agent
 from punchclock.environment.env import SSAScheduler
-from punchclock.environment.wrappers import (
-    ActionMask,
-    getNumWrappers,
-    getWrapperList,
-)
+from punchclock.environment.wrapper_utils import getNumWrappers, getWrapperList
+from punchclock.environment.wrappers import ActionMask
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 
 
