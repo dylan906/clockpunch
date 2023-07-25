@@ -1,5 +1,6 @@
 """Different wrapper configs for issue #7."""
 # Third Party Imports
+from gymnasium.spaces.utils import flatten_space
 from ray.rllib.algorithms import ppo
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
@@ -100,11 +101,28 @@ ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
 env = buildEnv(env_config)
 env.reset()
 env.step(env.action_space.sample())
+print(f"\nobs space = {env.observation_space}")
 
 # %% Build Algo
+num_inputs = flatten_space(env.observation_space.spaces["observations"]).shape[
+    0
+]
+print(f"num_inputs = {num_inputs}")
+num_outputs = flatten_space(env.action_space).shape[0]
+print(f"num_outputs = {num_outputs}")
+
 algo_config = (
     ppo.PPOConfig()
-    .training(model={"custom_model": "action_mask_model"})
+    .training(
+        model={
+            "custom_model": MyActionMaskModel,
+            "fcnet_hiddens": [8, 10],
+            # "custom_model_config": {
+            #     "num_inputs": num_inputs,
+            #     "num_outputs": num_outputs,
+            # },
+        }
+    )
     .environment(
         env="my_env",
         env_config=env_config,
