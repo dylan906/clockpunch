@@ -29,7 +29,6 @@ from torch import Tensor, tensor
 from punchclock.common.agents import Agent
 from punchclock.environment.env import SSAScheduler
 from punchclock.environment.wrapper_utils import getNumWrappers, getWrapperList
-from punchclock.environment.wrappers import ActionMask
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 
 
@@ -38,9 +37,18 @@ class SimRunner:
     """Simulation runner for `SSAScheduler` environment.
 
     Environment must be wrapped by at least one wrapper. One of the wrappers must
-    be ActionMask, which may be placed anywhere in the stack of wrappers. If env
-    has only a single wrapper, it must be ActionMask. Top wrapper observation space
-    must be a Dict with "observations" and "action_mask" as keys.
+    be include an action mask, which may be placed anywhere in the stack of wrappers.
+    The structure for an action mask wrapper is defined below. If env has only a
+    single wrapper, it must be an action mask. Top wrapper observation space must
+    be a Dict with "observations" and "action_mask" as keys (an action mask wrapper).
+
+    Action mask wrapper requirements:
+        - Wrapper must be an observation space wrapper.
+        - Wrapped observation space must be in format:
+            env.observation_space = Dict({
+                "action_mask": Box(),
+                "observations": Dict()
+            })
 
     Works with RLLib policy or CustomPolicy.
     """
@@ -55,9 +63,9 @@ class SimRunner:
 
         Args:
             env_params (`SSAScheduler`): Must be wrapped. One of the wrappers must
-                be ActionMask. Observation space must be a gym.spaces.Dict. and
-                the keys "observations" and "action_mask". Base environment must
-                be SSAScheduler.
+                be be an action mask wrapper. Observation space must be a
+                gym.spaces.Dict. and the keys "observations" and "action_mask".
+                Base environment must be SSAScheduler.
             policy (`Union[RayPolicy, CustomPolicy]`): Can be either an Ray policy
                 or a CustomPolicy.
             max_steps (`int`): Number of steps to take in simulation. Can be greater
@@ -128,7 +136,7 @@ class SimRunner:
 
         Args:
             stop_at_mask (`bool`, optional): Set to True to return observation
-                from ActionMask wrapper, regardless of any wrappers above ActionMask.
+                from action mask wrapper, regardless of any wrappers above it.
                 Defaults to False.
 
         """
@@ -153,10 +161,10 @@ class SimRunner:
                     },
                 )
                 if stop_at_mask is True:
-                    # Break for loop if at ActionMask wrapper, skip any higher
+                    # Break for loop if at action mask wrapper, skip any higher
                     # levels of wrappers.
                     intermediate_env = eval(cmd_no_obs, {"self": self})
-                    if isinstance(intermediate_env, ActionMask):
+                    if self._checkEnvWrapperForMask(intermediate_env) is True:
                         break
 
             obs = OrderedDict(obs)
@@ -167,6 +175,42 @@ class SimRunner:
         assert isinstance(obs, OrderedDict)
 
         return obs
+
+    def _checkEnvWrapperForMask(self, env: gym.Env) -> bool:
+        """Check if env has an observation space structured like below.
+
+        env.observation_space = Dict({
+            "action_mask": Any,
+            "observations": Dict()
+        })
+
+        Args:
+            env (gym.Env): A gym environment.
+
+        Returns:
+            bool: Returns True if env.observation_space matches above structure.
+        """
+        if (
+            isinstance(env.observation_space, gym.spaces.Dict)
+            and ("action_mask" in env.observation_space.spaces)
+            and ("observations" in env.observation_space.spaces)
+            and (
+                isinstance(
+                    env.observation_space.spaces["action_mask"], gym.spaces.Box
+                )
+            )
+            and (
+                isinstance(
+                    env.observation_space.spaces["observations"],
+                    gym.spaces.Dict,
+                )
+            )
+        ):
+            checkwrap = True
+        else:
+            checkwrap = False
+
+        return checkwrap
 
     def _getInfo(self):
         """Abstraction for getting info from wrapped or bare environment."""
