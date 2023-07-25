@@ -144,6 +144,8 @@ env_postnest = NestObsItems(
 obs_nested = env_postnest.observation(env_prenest.observation_space.sample())
 assert env_postnest.observation_space.contains(obs_nested)
 
+env_postnest.reset()
+
 # %% Test ActionMask wrapper
 print("\nTest ActionMask...")
 env.reset()

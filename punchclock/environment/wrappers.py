@@ -158,6 +158,8 @@ class NestObsItems(gym.ObservationWrapper):
         ), "All entries in keys_to_nest must be in observation space."
         self.keys_to_nest = keys_to_nest
 
+        super().__init__(env)
+
         if new_key is None:
             new_key = "new_key"
         self.new_key = new_key
