@@ -293,7 +293,7 @@ class CopyObsItem(gym.ObservationWrapper):
     New item is the existing (unwrapped) item provided on instantiation.
 
     Example:
-        copy_env = CopyObsItem(env, key="a", copy_key="new_a")
+        copy_env = CopyObsItem(env, key="a", new_key="new_a")
 
         unwrapped_obs = {
             "a": MultiBinary(2),
@@ -308,17 +308,17 @@ class CopyObsItem(gym.ObservationWrapper):
 
     """
 
-    def __init__(self, env: gym.Env, key: Any, copy_key: str = None):
+    def __init__(self, env: gym.Env, key: Any, new_key: str = None):
         """Wrap env observation space.
 
         Args:
             env (gym.Env): Must have gym.Dict observation space.
             key (Any): A key in unwrapped observation space.
-            copy_key (str, optional): Override new mask item key. Defaults
+            new_key (str, optional): Override new mask item key. Defaults
                 behavior is to append "_copy".
         """
-        if copy_key is None:
-            self.copy_key = str(key) + "_copy"
+        if new_key is None:
+            self.new_key = str(key) + "_copy"
 
         assert isinstance(
             env.observation_space, Dict
@@ -332,7 +332,7 @@ class CopyObsItem(gym.ObservationWrapper):
         self.observation_space = Dict(
             {
                 **env.observation_space.spaces,
-                self.copy_key: env.observation_space.spaces[key],
+                self.new_key: env.observation_space.spaces[key],
             }
         )
 
@@ -343,11 +343,11 @@ class CopyObsItem(gym.ObservationWrapper):
             obs (dict): Must contain self.key.
 
         Returns:
-            dict: Same as input, but with appended item self.copy_key, which is a copy
+            dict: Same as input, but with appended item self.new_key, which is a copy
                 of another item in obs, as specified on class instantiation.
         """
         new_obs = deepcopy(obs)
-        new_obs.update({self.copy_key: obs[self.key]})
+        new_obs.update({self.new_key: obs[self.key]})
         return new_obs
 
 
