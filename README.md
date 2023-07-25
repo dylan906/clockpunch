@@ -3,8 +3,8 @@
 ## Installation
 
 - Recommend installing into clean Python environment with `$ conda create --name [my_env] python=3.8.5`
-- To install, enter `$ pip install -e .`
-- To install optional developer dependencies, enter `$ pip install -e .[dev]`
+- To install: `$ pip install -e .`
+- To install optional developer dependencies: `$ pip install -e .[dev]`
 - The above steps seem to not work with installing Ray, so you will have to install Ray modules manually with:
   - `pip install ray[tune]`
   - `pip install ray[rllib]`
