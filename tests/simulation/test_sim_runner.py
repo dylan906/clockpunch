@@ -19,7 +19,12 @@ from ray.tune.registry import register_env
 
 # Punch Clock Imports
 from punchclock.environment.wrapper_utils import getWrapperList
-from punchclock.environment.wrappers import ActionMask, FlatDict
+from punchclock.environment.wrappers import (
+    ActionMask,
+    CopyObsItem,
+    FlatDict,
+    NestObsItems,
+)
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
 from punchclock.policies.random_policy import RandomPolicy
 from punchclock.ray.build_env import buildEnv
@@ -152,8 +157,43 @@ config = {
     "constructor_params": {
         "wrappers": [
             {
-                "wrapper": "action_mask",
-            }
+                "wrapper": "filter_observation",
+                "wrapper_config": {
+                    "filter_keys": [
+                        "eci_state",
+                        "est_cov",
+                        "num_tasked",
+                        "num_windows_left",
+                        "obs_staleness",
+                        "vis_map_est",
+                    ]
+                },
+            },
+            {
+                "wrapper": "copy_obs_items",
+                "wrapper_config": {
+                    "key": "vis_map_est",
+                    "new_key": "action_mask",
+                },
+            },
+            {
+                "wrapper": "vis_map_action_mask",
+                "wrapper_config": {"vis_map_key": "action_mask"},
+            },
+            {
+                "wrapper": "nest_obs_items",
+                "wrapper_config": {
+                    "new_key": "observations",
+                    "keys_to_nest": [
+                        "eci_state",
+                        "est_cov",
+                        "num_tasked",
+                        "num_windows_left",
+                        "obs_staleness",
+                        "vis_map_est",
+                    ],
+                },
+            },
         ],
     },
 }
