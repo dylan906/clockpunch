@@ -2,6 +2,7 @@
 # Third Party Imports
 from gymnasium.spaces.utils import flatten_space
 from ray.rllib.algorithms import ppo
+from ray.rllib.examples.models.action_mask_model import TorchActionMaskModel
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
@@ -76,6 +77,7 @@ env_config = {
     },
     "time_step": 100,
     "constructor_params": {
+        # Comment out individual or combinations of wrappers to test
         "wrappers": [
             {
                 "wrapper": "filter_observation",
@@ -90,13 +92,7 @@ env_config = {
 # %% Register env and model
 register_env("my_env", buildEnv)
 ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
-# %% Modify wrappers
-# env_config["constructor_params"]["wrappers"] = [
-#     {
-#         "wrapper": "filter_observation",
-#         "wrapper_config": {"filter_keys": ["vis_map_est"]},
-#     },
-# ]
+
 # %% Build env, check that it works
 env = buildEnv(env_config)
 env.reset()
@@ -104,19 +100,19 @@ env.step(env.action_space.sample())
 print(f"\nobs space = {env.observation_space}")
 
 # %% Build Algo
-num_inputs = flatten_space(env.observation_space.spaces["observations"]).shape[
-    0
-]
-print(f"num_inputs = {num_inputs}")
-num_outputs = flatten_space(env.action_space).shape[0]
-print(f"num_outputs = {num_outputs}")
+# num_inputs = flatten_space(env.observation_space.spaces["observations"]).shape[
+#     0
+# ]
+# print(f"num_inputs = {num_inputs}")
+# num_outputs = flatten_space(env.action_space).shape[0]
+# print(f"num_outputs = {num_outputs}")
 
 algo_config = (
     ppo.PPOConfig()
     .training(
         model={
             "custom_model": MyActionMaskModel,
-            "fcnet_hiddens": [8, 10],
+            # "fcnet_hiddens": [8, 10],
             # "custom_model_config": {
             #     "num_inputs": num_inputs,
             #     "num_outputs": num_outputs,
