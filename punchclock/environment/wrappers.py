@@ -318,7 +318,8 @@ class CopyObsItem(gym.ObservationWrapper):
                 behavior is to append "_copy".
         """
         if new_key is None:
-            self.new_key = str(key) + "_copy"
+            new_key = str(key) + "_copy"
+        self.new_key = new_key
 
         assert isinstance(
             env.observation_space, Dict
