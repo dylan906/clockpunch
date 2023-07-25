@@ -78,9 +78,6 @@ class SimRunner:
             env.unwrapped, SSAScheduler
         ), "Base environment must be SSAScheduler."
         assert (
-            ActionMask in self.wrappers
-        ), "Wrapped environment must have ActionMask as one of the wrappers."
-        assert (
             "observations" in env.observation_space.spaces
         ), "Environment observation space must contain 'observations' as a key."
         assert (
