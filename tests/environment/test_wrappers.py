@@ -7,7 +7,7 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, Dict, Discrete, MultiBinary
+from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy import array, diag, float32, inf, int64, sum
 from ray.rllib.examples.env.random_env import RandomEnv
@@ -32,6 +32,7 @@ from punchclock.environment.wrappers import (
     SelectiveDictObsWrapper,
     SplitArrayObs,
     SumArrayWrapper,
+    VisMap2ActionMask,
 )
 
 # %% Build environment
@@ -185,7 +186,24 @@ env_premask = RandomEnv(
     }
 )
 env_postmask = CopyObsItem(env=env_premask, key="a")
-obs_mask = env_postmask.observation(env_postmask.observation_space.sample())
+obs_mask = env_postmask.observation(env_premask.observation_space.sample())
+print(f"pre-mask obs space = {env_premask.observation_space}")
+print(f"post-mask obs space = {env_postmask.observation_space}")
+assert env_postmask.observation_space.contains(obs_mask)
+
+# %% Test VisMap2ActionMask
+print("\nTest VisMap2ActionMask...")
+env_premask = RandomEnv(
+    {
+        "observation_space": Dict({"a": Box(0, 1, shape=(2, 3))}),
+        "action_space": MultiDiscrete([3, 3, 3]),
+    }
+)
+env_postmask = VisMap2ActionMask(
+    env_premask, vis_map_key="a", renamed_key="a_mask"
+)
+unmasked_obs = env_premask.observation_space.sample()
+obs_mask = env_postmask.observation(unmasked_obs)
 print(f"pre-mask obs space = {env_premask.observation_space}")
 print(f"post-mask obs space = {env_postmask.observation_space}")
 assert env_postmask.observation_space.contains(obs_mask)

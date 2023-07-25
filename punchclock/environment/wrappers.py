@@ -11,7 +11,13 @@ from typing import Any
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, Dict, MultiBinary, flatten_space
+from gymnasium.spaces import (
+    Box,
+    Dict,
+    MultiBinary,
+    MultiDiscrete,
+    flatten_space,
+)
 from gymnasium.spaces.utils import flatten
 from numpy import (
     all,
@@ -352,6 +358,119 @@ class CopyObsItem(gym.ObservationWrapper):
         new_obs = deepcopy(obs)
         new_obs.update({self.new_key: obs[self.key]})
         return new_obs
+
+
+class VisMap2ActionMask(gym.ObservationWrapper):
+    """Convert visibility map within an observation space into an action mask.
+
+    Append a row of 1's to the bottom of a visibility map, then flatten. The modified
+    item is the same as the input item other than the appended row of 1's (unless
+    action_mask_on == False).
+
+    Set action_mask_on == False to make the modified observation space item always
+    an array of 1s.
+
+    Example (B = 2):
+        env.observation_space = {
+            "vis_map": Box(0, 1, shape=(A, A))
+        }
+
+        env.action_space = MultiDiscrete([A+1, A+1])
+
+        wrapped_env = VisMap2ActionMask(env,
+            vis_map_key="vis_map",
+            renamed_key="action_mask")
+
+        wrapped_env.observation_space = {
+            "action_mask": Box(0, 1, shape=(B*(A+1),))
+        }
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        vis_map_key: str,
+        renamed_key: str = None,
+        action_mask_on: bool = True,
+    ):
+        """Wrap environment with VisMap2ActionMask.
+
+        Args:
+            env (gym.Env): Must have:
+                - Dict observation space
+                - MultiDiscrete action space
+                - vis_map_key must be in observation space
+                - observation_space[vis_map_key] must be a Box
+                - Number of columns in observation_space[vis_map_key] must be
+                    same as length of action space.
+            vis_map_key (str): An item in observation space.
+            renamed_key (str, optional): Optionally rename vis_map_key in wrapped
+                observation space. If None, key will not be changed. Defaults to
+                None.
+            action_mask_on (bool, optional): If False, all values in wrapped
+                observation[renamed_key] will be 1. Otherwise, will be copies of
+                vis_map_key. Defaults to True.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gym.spaces.Dict."
+        assert (
+            vis_map_key in env.observation_space.spaces
+        ), "vis_map_key must be in observation space."
+        assert isinstance(
+            env.observation_space.spaces[vis_map_key], Box
+        ), "observation_space[vis_map_key] must be a gym.spaces.Box."
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "env.action_space must be a gym.spaces.MultiDiscrete."
+
+        vis_map_shape = env.observation_space.spaces[vis_map_key].shape
+        assert vis_map_shape[1] == len(
+            env.action_space.nvec
+        ), """Shape mismatch between action space and selected item in observation
+        space. The number of columns in observation_space[vis_map_key] must be equal
+        to length of action_space.nvec."""
+
+        super().__init__(env)
+
+        if renamed_key is None:
+            renamed_key = vis_map_key
+
+        self.vis_map_key = vis_map_key
+        self.renamed_key = renamed_key
+        self.action_mask_on = action_mask_on
+        self.mask_space = flatten_space(self.action_space)
+
+        new_obs_space = {**env.observation_space}
+        del new_obs_space[vis_map_key]
+        new_obs_space[renamed_key] = self.mask_space
+        self.observation_space = Dict(new_obs_space)
+
+    def observation(self, obs: dict) -> dict:
+        """Generate wrapped observation.
+
+        Args:
+            obs (dict): Must have self.vis_map_key in keys.
+
+        Returns:
+            dict: Same as input obs except for modified renamed_key.
+        """
+        mask = obs[self.vis_map_key]
+        m = mask.shape[1]
+        mask = append(mask, ones(shape=(1, m), dtype=int64), axis=0)
+        mask_flat = gym.spaces.flatten(self.mask_space, mask.transpose())
+
+        if self.action_mask_on is True:
+            obs_mask = mask_flat
+        else:
+            # Get pass-thru action mask (no actions are masked)
+            obs_mask = ones(shape=mask_flat.shape, dtype=int64)
+
+        obs_new = {**obs}
+        del obs_new[self.vis_map_key]
+        obs_new[self.renamed_key] = obs_mask
+
+        return obs_new
 
 
 class IntersectMask(gym.ObservationWrapper):
