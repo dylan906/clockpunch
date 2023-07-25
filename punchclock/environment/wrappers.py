@@ -108,7 +108,25 @@ class FloatObs(gym.ObservationWrapper):
 
 # %% NestItems
 class NestItems(gym.ObservationWrapper):
-    """Nest item(s) in a Dict observation space within a Dict."""
+    """Nest item(s) in a Dict observation space within a Dict.
+
+    Example:
+        nest_env = NestItems(unwrapped_env, new_key="foo", keys_to_nest=["a", "c"])
+
+        unwrapped_obs_space = Dict({
+            "a": Discrete(3),
+            "b": Discrete(2),
+            "c": Discrete(1)
+        })
+
+        wrapped_obs_space = Dict({
+            "b": Discrete(2),
+            "foo": Dict({
+                "a": Discrete(3),
+                "c": Discrete(1),
+            })
+        })
+    """
 
     def __init__(
         self,
@@ -275,7 +293,7 @@ class CopyObsItem(gym.ObservationWrapper):
     New item is the existing (unwrapped) item provided on instantiation.
 
     Example:
-        masker = CopyObsItem(env, key="a", copy_key="new_a")
+        copy_env = CopyObsItem(env, key="a", copy_key="new_a")
 
         unwrapped_obs = {
             "a": MultiBinary(2),
