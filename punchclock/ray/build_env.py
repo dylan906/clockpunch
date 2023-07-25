@@ -26,7 +26,7 @@ from punchclock.environment.wrappers import (
     IntersectMask,
     LinScaleDictObs,
     MinMaxScaleDictObs,
-    NestItems,
+    NestObsItems,
     SplitArrayObs,
 )
 
@@ -144,7 +144,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "splitarray_obs": SplitArrayObs,
         "custody": CustodyWrapper,
         "intersect_mask": IntersectMask,
-        "nest_items": NestItems,
+        "nest_obs_items": NestObsItems,
         "copy_obs_items": CopyObsItem,
     }
 

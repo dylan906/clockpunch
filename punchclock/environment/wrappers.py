@@ -106,12 +106,12 @@ class FloatObs(gym.ObservationWrapper):
         return obs_new
 
 
-# %% NestItems
-class NestItems(gym.ObservationWrapper):
+# %% NestObsItems
+class NestObsItems(gym.ObservationWrapper):
     """Nest item(s) in a Dict observation space within a Dict.
 
     Example:
-        nest_env = NestItems(unwrapped_env, new_key="foo", keys_to_nest=["a", "c"])
+        nest_env = NestObsItems(unwrapped_env, new_key="foo", keys_to_nest=["a", "c"])
 
         unwrapped_obs_space = Dict({
             "a": Discrete(3),
@@ -134,7 +134,7 @@ class NestItems(gym.ObservationWrapper):
         new_key: Any = None,
         keys_to_nest: list = None,
     ):
-        """Wrap environment with NestItems ObservationWrapper.
+        """Wrap environment with NestObsItems ObservationWrapper.
 
         Args:
             env (gym.Env): Must have a Dict observation space.
