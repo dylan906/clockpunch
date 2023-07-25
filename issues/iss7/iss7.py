@@ -1,11 +1,13 @@
 """Issue 7 reproduction script."""
 # %% Imports
+
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiDiscrete
 from ray.air import RunConfig
 from ray.rllib.algorithms import ppo
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
+from ray.tune import Tuner
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
@@ -37,6 +39,8 @@ env_random = RandomEnv(
         "action_space": MultiDiscrete([10]),
     }
 )
+env_random.step(env_random.action_space.sample())
+
 algo_config_rand = (
     ppo.PPOConfig()
     .training(
@@ -57,9 +61,17 @@ results = algo_random.training_step()
 print(f"random env results : \n{results}")
 
 # %% Custom Env
+# check environment functionality
+env = buildEnv(config["param_space"]["env_config"])
+env.reset()
+env.step(env.action_space.sample())
+
+# build algo w/ custom env
 algo_config_customenv = (
     ppo.PPOConfig()
-    .training(model={**config["param_space"]["model"]})
+    .training(
+        model={**config["param_space"]["model"]},
+    )
     .environment(
         env="my_env",
         env_config=config["param_space"]["env_config"],
@@ -74,16 +86,15 @@ try:
 except Exception as e:
     print(e)
 
-# env = buildEnv(config["param_space"]["env_config"])
-# obs = env.observation_space.sample()
-# action = algo.compute_single_action(obs)
+obs = env.observation_space.sample()
+action = algo_customenv.compute_single_action(obs)
 
-# tuner = Tuner(
-#     trainable="PPO",
-#     param_space=config["param_space"],
-#     run_config=run_config,
-#     tune_config=config["tune_config"],
-# )
-# tuner.fit()
+tuner = Tuner(
+    trainable="PPO",
+    param_space=config["param_space"],
+    run_config=run_config,
+    tune_config=config["tune_config"],
+)
+tuner.fit()
 # %% done
 print("done")
