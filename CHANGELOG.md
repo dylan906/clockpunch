@@ -11,6 +11,7 @@ I'm trying to get better about that.
 ### Added
 - Added MinMax wrapper that scales every entry in a gym.Dict observation space by sklearn.MinMaxScaler (#4).
 - Added some wrappers to help with array dimension handling and scaling (#5).
+- Added a wrapper to track target custody (#10).
 
 ### Changed
 - Changed a couple of low-level attribute names that shadowed `builtin` and appeared throughout repo (#9).
