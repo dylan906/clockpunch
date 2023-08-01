@@ -98,6 +98,7 @@ env = buildEnv(env_config)
 env.reset()
 env.step(env.action_space.sample())
 print(f"\nobs space = {env.observation_space}")
+print(f"action space = {env.action_space}")
 
 # %% Build Algo
 # num_inputs = flatten_space(env.observation_space.spaces["observations"]).shape[

@@ -44,7 +44,10 @@ env_random.step(env_random.action_space.sample())
 algo_config_rand = (
     ppo.PPOConfig()
     .training(
-        model={"custom_model": "action_mask_model", "fcnet_hiddens": [20, 30]},
+        model={
+            "custom_model": "action_mask_model",
+            # "fcnet_hiddens": [20, 30],
+        },
     )
     .environment(
         env=RandomEnv,
