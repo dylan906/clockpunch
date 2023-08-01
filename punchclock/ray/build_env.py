@@ -146,7 +146,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "custody": CustodyWrapper,
         "multiply_obs_items": MultiplyObsItems,
         "nest_obs_items": NestObsItems,
-        "copy_obs_items": CopyObsItem,
+        "copy_obs_item": CopyObsItem,
         "vis_map_action_mask": VisMap2ActionMask,
     }
 
