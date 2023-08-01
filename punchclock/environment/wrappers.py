@@ -247,10 +247,11 @@ class ActionMask(gym.ObservationWrapper):
         super().__init__(env)
         self.action_mask_on = action_mask_on
         self.mask_space = flatten_space(self.action_space)
+        # "action_mask" must go before "observations"
         self.observation_space = gym.spaces.Dict(
             {
-                "observations": env.observation_space,
                 "action_mask": self.mask_space,
+                "observations": env.observation_space,
             }
         )
 
@@ -285,10 +286,11 @@ class ActionMask(gym.ObservationWrapper):
             # Get pass-thru action mask (no actions are masked)
             obs_mask = ones(shape=mask_flat.shape, dtype=int64)
 
+        # "action_mask" must go before "observations"
         obs_new = OrderedDict(
             {
-                "observations": obs,
                 "action_mask": obs_mask,
+                "observations": obs,
             }
         )
 

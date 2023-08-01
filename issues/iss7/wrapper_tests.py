@@ -1,9 +1,8 @@
 """Different wrapper configs for issue #7."""
 # Third Party Imports
-from gymnasium.spaces.utils import flatten_space
 from ray.rllib.algorithms import ppo
-from ray.rllib.examples.models.action_mask_model import TorchActionMaskModel
 from ray.rllib.models import ModelCatalog
+from ray.rllib.utils import check_env
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
@@ -92,13 +91,13 @@ env_config = {
 # %% Register env and model
 register_env("my_env", buildEnv)
 ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
-
 # %% Build env, check that it works
 env = buildEnv(env_config)
+check_env(env)
 env.reset()
-env.step(env.action_space.sample())
+[obs, _, _, _, _] = env.step(env.action_space.sample())
 print(f"\nobs space = {env.observation_space}")
-print(f"action space = {env.action_space}")
+print(f"obs = {obs}")
 
 # %% Build Algo
 # num_inputs = flatten_space(env.observation_space.spaces["observations"]).shape[
