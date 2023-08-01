@@ -473,7 +473,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         return obs_new
 
 
-class IntersectMask(gym.ObservationWrapper):
+class MultiplyObsItems(gym.ObservationWrapper):
     """Element-by-element multiply 2 entries from a Dict observation space.
 
     Specify two keys in the unwrapped observation space. The values associated
@@ -484,7 +484,7 @@ class IntersectMask(gym.ObservationWrapper):
         first entry in keys.
     """
 
-    # """Wrap environment with IntersectMask ObservationWrapper."""
+    # """Wrap environment with MultiplyObsItems ObservationWrapper."""
     def __init__(self, env: gym.Env, keys: list, new_key: str = None):
         """Wrap environment observation space.
 

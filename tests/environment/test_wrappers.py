@@ -24,10 +24,10 @@ from punchclock.environment.wrappers import (
     CustodyWrapper,
     FlatDict,
     FloatObs,
-    IntersectMask,
     LinScaleDictObs,
     MakeDict,
     MinMaxScaleDictObs,
+    MultiplyObsItems,
     NestObsItems,
     SelectiveDictObsWrapper,
     SplitArrayObs,
@@ -208,8 +208,8 @@ print(f"pre-mask obs space = {env_premask.observation_space}")
 print(f"post-mask obs space = {env_postmask.observation_space}")
 assert env_postmask.observation_space.contains(obs_mask)
 
-# %% Test IntersectMask
-print("\nTest IntersectMask...")
+# %% Test MultiplyObsItems
+print("\nTest MultiplyObsItems...")
 env_randmask = RandomEnv(
     {
         "observation_space": gym.spaces.Dict(
@@ -220,7 +220,7 @@ env_randmask = RandomEnv(
         )
     }
 )
-env_doublemask = IntersectMask(env=env_randmask, keys=["a1", "a2"])
+env_doublemask = MultiplyObsItems(env=env_randmask, keys=["a1", "a2"])
 obs_randmask = env_randmask.observation_space.sample()
 obs_doublemask = env_doublemask.observation(obs=obs_randmask)
 # %% Test FlatDict
