@@ -15,6 +15,7 @@ I'm trying to get better about that.
 
 ### Changed
 - Changed a couple of low-level attribute names that shadowed `builtin` and appeared throughout repo (#9).
+- Refactored `IntersectMask` wrapper to more generic `MultiplyObsItems` (#14).
 
 ### Deprecated
 
