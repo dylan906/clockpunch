@@ -365,16 +365,14 @@ class CopyObsItem(gym.ObservationWrapper):
 class VisMap2ActionMask(gym.ObservationWrapper):
     """Convert visibility map within an observation space into an action mask.
 
-    Append a row of 1's to the bottom of a visibility map, then flatten. The modified
-    item is the same as the input item other than the appended row of 1's (unless
-    action_mask_on == False).
+    Append a row of 1's to the bottom of a visibility map, then flatten.
 
     Set action_mask_on == False to make the modified observation space item always
-    an array of 1s.
+    a flattened array of 1s.
 
     Example (B = 2):
         env.observation_space = {
-            "vis_map": Box(0, 1, shape=(A, A))
+            "vis_map": Box(0, 1, shape=(A, B))
         }
 
         env.action_space = MultiDiscrete([A+1, A+1])
