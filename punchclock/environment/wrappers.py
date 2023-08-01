@@ -751,11 +751,6 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         ), """The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict`
          observation space."""
 
-        for space in env.observation_space.spaces.values():
-            assert isinstance(
-                space, gym.spaces.Box
-            ), "All spaces in Dict observation space must be a `gym.spaces.Box`."
-
         super().__init__(env)
 
         # Update wrapper observation_shape. Set all lows/highs to 0/1.
@@ -763,8 +758,8 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         new_obs_space = {}
         for k, space in env.observation_space.spaces.items():
             new_space = Box(
-                low=zeros(space.low.shape),
-                high=ones(space.high.shape),
+                low=zeros(space.shape),
+                high=ones(space.shape),
                 shape=space.shape,
             )
             new_obs_space.update({k: new_space})
