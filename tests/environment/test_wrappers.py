@@ -214,15 +214,13 @@ env_randmask = RandomEnv(
     {
         "observation_space": gym.spaces.Dict(
             {
-                "observations": Dict(
-                    {"a_key": MultiBinary(4)},
-                ),
-                "action_mask": Box(0, 1, shape=(4,), dtype=int),
+                "a1": MultiBinary(4),
+                "a2": Box(0, 1, shape=(4,), dtype=int),
             }
         )
     }
 )
-env_doublemask = IntersectMask(env=env_randmask, key="a_key")
+env_doublemask = IntersectMask(env=env_randmask, keys=["a1", "a2"])
 obs_randmask = env_randmask.observation_space.sample()
 obs_doublemask = env_doublemask.observation(obs=obs_randmask)
 # %% Test FlatDict

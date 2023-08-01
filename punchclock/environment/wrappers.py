@@ -474,64 +474,67 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
 
 class IntersectMask(gym.ObservationWrapper):
-    """Layer the unwrapped action mask with another mask from the obs space.
+    """Element-by-element multiply 2 entries from a Dict observation space.
 
-    Specify a key from the unwrapped obs space that contains the new mask to layer
-        over observation_space.spaces["action_mask"]. The specified key value must
-        be a MultiBinary space of the same shape as "action_mask".
+    Specify two keys in the unwrapped observation space. The values associated
+        with the keys will be multiplied. Both values must be array-likes.
+
+    If specified, the multiplied array will be inserted as a new item in observation.
+        Otherwise the multiplied array replaced the value associated with the
+        first entry in keys.
     """
 
-    def __init__(self, env: gym.Env, key: str):
-        """Wrap environment with IntersectMask ObservationWrapper."""
+    # """Wrap environment with IntersectMask ObservationWrapper."""
+    def __init__(self, env: gym.Env, keys: list, new_key: str = None):
+        """Wrap environment observation space.
+
+        Args:
+            env (gym.Env): Gym environment.
+            keys (list): 2-long list of keys. Keys must be in env.observation_space.
+            new_key (str, optional): Key of new item in observation space where
+                return value will be placed. If None, the value of
+                observation_space[keys[0]] will be overridden. Defaults to None.
+        """
         assert isinstance(
             env.observation_space, Dict
         ), "Environment observation space is not a Dict."
+        assert len(keys) == 2, "keys must have length == 2."
+        for k in keys:
+            assert (
+                k in env.observation_space.spaces
+            ), f"'{k}' is not in env.observation_space."
+
+        shapes = [env.observation_space.spaces[k].shape for k in keys]
         assert (
-            "action_mask" in env.observation_space.spaces
-        ), "Environment observation space does not contain 'action_mask'."
+            shapes[0] == shapes[1]
+        ), f"""Shape of observation_space[{keys[0]}] and observation_space[{keys[1]}]
+        must be same."""
+
+        if new_key is None:
+            new_key = keys[0]
         assert (
-            "observations" in env.observation_space.spaces
-        ), "Environment observation space does not contain 'observations'."
-        assert (
-            key in env.observation_space.spaces["observations"].spaces
-        ), f"'{key}' is not in env.observation_space.spaces['observations'].spaces."
-        assert isinstance(
-            env.observation_space.spaces["observations"].spaces[key],
-            MultiBinary,
-        ), f"['observations']['{key}'] must be a gym.spaces.MultiBinary."
-        mask_shape = env.observation_space.spaces["action_mask"].shape
-        layeredmask_shape = (
-            env.observation_space.spaces["observations"].spaces[key].shape
-        )
-        assert (
-            mask_shape == layeredmask_shape
-        ), f"['observations']['{key}'] must be same shape as 'action_mask'"
+            new_key in env.observation_space.spaces
+        ), f"""{new_key} is not in env.observation_space."""
 
         super().__init__(env)
-        self.imask_key = key
+        self.keys = keys
+        self.new_key = new_key
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Pass unwrapped action mask through another, pre-specified, mask.
 
         Args:
-            obs (OrderedDict): Must be structured like
-                {
-                    "observations": {
-                        "key": binary_array1,
-                        ...
-                    }
-                    "action_mask": binary_array2,
-                }
+            obs (OrderedDict): Must contain keys defined at mask instantiation.
 
         Returns:
             OrderedDict: Same keys as obs.
         """
-        x_mask = obs["action_mask"]
-        y_mask = obs["observations"][self.imask_key]
+        x_mask = obs[self.keys[0]]
+        y_mask = obs[self.keys[1]]
         new_mask = multiply(x_mask, y_mask)
 
         new_obs = deepcopy(obs)
-        new_obs["action_mask"] = new_mask
+        new_obs[self.new_key] = new_mask
         return new_obs
 
 
