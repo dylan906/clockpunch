@@ -1195,95 +1195,108 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
 class CustodyWrapper(gym.ObservationWrapper):
     """Add 'custody' as an item to a Dict observation space.
 
-    Custody entry entry is a MultiBinary space with shape (N,), where N is the
-    number of targets. Number of targets is determined by shape of "est_cov"
-    in unwrapped observation space. Does not modify other items in observation
-    space, just adds "custody".
+    Custody entry is a MultiBinary space with shape (N,), where N is the
+    number of targets. Does not modify other items in observation
+    space, just adds "custody" to end of (ordered) dict.
 
-    Unwrapped observation space is required to have "est_cov" as an item, which
-    must be a Box space with shape == (6, N), where the column values are covariance
-    matrix diagonals for the n-th target.
+    Unwrapped observation space is required to have `key` as an item, which
+    must be a 2d Box space.
     """
 
-    def __init__(self, env: gym.Env, key: Any, config: dict):
+    def __init__(
+        self,
+        env: gym.Env,
+        key: Any,
+        num_targets: int,
+        config: dict,
+        target_names: list = None,
+    ):
         """Wrap environment with CustodyWrapper observation space wrapper.
 
         Args:
-            env (gym.Env): Must have a Dict observation space with key value
-                corresponding to covariance diagonals.
-            key (Any): A key contained in the observation space. Key's corresponding
-                value must be a (6, N) Box space.
-            config (dict): See CustodyTracker for details. The wrapper derives
-                most of the args to use in CustodyTracker. The only CustodyTracker
-                arg that needs to be provided in config is the arg to
-                CustodyTracker(config).
+            env (gym.Env): Must have a Dict observation space with key in it.
+            key (Any): A key contained in the observation space. The value corresponding
+                to this key must conform to interface expected in CustodyTracker
+                and config.
+            num_targets (int): Number of targets.
+            config (dict): See CustodyTracker for details.
+            target_names (list, optional): Target names. Used for debugging. Must
+                have length == num_targets. Defaults to None.
         """
-        # Type and shape checking
         assert (
             key in env.observation_space.spaces
         ), f"{key} must be in env.observation_space to use wrapper."
-        assert isinstance(
-            env.observation_space.spaces[key], Box
-        ), f"{key} must be a gym.Box space."
         assert (
-            len(env.observation_space.spaces[key].shape) == 2
-        ), f"{key} should be a 2d space."
-        assert (
-            env.observation_space.spaces[key].shape[0] == 6
-        ), f"The first dimension of {key} should be 6."
+            "custody" not in env.observation_space.spaces
+        ), "'custody' is already in env.observation_space."
+        if target_names is not None:
+            assert (
+                len(target_names) == num_targets
+            ), "num_targets must equal len(target_names) (if target_names is not None)."
 
         # make wrapper
         super().__init__(env)
         self.key = key
-        num_targets = env.num_targets
-        target_names = env.target_ids
+
         self.custody_tracker = CustodyTracker(
             config=config,
             num_targets=num_targets,
             target_names=target_names,
         )
 
-        # update observation space
-        new_space = {**env.observation_space}
-        new_space.update({"custody": MultiBinary(num_targets)})
+        # Update observation space, maintain order, append "custody" to end.
+        new_space = OrderedDict({**env.observation_space})
+        new_space["custody"] = MultiBinary(num_targets)
         self.observation_space = Dict(new_space)
 
-    def observation(self, obs: OrderedDict) -> dict:
+    def observation(self, obs: OrderedDict) -> OrderedDict:
         """Convert unwrapped observation to wrapped observation.
 
         Args:
             obs (OrderedDict): Must have self.key as item.
 
         Returns:
-            dict: Same as input dict, but with "custody" item appended. Custody
-                is a (N,) binary array where 1 indicates the n-th target is in
-                custody.
+            OrderedDict: Same as input dict, but with "custody" item appended.
+                Custody is a (N,) binary array where 1 indicates the n-th target
+                is in custody.
         """
-        new_obs = deepcopy(obs)
-        est_cov2d = obs[self.key]
-        est_cov3d = self.covFlatTo3d(est_cov2d)
+        new_obs = OrderedDict(deepcopy(obs))
+
+        custody_input = deepcopy(obs[self.key])
+        # est_cov2d = obs[self.key]
+
+        # # Use cov2d_compatibility to convert 2d covariance diagonals into 3d sparse
+        # # matrices.
+        # # TODO: Make this 2d/3d handling less kludgey
+        # if self.cov2d_compatiblity:
+        #     custody_input = self.covFlatTo3d(custody_input)
+
         # custody_tracker outputs custody status as a list of bools; convert to
         # a 1d array of ints. Use int8 for dtype-> this is the default dtype of
-        # MultiBinary space.
-        custody = array(self.custody_tracker.update(est_cov3d)).astype(int8)
-        new_obs.update({"custody": custody})
+        # MultiBinary space. Make sure "custody" is added at end of OrderedDict
+        # observation.
+        custody = array(self.custody_tracker.update(custody_input)).astype(int8)
+        new_obs["custody"] = custody
 
         assert self.observation_space.contains(new_obs)
         return new_obs
 
-    def covFlatTo3d(self, cov2d: ndarray) -> ndarray:
-        """Converts an array of covariance diags to 3D array of diagonal matrices.
+    # def covFlatTo3d(self, cov2d: ndarray) -> ndarray:
+    #     """Converts an array of covariance diags to 3D array of diagonal matrices.
 
-        Args:
-            cov2d (ndarray): (6, N) Each column is the diagonals of the n-th covariance
-                matrix, where the first 3 entries are positional (I, J, K).
+    #     Args:
+    #         cov2d (ndarray): (6, N) Each column is the diagonals of the n-th covariance
+    #             matrix, where the first 3 entries are positional (I, J, K).
 
-        Returns
-            ndarray: (N, 6, 6) Diagonal matrices where the diagonal values are
-                the columns of cov2d. Off-diagonals are 0.
-        """
-        cov3d = zeros(shape=(cov2d.shape[1], 6, 6))
-        for i in range(cov2d.shape[1]):
-            cov3d[i, :, :] = diag(cov2d[:, i])
+    #     Returns
+    #         ndarray: (N, 6, 6) Diagonal matrices where the diagonal values are
+    #             the columns of cov2d. Off-diagonals are 0.
+    #     """
+    #     cov3d = zeros(shape=(cov2d.shape[1], 6, 6))
+    #     for i in range(cov2d.shape[1]):
+    #         cov3d[i, :, :] = diag(cov2d[:, i])
 
-        return cov3d
+    #     return cov3d
+
+
+# class Cov2dTo3d(gym.ObservationWrapper):

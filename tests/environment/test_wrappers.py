@@ -381,19 +381,29 @@ print(f"wrapped obs space = {sdow.observation_space['est_cov']}")
 
 # %% Test CustodyWrapper
 print("\nTest CustodyWrapper...")
+env_custody = RandomEnv(
+    {
+        "observation_space": gym.spaces.Dict(
+            {"a": gym.spaces.Box(0, 1, shape=(3, 2))}
+        ),
+        "action_space": gym.spaces.MultiDiscrete([4, 4]),
+    }
+)
 cw = CustodyWrapper(
-    env=env,
-    key="est_cov",
+    env_custody,
+    key="a",
+    num_targets=3,
     config={
-        "func": "max_pos_std",
-        "threshold": 5,
+        "func": "tr_cov",
+        "threshold": 1,
     },
 )
-print(f"unwrapped obs space = \n{env.observation_space.keys()}")
+
+print(f"unwrapped obs space = \n{env_custody.observation_space.keys()}")
 print(f"wrapped obs space = \n{cw.observation_space.keys()}")
-obs = env.observation_space.sample()
+obs = env_custody.observation_space.sample()
 # Make covariance all positive to be ensure diagonals are properly conditioned.
-obs["est_cov"] = abs(obs["est_cov"])
+# obs["est_cov"] = abs(obs["est_cov"])
 print(f"wrapped obs = {cw.observation(obs)['custody']}")
 
 # %% Test SumArrayWrapper
