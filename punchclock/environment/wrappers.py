@@ -1299,4 +1299,48 @@ class CustodyWrapper(gym.ObservationWrapper):
     #     return cov3d
 
 
-# class Cov2dTo3d(gym.ObservationWrapper):
+class Convert2dTo3dObsItems(gym.ObservationWrapper):
+    """Convert 2d arrays in a Dict observation space to sparse 3d arrays."""
+
+    def __init__(self, env: gym.Env, keys: list):
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.Dict."
+        for k in keys:
+            assert (
+                k in env.observation_space.spaces
+            ), f"{k} not in observation_space."
+            assert isinstance(
+                env.observation_space.spaces[k], Box
+            ), f"{k} is not a Box."
+            assert (
+                len(env.observation_space.spaces[k].shape) == 2
+            ), f"{k} is not 2d."
+
+        super().__init__(env)
+
+        self.keys = keys
+        self.observation_space = deepcopy(env.observation_space)
+        for k in keys:
+            old_space = self.observation_space[k]
+            num_rows = old_space.shape[0]
+            num_cols = old_space.shape[1]
+            self.observation_space[k] = Box(
+                old_space.low[0, 0],
+                high=old_space.high[0, 0],
+                shape=(num_cols, num_rows, num_rows),
+            )
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        new_obs = OrderedDict(deepcopy(obs))
+        for k in self.keys:
+            # loop through keys
+            ob = obs[k]
+            new_ob = zeros(shape=(ob.shape[1], ob.shape[0], ob.shape[0]))
+            for i in range(new_ob.shape[0]):
+                # loop through columns of 2d ob
+                new_ob[i, :, :] = diag(ob[:, i])
+
+            new_obs[k] = new_ob
+
+        return new_obs

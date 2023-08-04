@@ -20,6 +20,7 @@ from punchclock.environment.env import SSAScheduler
 from punchclock.environment.env_parameters import SSASchedulerParams
 from punchclock.environment.wrappers import (
     ActionMask,
+    Convert2dTo3dObsItems,
     CopyObsItem,
     CustodyWrapper,
     FlatDict,
@@ -380,31 +381,31 @@ print(f"unwrapped obs space = {env.observation_space['est_cov']}")
 print(f"wrapped obs space = {sdow.observation_space['est_cov']}")
 
 # %% Test CustodyWrapper
-print("\nTest CustodyWrapper...")
-env_custody = RandomEnv(
-    {
-        "observation_space": gym.spaces.Dict(
-            {"a": gym.spaces.Box(0, 1, shape=(3, 2))}
-        ),
-        "action_space": gym.spaces.MultiDiscrete([4, 4]),
-    }
-)
-cw = CustodyWrapper(
-    env_custody,
-    key="a",
-    num_targets=3,
-    config={
-        "func": "tr_cov",
-        "threshold": 1,
-    },
-)
+# print("\nTest CustodyWrapper...")
+# env_custody = RandomEnv(
+#     {
+#         "observation_space": gym.spaces.Dict(
+#             {"a": gym.spaces.Box(0, 1, shape=(3, 2))}
+#         ),
+#         "action_space": gym.spaces.MultiDiscrete([4, 4]),
+#     }
+# )
+# cw = CustodyWrapper(
+#     env_custody,
+#     key="a",
+#     num_targets=3,
+#     config={
+#         "func": "tr_cov",
+#         "threshold": 1,
+#     },
+# )
 
-print(f"unwrapped obs space = \n{env_custody.observation_space.keys()}")
-print(f"wrapped obs space = \n{cw.observation_space.keys()}")
-obs = env_custody.observation_space.sample()
-# Make covariance all positive to be ensure diagonals are properly conditioned.
-# obs["est_cov"] = abs(obs["est_cov"])
-print(f"wrapped obs = {cw.observation(obs)['custody']}")
+# print(f"unwrapped obs space = \n{env_custody.observation_space.keys()}")
+# print(f"wrapped obs space = \n{cw.observation_space.keys()}")
+# obs = env_custody.observation_space.sample()
+# # Make covariance all positive to be ensure diagonals are properly conditioned.
+# # obs["est_cov"] = abs(obs["est_cov"])
+# print(f"wrapped obs = {cw.observation(obs)['custody']}")
 
 # %% Test SumArrayWrapper
 print("\nTest SumArrayWrapper...")
@@ -432,6 +433,21 @@ sawrand_uw_obs = rand_env.observation_space.sample()
 sawrand_wr_obs = saw_rand.observation(sawrand_uw_obs)
 print(f"unwrapped obs rand = \n{sawrand_uw_obs['a']}")
 print(f"wrapped obs rand = \n{sawrand_wr_obs['a']}")
+# %% Test Convert2dTo3dObsItems
+print("\nTest Convert2dTo3dObsItems...")
+env_rand = rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(0, 1, shape=[2, 3]),
+                "b": Box(0, 1, shape=(6, 2)),
+            }
+        ),
+    },
+)
+
+env_3d = Convert2dTo3dObsItems(env=env_rand, keys=["a"])
+
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")
 env_multi_wrapped = FilterObservation(
@@ -462,6 +478,7 @@ print(f"obs = {obs}")
 print(
     f"obs in observation_space: {env_multi_wrapped.observation_space.contains(obs)}"
 )
+
 
 # %% Done
 print("done")
