@@ -116,16 +116,19 @@ class FloatObs(gym.ObservationWrapper):
 class NestObsItems(gym.ObservationWrapper):
     """Nest item(s) in a Dict observation space within a Dict.
 
+    Nested keys are placed at end of OrderedDict observation space. Order of nested
+    space is maintained from original space.
+
     Example:
         nest_env = NestObsItems(unwrapped_env, new_key="foo", keys_to_nest=["a", "c"])
 
-        unwrapped_obs_space = Dict({
+        unwrapped_obs_space = OrderedDict({
             "a": Discrete(3),
             "b": Discrete(2),
             "c": Discrete(1)
         })
 
-        wrapped_obs_space = Dict({
+        wrapped_obs_space = OrderedDict({
             "b": Discrete(2),
             "foo": Dict({
                 "a": Discrete(3),
@@ -170,38 +173,41 @@ class NestObsItems(gym.ObservationWrapper):
             new_key = "new_key"
         self.new_key = new_key
 
-        nested_spaces = {
-            k: env.observation_space.spaces[k] for k in keys_to_nest
-        }
+        # iterate over observation space items (not keys_to_nest) to maintain order
+        nested_spaces = OrderedDict({})
+        for k, v in env.observation_space.spaces.items():
+            if k in keys_to_nest:
+                nested_spaces[k] = v
 
-        unnested_spaces = {}
+        unnested_spaces = OrderedDict({})
         for k, v in env.observation_space.items():
             if k not in keys_to_nest:
                 unnested_spaces[k] = v
 
         self.observation_space = Dict(
-            {self.new_key: Dict(nested_spaces), **unnested_spaces}
+            {**unnested_spaces, self.new_key: Dict(nested_spaces),}
         )
 
-    def observation(self, obs: dict) -> dict:
+    def observation(self, obs: dict) -> OrderedDict:
         """Nest item(s) from obs into a new item, leave other items at top.
 
         Args:
-            obs (dict): Must be a Dict.
+            obs (dict): Order will be maintained. Must be contained in self.observation_space.
 
         Returns:
-            dict: One or more items from unwrapped observation will be nested under
-                a single item, with key specified on class instantiation.
+            OrderedDict: One or more items from unwrapped observation will be nested
+                under a single item, with key specified on class instantiation.
+                Un-nested items are first, nested item is last.  
         """
-        nested_obs = {}
-        unnested_obs = {}
+        nested_obs = OrderedDict({})
+        unnested_obs = OrderedDict({})
         for k, v in obs.items():
             if k in self.keys_to_nest:
                 nested_obs[k] = v
             else:
                 unnested_obs[k] = v
 
-        new_obs = {self.new_key: {**nested_obs}, **unnested_obs}
+        new_obs = OrderedDict({ **unnested_obs, self.new_key: {**nested_obs}})
 
         return new_obs
 

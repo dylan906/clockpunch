@@ -139,8 +139,11 @@ env_prenest = RandomEnv(
         )
     }
 )
+
+# set key_to_nest to different order from observation_space; wrapped env should
+# maintain original order of env, regardless of order in keys_to_nest
 env_postnest = NestObsItems(
-    env=env_prenest, new_key="top_level", keys_to_nest=["a", "c"]
+    env=env_prenest, new_key="top_level", keys_to_nest=["c", "a"]
 )
 obs_nested = env_postnest.observation(env_prenest.observation_space.sample())
 assert env_postnest.observation_space.contains(obs_nested)
