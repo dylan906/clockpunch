@@ -45,7 +45,7 @@ from punchclock.environment.wrapper_utils import (
 )
 
 
-# %% Wrappers
+# %% FloatObs
 class FloatObs(gym.ObservationWrapper):
     """Convert any ints in the Dict observation space to floats.
 
@@ -195,7 +195,8 @@ class NestObsItems(gym.ObservationWrapper):
         """Nest item(s) from obs into a new item, leave other items at top.
 
         Args:
-            obs (dict): Order will be maintained. Must be contained in self.observation_space.
+            obs (dict): Order will be maintained. Must be contained in
+                self.observation_space.
 
         Returns:
             OrderedDict: One or more items from unwrapped observation will be nested
@@ -215,7 +216,7 @@ class NestObsItems(gym.ObservationWrapper):
         return new_obs
 
 
-# %% Wrapper for action mask
+# %% ActionMask
 class ActionMask(gym.ObservationWrapper):
     """Mask invalid actions based on estimated sensor-target visibility.
 
@@ -306,6 +307,7 @@ class ActionMask(gym.ObservationWrapper):
         return obs_new
 
 
+# %% CopyObsItem
 class CopyObsItem(gym.ObservationWrapper):
     """Copy an existing item in a Dict observation space to a new item.
 
@@ -374,6 +376,7 @@ class CopyObsItem(gym.ObservationWrapper):
         return new_obs
 
 
+# %% VisMap2ActionMask
 class VisMap2ActionMask(gym.ObservationWrapper):
     """Convert visibility map within an observation space into an action mask.
 
@@ -494,6 +497,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         return obs_new
 
 
+# %% MultiplyObsItems
 class MultiplyObsItems(gym.ObservationWrapper):
     """Element-by-element multiply 2 entries from a Dict observation space.
 
@@ -592,7 +596,7 @@ class MultiplyObsItems(gym.ObservationWrapper):
         return new_obs
 
 
-# %% Wrapper for flattening part of observation space
+# %% FlatDict
 class FlatDict(gym.ObservationWrapper):
     """Flatten entries of a Dict observation space, leaving the top level unaffected.
 
@@ -659,6 +663,7 @@ class FlatDict(gym.ObservationWrapper):
         return obs_new
 
 
+# %% MakeDict
 class MakeDict(gym.ObservationWrapper):
     """Wraps the observation space in a 1-item Dict.
 
@@ -686,7 +691,7 @@ class MakeDict(gym.ObservationWrapper):
         return obs_new
 
 
-# %% Rescale obs
+# %% LinScaleDictObs
 class LinScaleDictObs(gym.ObservationWrapper):
     """Rescale selected entries in a Dict observation space.
 
@@ -789,6 +794,7 @@ class LinScaleDictObs(gym.ObservationWrapper):
         return x * mult
 
 
+# %% MinMaxScaleDictObs
 class MinMaxScaleDictObs(gym.ObservationWrapper):
     """MinMax scale entries in a dict observation space.
 
@@ -899,6 +905,7 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         return x
 
 
+# %% SplitArrayObs
 class SplitArrayObs(gym.ObservationWrapper):
     """Split array entries in a Dict observation space into multiple entries.
 
@@ -1060,7 +1067,7 @@ class SplitArrayObs(gym.ObservationWrapper):
         return new_obs
 
 
-# %% Classes built from SelectiveDictObsWrapper
+# %% SelectiveDictObsWrapper
 class SelectiveDictObsWrapper(gym.ObservationWrapper):
     """Base class for wrappers that apply a function to a selection of Dict entries."""
 
@@ -1116,6 +1123,7 @@ class SelectiveDictObsWrapper(gym.ObservationWrapper):
         return check_result
 
 
+# %% SumArrayWrapper
 class SumArrayWrapper(SelectiveDictObsWrapper):
     """Sum array(s) along a given dimension for items in a Dict observation space."""
 
@@ -1183,6 +1191,7 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
         return sum_out
 
 
+# %% CustodyWrapper
 class CustodyWrapper(gym.ObservationWrapper):
     """Add 'custody' as an item to a Dict observation space.
 
