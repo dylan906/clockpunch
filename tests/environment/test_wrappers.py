@@ -198,7 +198,12 @@ assert env_postmask.observation_space.contains(obs_mask)
 print("\nTest VisMap2ActionMask...")
 env_premask = RandomEnv(
     {
-        "observation_space": Dict({"a": Box(0, 1, shape=(2, 3)),"b": Box(0, 1, shape=(1,1)),}),
+        "observation_space": Dict(
+            {
+                "a": Box(0, 1, shape=(2, 3)),
+                "b": Box(0, 1, shape=(1, 1)),
+            }
+        ),
         "action_space": MultiDiscrete([3, 3, 3]),
     }
 )
@@ -223,9 +228,15 @@ env_randmask = RandomEnv(
         )
     }
 )
-env_doublemask = MultiplyObsItems(env=env_randmask, keys=["a1", "a2"])
+env_doublemask = MultiplyObsItems(
+    env=env_randmask, keys=["a1", "a2"], new_key="foo"
+)
 obs_randmask = env_randmask.observation_space.sample()
 obs_doublemask = env_doublemask.observation(obs=obs_randmask)
+print(f"unwrapped obs space = {env_randmask.observation_space}")
+print(f"wrapped obs space = {env_doublemask.observation_space}")
+assert env_doublemask.observation_space.contains(obs_doublemask)
+
 # %% Test FlatDict
 print("\nTest FlatDict...")
 # create a separate test env that has a nested dict obs space

@@ -185,7 +185,10 @@ class NestObsItems(gym.ObservationWrapper):
                 unnested_spaces[k] = v
 
         self.observation_space = Dict(
-            {**unnested_spaces, self.new_key: Dict(nested_spaces),}
+            {
+                **unnested_spaces,
+                self.new_key: Dict(nested_spaces),
+            }
         )
 
     def observation(self, obs: dict) -> OrderedDict:
@@ -197,7 +200,7 @@ class NestObsItems(gym.ObservationWrapper):
         Returns:
             OrderedDict: One or more items from unwrapped observation will be nested
                 under a single item, with key specified on class instantiation.
-                Un-nested items are first, nested item is last.  
+                Un-nested items are first, nested item is last.
         """
         nested_obs = OrderedDict({})
         unnested_obs = OrderedDict({})
@@ -207,7 +210,7 @@ class NestObsItems(gym.ObservationWrapper):
             else:
                 unnested_obs[k] = v
 
-        new_obs = OrderedDict({ **unnested_obs, self.new_key: {**nested_obs}})
+        new_obs = OrderedDict({**unnested_obs, self.new_key: {**nested_obs}})
 
         return new_obs
 
@@ -452,11 +455,11 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
         # Maintain same order of obs dict
         new_obs_space = OrderedDict({})
-        for (k, space) in env.observation_space.items():
+        for k, space in env.observation_space.items():
             if k == vis_map_key:
                 new_obs_space[renamed_key] = self.mask_space
             else:
-                new_obs_space[k]=space
+                new_obs_space[k] = space
         self.observation_space = Dict(new_obs_space)
 
     def observation(self, obs: dict) -> OrderedDict:
@@ -482,11 +485,11 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
         # Maintain same order of obs dict
         obs_new = OrderedDict()
-        for (k, v) in obs.items():
+        for k, v in obs.items():
             if k == self.vis_map_key:
                 obs_new[self.renamed_key] = obs_mask
             else:
-                obs_new[k]=v
+                obs_new[k] = v
 
         return obs_new
 
@@ -497,9 +500,28 @@ class MultiplyObsItems(gym.ObservationWrapper):
     Specify two keys in the unwrapped observation space. The values associated
         with the keys will be multiplied. Both values must be array-likes.
 
-    If specified, the multiplied array will be inserted as a new item in observation.
-        Otherwise the multiplied array replaced the value associated with the
-        first entry in keys.
+    If specified, the multiplied array will be appended to end of (ordered) Dict
+        observation space. Otherwise the multiplied array replaced the value associated
+        with keys[0].
+
+    Example:
+        env.observation_space = Dict(
+            {
+                "a1": MultiBinary(4),  # has same shape as "a2" even though
+                                       # different spaces
+                "a2": Box(0, 1, shape=(4,), dtype=int),
+            }
+        )
+
+        env_wrapped = MultiplyObsItems(env, keys=["a1", "a2"], new_key="foo")
+
+        env_wrapped.observation_space = Dict(
+            {
+                "a1": MultiBinary(4),
+                "a2": Box(0, 1, shape=(4,), dtype=int),
+                "foo": Box(0, 1, shape=(4,), dtype=int),
+            }
+        )
     """
 
     # """Wrap environment with MultiplyObsItems ObservationWrapper."""
@@ -511,7 +533,8 @@ class MultiplyObsItems(gym.ObservationWrapper):
             keys (list): 2-long list of keys. Keys must be in env.observation_space.
             new_key (str, optional): Key of new item in observation space where
                 return value will be placed. If None, the value of
-                observation_space[keys[0]] will be overridden. Defaults to None.
+                observation_space.spaces[keys[0]] will be overridden. Defaults
+                to None.
         """
         assert isinstance(
             env.observation_space, Dict
@@ -530,13 +553,23 @@ class MultiplyObsItems(gym.ObservationWrapper):
 
         if new_key is None:
             new_key = keys[0]
-        assert (
-            new_key in env.observation_space.spaces
-        ), f"""{new_key} is not in env.observation_space."""
+            new_key_provided = False
+        else:
+            new_key_provided = True
 
         super().__init__(env)
         self.keys = keys
         self.new_key = new_key
+
+        # redefine observation space if new_key provided. new_key goes at end.
+        if new_key_provided:
+            new_space = env.observation_space.spaces[keys[0]]
+            self.observation_space = Dict(
+                {
+                    **env.observation_space.spaces,
+                    new_key: new_space,
+                }
+            )
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Pass unwrapped action mask through another, pre-specified, mask.
@@ -545,13 +578,16 @@ class MultiplyObsItems(gym.ObservationWrapper):
             obs (OrderedDict): Must contain keys defined at mask instantiation.
 
         Returns:
-            OrderedDict: Same keys as obs.
+            OrderedDict: Same keys as obs, plus optionally new_key (specified
+                at instantiation). If new_key is included, it is the last entry
+                in the returned OrderedDict.
         """
         x_mask = obs[self.keys[0]]
         y_mask = obs[self.keys[1]]
         new_mask = multiply(x_mask, y_mask)
 
-        new_obs = deepcopy(obs)
+        new_obs = OrderedDict(**deepcopy(obs))
+        # if new_key is not already in new_obs, add at end.
         new_obs[self.new_key] = new_mask
         return new_obs
 
