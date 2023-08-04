@@ -198,7 +198,7 @@ assert env_postmask.observation_space.contains(obs_mask)
 print("\nTest VisMap2ActionMask...")
 env_premask = RandomEnv(
     {
-        "observation_space": Dict({"a": Box(0, 1, shape=(2, 3))}),
+        "observation_space": Dict({"a": Box(0, 1, shape=(2, 3)),"b": Box(0, 1, shape=(1,1)),}),
         "action_space": MultiDiscrete([3, 3, 3]),
     }
 )

@@ -306,7 +306,8 @@ class ActionMask(gym.ObservationWrapper):
 class CopyObsItem(gym.ObservationWrapper):
     """Copy an existing item in a Dict observation space to a new item.
 
-    New item is the existing (unwrapped) item provided on instantiation.
+    New item is the existing (unwrapped) item provided on instantiation. New item
+    is last entry in OrderedDict observation.
 
     Example:
         copy_env = CopyObsItem(env, key="a", new_key="new_a")
@@ -316,11 +317,11 @@ class CopyObsItem(gym.ObservationWrapper):
             "b": Box()
         }
 
-        wrapped_obs = {
+        wrapped_obs = OrderedDict({
             "a": MultiBinary(2),
             "b": Box(),
             "new_a": MultiBinary(2)
-        }
+        })
 
     """
 
@@ -353,18 +354,20 @@ class CopyObsItem(gym.ObservationWrapper):
             }
         )
 
-    def observation(self, obs: dict) -> dict:
+    def observation(self, obs: dict) -> OrderedDict:
         """Add item to existing obs that is a copy of another item.
 
         Args:
             obs (dict): Must contain self.key.
 
         Returns:
-            dict: Same as input, but with appended item self.new_key, which is a copy
-                of another item in obs, as specified on class instantiation.
+            OrderedDict: Same as input, but with appended item self.new_key, which
+                is a copy of another item in obs, as specified on class instantiation.
+                Order of return is same as input obs; new key is last entry.
         """
         new_obs = deepcopy(obs)
-        new_obs.update({self.new_key: obs[self.key]})
+        new_obs = OrderedDict({**new_obs})
+        new_obs[self.new_key] = obs[self.key]
         return new_obs
 
 
@@ -447,19 +450,24 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         self.action_mask_on = action_mask_on
         self.mask_space = flatten_space(self.action_space)
 
-        new_obs_space = {**env.observation_space}
-        del new_obs_space[vis_map_key]
-        new_obs_space[renamed_key] = self.mask_space
+        # Maintain same order of obs dict
+        new_obs_space = OrderedDict({})
+        for (k, space) in env.observation_space.items():
+            if k == vis_map_key:
+                new_obs_space[renamed_key] = self.mask_space
+            else:
+                new_obs_space[k]=space
         self.observation_space = Dict(new_obs_space)
 
-    def observation(self, obs: dict) -> dict:
+    def observation(self, obs: dict) -> OrderedDict:
         """Generate wrapped observation.
 
         Args:
             obs (dict): Must have self.vis_map_key in keys.
 
         Returns:
-            dict: Same as input obs except for modified renamed_key.
+            OrderedDict: Same as input obs except for modified renamed_key (if
+                renamed_key was provided on instantiation).
         """
         mask = obs[self.vis_map_key]
         m = mask.shape[1]
@@ -472,9 +480,13 @@ class VisMap2ActionMask(gym.ObservationWrapper):
             # Get pass-thru action mask (no actions are masked)
             obs_mask = ones(shape=mask_flat.shape, dtype=int64)
 
-        obs_new = {**obs}
-        del obs_new[self.vis_map_key]
-        obs_new[self.renamed_key] = obs_mask
+        # Maintain same order of obs dict
+        obs_new = OrderedDict()
+        for (k, v) in obs.items():
+            if k == self.vis_map_key:
+                obs_new[self.renamed_key] = obs_mask
+            else:
+                obs_new[k]=v
 
         return obs_new
 
