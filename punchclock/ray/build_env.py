@@ -19,6 +19,7 @@ from punchclock.common.utilities import array2List
 from punchclock.environment.env import SSAScheduler, SSASchedulerParams
 from punchclock.environment.wrappers import (
     ActionMask,
+    Convert2dTo3dObsItems,
     CopyObsItem,
     CustodyWrapper,
     FlatDict,
@@ -148,6 +149,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "nest_obs_items": NestObsItems,
         "copy_obs_item": CopyObsItem,
         "vis_map_action_mask": VisMap2ActionMask,
+        "convert_2d_to_3d_obs_items": Convert2dTo3dObsItems,
     }
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
