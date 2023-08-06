@@ -21,6 +21,7 @@ from punchclock.environment.env_parameters import SSASchedulerParams
 from punchclock.environment.wrappers import (
     ActionMask,
     Convert2dTo3dObsItems,
+    ConvertCustody2ActionMask,
     CopyObsItem,
     CustodyWrapper,
     FlatDict,
@@ -452,6 +453,18 @@ obs3d = env_3d.observation(obs2d)
 print(f"unwrapped obs 2d = \n{obs2d}")
 print(f"wrapped obs 3d = \n{obs3d}")
 assert env_3d.observation_space.contains(obs3d)
+
+# %% Test ConvertCustody2ActionMask
+print("\nTest ConvertCustody2ActionMask...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"custody": MultiBinary(3)}),
+    },
+)
+
+env_custody2am = ConvertCustody2ActionMask(
+    rand_env, key="custody", num_sensors=2
+)
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")

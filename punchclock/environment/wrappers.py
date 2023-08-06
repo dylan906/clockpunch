@@ -1275,6 +1275,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         return new_obs
 
 
+# %% Convert2dTo3dObsItems
 class Convert2dTo3dObsItems(gym.ObservationWrapper):
     """Convert 2d arrays in a Dict observation space to sparse 3d arrays.
 
@@ -1392,4 +1393,62 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
         return new_obs
 
 
-# %%
+# %% ConvertCustody2ActionMask
+class ConvertCustody2ActionMask(gym.ObservationWrapper):
+    def __init__(
+        self,
+        env: gym.Env,
+        key: str,
+        new_key: str,
+        num_sensors: int,
+    ):
+        super().__init__(env)
+
+        self.num_sensors = num_sensors
+        self.new_key = new_key
+        self.sdp = SelectiveDictProcessor(
+            funcs=[self.binary2ActionMask], keys=[key]
+        )
+        self.observation_space = deepcopy(env.observation_space)
+
+        num_targets = env.observation_space.spaces[key].shape[0]
+        self.observation_space[new_key] = MultiBinary(
+            (num_targets + 1) * num_sensors
+        )
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        new_obs = self.sdp.applyFunc(obs)
+        return new_obs
+
+    def binary2ActionMask(custody_array: ndarray, num_sensors: int) -> ndarray:
+        """Convert a 1d binary array to an action mask.
+
+        Notation:
+            M: number of sensors
+            N: number of targets
+
+        Args:
+            custody_array (ndarray): (N, ) single-dimensional binary array.
+
+        Returns:
+            ndarray: ( (N + 1) * M, ) single-dimensional binary array. Every (N+1)th
+                entry corresponds to inaction, and always == 1.
+
+
+        Example:
+            custody = [1, 0, 1]
+            action_mask = binary2ActionMask(custody, num_sensors = 2)
+            % action_mask = [1, 0, 1, 1, 1, 0, 1, 1]
+            %               [Sensor 1  , Sensor 2  ]
+
+        """
+        num_targets = len(custody_array)
+        action_mask = ones(shape=((num_targets + 1) * M,))
+        # for i, targ in enumerate(custody_array):
+        #     action_mask[]
+        mini_array = append(custody_array, [1])
+        action_mask = array(
+            [copy(mini_array) for i in custody_array], dtype=int
+        )
+
+        return action_mask
