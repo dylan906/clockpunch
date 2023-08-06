@@ -440,13 +440,18 @@ env_rand = rand_env = RandomEnv(
         "observation_space": Dict(
             {
                 "a": Box(0, 1, shape=[2, 3]),
-                "b": Box(0, 1, shape=(6, 2)),
+                "b": Box(0, 1, shape=[6, 2]),
             }
         ),
     },
 )
 
-env_3d = Convert2dTo3dObsItems(env=env_rand, keys=["a"])
+env_3d = Convert2dTo3dObsItems(env=env_rand, keys=["a"], diag_on_0_or_1=[1])
+obs2d = env_rand.observation_space.sample()
+obs3d = env_3d.observation(obs2d)
+print(f"unwrapped obs 2d = \n{obs2d}")
+print(f"wrapped obs 3d = \n{obs3d}")
+assert env_3d.observation_space.contains(obs3d)
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")

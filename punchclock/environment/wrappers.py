@@ -1300,13 +1300,59 @@ class CustodyWrapper(gym.ObservationWrapper):
 
 
 class Convert2dTo3dObsItems(gym.ObservationWrapper):
-    """Convert 2d arrays in a Dict observation space to sparse 3d arrays."""
+    """Convert 2d arrays in a Dict observation space to sparse 3d arrays.
 
-    def __init__(self, env: gym.Env, keys: list):
+    Order in observation space is maintained. Specified items have shapes changed
+        from (A, B) to (A, B, B) or (B, A, A), depending on configuration. Off-diagonals
+        are 0s.
+
+    Example:
+        env.observation_space = Dict(
+            {
+                "a": Box(0, 1, shape=(2, 3)),
+                "b": Box(0, 1, shape=(6, 2)),
+            }
+
+        wrapped_env = Convert2dTo3dObsItems(env, keys=["a"], diag_on_0_or_1=1)
+
+        wrapped_env.observation_space = Dict(
+            {
+                "a": Box(0, 1, shape=(3, 2, 2)),
+                "b": Box(0, 1, shape=(6, 2)),
+            }
+        )
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        keys: list,
+        diag_on_0_or_1: list[int] = None,
+    ):
+        """Wrap environment.
+
+        Args:
+            env (gym.Env): Must have Dict observation space.
+            keys (list): Items in observation space that will be diagonalized.
+                All entries must:
+                    - be keys in env.observation_space
+                    - be 2d ndarrays
+            diag_on_0_or_1 (list[int], optional): Must be 0s or 1s. Determines
+                which indices of input arrays will be used to diagonalize 2d arrays.
+                If 0, output shape == (A, B, B). If 1, output shape == (B, A, A).
+                Must have length == len(keys). Defaults to all 0s.
+        """
+        # default to all 0s
+        if diag_on_0_or_1 is None:
+            diag_on_0_or_1 = [0 for i in range(len(keys))]
+
         assert isinstance(
             env.observation_space, Dict
         ), "env.observation_space must be a gymnasium.Dict."
-        for k in keys:
+        assert len(diag_on_0_or_1) == len(
+            keys
+        ), "diag_on_0_or_1 must have same length as keys."
+        for k, d in zip(keys, diag_on_0_or_1):
             assert (
                 k in env.observation_space.spaces
             ), f"{k} not in observation_space."
@@ -1316,31 +1362,58 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
             assert (
                 len(env.observation_space.spaces[k].shape) == 2
             ), f"{k} is not 2d."
+            assert d in [0, 1], "All entries of diag_on_0_or_1 must be 0 or 1."
 
         super().__init__(env)
 
         self.keys = keys
+        self.first_dims = diag_on_0_or_1
         self.observation_space = deepcopy(env.observation_space)
-        for k in keys:
+        for k, d in zip(keys, diag_on_0_or_1):
+            # NOTE: Assumes the old space has same highs/lows for all values
             old_space = self.observation_space[k]
-            num_rows = old_space.shape[0]
-            num_cols = old_space.shape[1]
             self.observation_space[k] = Box(
                 old_space.low[0, 0],
                 high=old_space.high[0, 0],
-                shape=(num_cols, num_rows, num_rows),
+                shape=(
+                    old_space.shape[d],
+                    old_space.shape[1 - d],
+                    old_space.shape[1 - d],
+                ),
+                dtype=old_space.dtype,
             )
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
-        new_obs = OrderedDict(deepcopy(obs))
-        for k in self.keys:
-            # loop through keys
-            ob = obs[k]
-            new_ob = zeros(shape=(ob.shape[1], ob.shape[0], ob.shape[0]))
-            for i in range(new_ob.shape[0]):
-                # loop through columns of 2d ob
-                new_ob[i, :, :] = diag(ob[:, i])
+        """Convert selected 2d array entries of a Dict observation space to 3d.
 
-            new_obs[k] = new_ob
+        Args:
+            obs (OrderedDict): Only certain items, specified at instantiation,
+                will be modified.
+
+        Returns:
+            OrderedDict: Same order as input. Specified items, which were input
+                as 2d, are now 3d.
+        """
+        new_obs = OrderedDict(deepcopy(obs))
+        for k, d in zip(self.keys, self.first_dims):
+            # Loop through keys. Take old space (shape=AxB) and make new space
+            # (shape BxAxA).
+            ob = obs[k]
+            new_ob = zeros(
+                shape=(ob.shape[d], ob.shape[1 - d], ob.shape[1 - d])
+            )
+            for i in range(new_ob.shape[d]):
+                if d == 0:
+                    # Diagonalize rows of input obs
+                    new_ob[i, :, :] = diag(ob[i, :])
+                elif d == 1:
+                    # Diagonalize cols of input obs
+                    new_ob[i, :, :] = diag(ob[:, i])
+
+            # Convert dtype after filling in all 0-th indexed entries-- not before
+            new_obs[k] = new_ob.astype(self.observation_space[k].dtype)
 
         return new_obs
+
+
+# %%
