@@ -23,6 +23,7 @@ from numpy import (
     all,
     append,
     array,
+    concatenate,
     diag,
     float32,
     inf,
@@ -1399,28 +1400,44 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         self,
         env: gym.Env,
         key: str,
-        new_key: str,
         num_sensors: int,
+        renamed_key: str = None,
     ):
+        if renamed_key is None:
+            renamed_key = key
+
         super().__init__(env)
 
+        self.key = key
         self.num_sensors = num_sensors
-        self.new_key = new_key
+        self.renamed_key = renamed_key
         self.sdp = SelectiveDictProcessor(
-            funcs=[self.binary2ActionMask], keys=[key]
+            funcs=[
+                partial(
+                    self.binary2ActionMask,
+                    num_sensors=num_sensors,
+                )
+            ],
+            keys=[renamed_key],
         )
         self.observation_space = deepcopy(env.observation_space)
 
         num_targets = env.observation_space.spaces[key].shape[0]
-        self.observation_space[new_key] = MultiBinary(
+        self.observation_space[renamed_key] = MultiBinary(
             (num_targets + 1) * num_sensors
         )
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
-        new_obs = self.sdp.applyFunc(obs)
+        new_obs = deepcopy(obs)
+        # Copy item to new item (no effect if key == renamed_key)
+        new_obs[self.renamed_key] = new_obs[self.key]
+        # sdp.applyFunc overwrites new_obs[renamed_key], leaves other keys untouched
+        new_obs = self.sdp.applyFunc(new_obs)
         return new_obs
 
-    def binary2ActionMask(custody_array: ndarray, num_sensors: int) -> ndarray:
+    def binary2ActionMask(
+        self, custody_array: ndarray, num_sensors: int
+    ) -> ndarray:
         """Convert a 1d binary array to an action mask.
 
         Notation:
@@ -1443,12 +1460,11 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
 
         """
         num_targets = len(custody_array)
-        action_mask = ones(shape=((num_targets + 1) * M,))
-        # for i, targ in enumerate(custody_array):
-        #     action_mask[]
+        action_mask = ones(shape=((num_targets + 1) * num_sensors,))
+
         mini_array = append(custody_array, [1])
-        action_mask = array(
-            [copy(mini_array) for i in custody_array], dtype=int
+        action_mask = concatenate(
+            [deepcopy(mini_array) for _ in range(num_sensors)]
         )
 
         return action_mask

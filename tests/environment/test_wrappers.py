@@ -463,8 +463,16 @@ rand_env = RandomEnv(
 )
 
 env_custody2am = ConvertCustody2ActionMask(
-    rand_env, key="custody", num_sensors=2
+    rand_env,
+    key="custody",
+    renamed_key="mask",
+    num_sensors=2,
 )
+obs_nomask = rand_env.observation_space.sample()
+obs_mask = env_custody2am.observation(obs_nomask)
+print(f"unwrapped obs  = \n{obs_nomask}")
+print(f"wrapped obs = \n{obs_mask}")
+assert env_custody2am.observation_space.contains(obs_mask)
 
 # %% Test multiple wrappers
 print("\nTest multiple wrappers...")
