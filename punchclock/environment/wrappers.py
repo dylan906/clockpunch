@@ -1263,13 +1263,6 @@ class CustodyWrapper(gym.ObservationWrapper):
         new_obs = OrderedDict(deepcopy(obs))
 
         custody_input = deepcopy(obs[self.key])
-        # est_cov2d = obs[self.key]
-
-        # # Use cov2d_compatibility to convert 2d covariance diagonals into 3d sparse
-        # # matrices.
-        # # TODO: Make this 2d/3d handling less kludgey
-        # if self.cov2d_compatiblity:
-        #     custody_input = self.covFlatTo3d(custody_input)
 
         # custody_tracker outputs custody status as a list of bools; convert to
         # a 1d array of ints. Use int8 for dtype-> this is the default dtype of
@@ -1280,23 +1273,6 @@ class CustodyWrapper(gym.ObservationWrapper):
 
         assert self.observation_space.contains(new_obs)
         return new_obs
-
-    # def covFlatTo3d(self, cov2d: ndarray) -> ndarray:
-    #     """Converts an array of covariance diags to 3D array of diagonal matrices.
-
-    #     Args:
-    #         cov2d (ndarray): (6, N) Each column is the diagonals of the n-th covariance
-    #             matrix, where the first 3 entries are positional (I, J, K).
-
-    #     Returns
-    #         ndarray: (N, 6, 6) Diagonal matrices where the diagonal values are
-    #             the columns of cov2d. Off-diagonals are 0.
-    #     """
-    #     cov3d = zeros(shape=(cov2d.shape[1], 6, 6))
-    #     for i in range(cov2d.shape[1]):
-    #         cov3d[i, :, :] = diag(cov2d[:, i])
-
-    #     return cov3d
 
 
 class Convert2dTo3dObsItems(gym.ObservationWrapper):
@@ -1402,7 +1378,7 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
             new_ob = zeros(
                 shape=(ob.shape[d], ob.shape[1 - d], ob.shape[1 - d])
             )
-            for i in range(new_ob.shape[d]):
+            for i in range(new_ob.shape[0]):
                 if d == 0:
                     # Diagonalize rows of input obs
                     new_ob[i, :, :] = diag(ob[i, :])
