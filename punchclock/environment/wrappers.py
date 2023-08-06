@@ -815,14 +815,14 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
 
         # Update wrapper observation_shape. Set all lows/highs to 0/1.
         # NOTE: Any subspace with dtype==int will be changed to float.
-        new_obs_space = {}
+        new_obs_space = OrderedDict({})
         for k, space in env.observation_space.spaces.items():
             new_space = Box(
                 low=zeros(space.shape),
                 high=ones(space.shape),
                 shape=space.shape,
             )
-            new_obs_space.update({k: new_space})
+            new_obs_space[k] = new_space
         self.observation_space = Dict(new_obs_space)
         return
 
