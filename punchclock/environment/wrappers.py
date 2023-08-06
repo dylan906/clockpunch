@@ -1396,21 +1396,73 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
 
 # %% ConvertCustody2ActionMask
 class ConvertCustody2ActionMask(gym.ObservationWrapper):
+    """Convert a MultiBinary custody array to a MultiBinary action mask.
+
+    Assumes inaction is a valid action.
+
+    Notation:
+        M: number of sensors
+        N: number of targets
+        custody array: N-long, 1d array, where a 1 indicates the n'th target is
+            in custody, and 0 otherwise.
+        action mask: (N+1)*M long, 1d array, where a 1 indicates the (n, m)'th
+            target-sensor pair is a valid action. The extra "+1" entries denote
+            inaction, which is always valid.
+
+    Example:
+        env.observation_space = Dict(
+            {
+                "custody": MultiBinary(3),
+            }
+
+        wrapped_env = ConvertCustody2ActionMask(
+            env,
+            key = ["custody"],
+            num_sensors = 2,
+            )
+
+        wrapped_env.observation_space = Dict(
+            {
+                "custody": MultiBinary(8),
+            }
+        )
+
+    """
+
     def __init__(
         self,
         env: gym.Env,
         key: str,
         num_sensors: int,
-        renamed_key: str = None,
+        new_key: str = None,
     ):
-        if renamed_key is None:
-            renamed_key = key
+        """Wrap environment.
+
+        Args:
+            env (gym.Env): Must have a Dict observation_space.
+            key (str): Contained in env.observation_space. Must be a 1d MultiBinary
+                space.
+            num_sensors (int): Number of sensors.
+            new_key (str, optional): _description_. Defaults to None.
+        """
+        if new_key is None:
+            new_key = key
+
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.Dict."
+        assert (
+            key in env.observation_space
+        ), f"{key} is not in env.observation_space."
+        assert isinstance(
+            env.observation_space.spaces[key], MultiBinary
+        ), f"env.observation_space[{key}] must be a MultiBinary."
 
         super().__init__(env)
 
         self.key = key
         self.num_sensors = num_sensors
-        self.renamed_key = renamed_key
+        self.new_key = new_key
         self.sdp = SelectiveDictProcessor(
             funcs=[
                 partial(
@@ -1418,20 +1470,20 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
                     num_sensors=num_sensors,
                 )
             ],
-            keys=[renamed_key],
+            keys=[new_key],
         )
         self.observation_space = deepcopy(env.observation_space)
 
         num_targets = env.observation_space.spaces[key].shape[0]
-        self.observation_space[renamed_key] = MultiBinary(
+        self.observation_space[new_key] = MultiBinary(
             (num_targets + 1) * num_sensors
         )
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         new_obs = deepcopy(obs)
-        # Copy item to new item (no effect if key == renamed_key)
-        new_obs[self.renamed_key] = new_obs[self.key]
-        # sdp.applyFunc overwrites new_obs[renamed_key], leaves other keys untouched
+        # Copy item to new item (no effect if key == new_key)
+        new_obs[self.new_key] = new_obs[self.key]
+        # sdp.applyFunc overwrites new_obs[new_key], leaves other keys untouched
         new_obs = self.sdp.applyFunc(new_obs)
         return new_obs
 
