@@ -1417,7 +1417,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
 
         wrapped_env = ConvertCustody2ActionMask(
             env,
-            key = ["custody"],
+            key = "custody",
             num_sensors = 2,
             )
 
@@ -1426,6 +1426,28 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
                 "custody": MultiBinary(8),
             }
         )
+
+    Example (with rename_key):
+        env.observation_space = Dict(
+            {
+                "custody": MultiBinary(3),
+                "bar": Box(0, 1)
+            }
+
+        wrapped_env = ConvertCustody2ActionMask(
+            env,
+            key = "custody",
+            num_sensors = 2,
+            rename_key = "foo"
+            )
+
+        wrapped_env.observation_space = Dict(
+            {
+                "bar": Box(0, 1)
+                "foo": MultiBinary(8),  # new item is at end of Dict
+            }
+        )
+
 
     """
 
@@ -1443,7 +1465,10 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
             key (str): Contained in env.observation_space. Must be a 1d MultiBinary
                 space.
             num_sensors (int): Number of sensors.
-            rename_key (str, optional): _description_. Defaults to None.
+            rename_key (str, optional): Unwrapped observation space entry key will
+                be renamed to rename_key and put at end of Dict observation space.
+                If rename_key == None, then unwrapped key is unmodified and stays
+                in same place. Defaults to None.
         """
         if rename_key is None:
             rename_key = key
@@ -1457,6 +1482,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         assert isinstance(
             env.observation_space.spaces[key], MultiBinary
         ), f"env.observation_space[{key}] must be a MultiBinary."
+        assert num_sensors > 0, "num_sensors must be > 0."
 
         super().__init__(env)
 
