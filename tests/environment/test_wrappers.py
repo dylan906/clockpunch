@@ -465,7 +465,7 @@ rand_env = RandomEnv(
 env_custody2am = ConvertCustody2ActionMask(
     rand_env,
     key="custody",
-    new_key="mask",
+    rename_key="mask",
     num_sensors=2,
 )
 obs_nomask = rand_env.observation_space.sample()
