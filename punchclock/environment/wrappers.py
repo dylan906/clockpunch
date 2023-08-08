@@ -33,6 +33,7 @@ from numpy import (
     ndarray,
     ones,
     split,
+    stack,
     sum,
     zeros,
 )
@@ -400,6 +401,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         wrapped_env.observation_space = {
             "action_mask": Box(0, 1, shape=(B*(A+1),), dtype=int)
         }
+
     """
 
     def __init__(
@@ -416,7 +418,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
                 - Dict observation space
                 - MultiDiscrete action space
                 - vis_map_key must be in observation space
-                - observation_space[vis_map_key] must be a MultiBinary
+                - observation_space[vis_map_key] must be a 2d MultiBinary
                 - Number of columns in observation_space[vis_map_key] must be
                     same as length of action space.
             vis_map_key (str): An item in observation space.
@@ -435,7 +437,10 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         ), "vis_map_key must be in observation space."
         assert isinstance(
             env.observation_space.spaces[vis_map_key], MultiBinary
-        ), "observation_space[vis_map_key] must be a gym.spaces.MultiBinary."
+        ), f"observation_space[{vis_map_key}] must be a gym.spaces.MultiBinary."
+        assert (
+            len(env.observation_space.spaces[vis_map_key].shape) == 2
+        ), f"observation_space[{vis_map_key}] must be 2d."
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "env.action_space must be a gym.spaces.MultiDiscrete."
@@ -475,6 +480,14 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         Returns:
             OrderedDict: Same as input obs except for modified renamed_key (if
                 renamed_key was provided on instantiation).
+
+        Example (num_sensors = 2, num_targets = 3):
+            obs = OrderedDict({"vis_map": array([[1, 0], [0, 0], [0, 0]])})
+            action_mask = VisMap2ActionMask.observation(obs, num_sensors = 2)
+            # action_mask = [1, 0, 0, 1, 0, 0, 0, 1]
+            #               [Sensor_1  , Sensor_2  ]
+            #                         ^           ^
+            #                       inaction always valid (=1)
         """
         mask = obs[self.vis_map_key]
         m = mask.shape[1]
@@ -1211,6 +1224,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         num_targets: int,
         config: dict = None,
         target_names: list = None,
+        initial_status: list[bool] = None,
     ):
         """Wrap environment with CustodyWrapper observation space wrapper.
 
@@ -1223,6 +1237,8 @@ class CustodyWrapper(gym.ObservationWrapper):
             config (dict, optional): See CustodyTracker for details. Defaults to None.
             target_names (list, optional): Target names. Used for debugging. Must
                 have length == num_targets. Defaults to None.
+            initial_status (list[bool], optional): See CustodyTracker for details.
+                Defaults to None.
         """
         assert (
             key in env.observation_space.spaces
@@ -1455,7 +1471,6 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         self,
         env: gym.Env,
         key: str,
-        num_sensors: int,
         rename_key: str = None,
     ):
         """Wrap environment.
@@ -1464,7 +1479,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
             env (gym.Env): Must have a Dict observation_space.
             key (str): Contained in env.observation_space. Must be a 1d MultiBinary
                 space.
-            num_sensors (int): Number of sensors.
+            # num_sensors (int): Number of sensors.
             rename_key (str, optional): Unwrapped observation space entry key will
                 be renamed to rename_key and put at end of Dict observation space.
                 If rename_key == None, then unwrapped key is unmodified and stays
@@ -1482,25 +1497,31 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         assert isinstance(
             env.observation_space.spaces[key], MultiBinary
         ), f"env.observation_space[{key}] must be a MultiBinary."
-        assert num_sensors > 0, "num_sensors must be > 0."
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "env.action_space must be a gym.spaces.MultiDiscrete."
 
         super().__init__(env)
 
         self.key = key
-        self.num_sensors = num_sensors
+        self.num_sensors = env.action_space.shape[0]
+        # convert num_targets from numpy dtype to Python int
+        self.num_targets = int(env.action_space.nvec.max())
         self.rename_key = rename_key
         self.sdp = SelectiveDictProcessor(
             funcs=[
                 partial(
                     self.binary2ActionMask,
-                    num_sensors=num_sensors,
+                    num_sensors=self.num_sensors,
                 )
             ],
             keys=[rename_key],
         )
         self.observation_space = deepcopy(env.observation_space)
-
-        num_targets = env.observation_space.spaces[key].shape[0]
+        self.mask2d_space = MultiBinary(
+            [self.num_targets + 1, self.num_sensors]
+        )
+        self.mask1d_space = flatten_space(env.action_space)
 
         # If original key's value is being overwritten, then maintain the item's
         # position in the OrderedDict. But if the original key is being replaced
@@ -1509,9 +1530,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         if rename_key != key:
             del self.observation_space.spaces[key]
 
-        self.observation_space[rename_key] = MultiBinary(
-            (num_targets + 1) * num_sensors
-        )
+        self.observation_space[rename_key] = flatten_space(self.action_space)
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Convert custody observation to action mask.
@@ -1559,16 +1578,20 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         Example:
             custody = [1, 0, 1]
             action_mask = binary2ActionMask(custody, num_sensors = 2)
-            % action_mask = [1, 0, 1, 1, 1, 0, 1, 1]
-            %               [Sensor 1  , Sensor 2  ]
+            # action_mask = [1, 0, 1, 1, 1, 0, 1, 1]
+            #               [Sensor_1  , Sensor_2  ]
+            #                         ^           ^
+            #                       inaction always valid (=1)
 
         """
-        num_targets = len(custody_array)
-        action_mask = ones(shape=((num_targets + 1) * num_sensors,))
-
-        mini_array = append(custody_array, [1])
-        action_mask = concatenate(
-            [deepcopy(mini_array) for _ in range(num_sensors)]
+        custody_copies = [custody_array for _ in range(num_sensors)]
+        partial_action_mask_2d = stack(custody_copies, axis=1)
+        full_action_mask_2d = concatenate(
+            [partial_action_mask_2d, ones((1, num_sensors), dtype=int)], axis=0
         )
+        full_action_mask_1d = flatten(
+            self.mask2d_space, full_action_mask_2d.transpose()
+        )
+        assert self.mask1d_space.contains(full_action_mask_1d)
 
-        return action_mask
+        return full_action_mask_1d
