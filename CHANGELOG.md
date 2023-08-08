@@ -6,7 +6,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that. 
 
-## [unreleased] - 20YY-MM-DD
+## [0.6.1] - 20YY-08-08
 
 ### Added
 - Added MinMax wrapper that scales every entry in a gym.Dict observation space by sklearn.MinMaxScaler (#4).
