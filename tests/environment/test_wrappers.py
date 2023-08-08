@@ -474,5 +474,28 @@ print(f"unwrapped obs  = \n{obs_nomask}")
 print(f"wrapped obs = \n{obs_mask}")
 assert env_custody2am.observation_space.contains(obs_mask)
 
+# %% Test combo CustodyWrapper and ConvertCustody2ActionMask
+print("\nTest combo CustodyWrapper and ConvertCustody2ActionMask...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"a": Box(0, 1, shape=(3, 6, 6))}),
+    },
+)
+custody_env = CustodyWrapper(rand_env, key="a", num_targets=3)
+custody_env = CopyObsItem(custody_env, key="custody")
+custody_mask_env = ConvertCustody2ActionMask(
+    custody_env, key="custody", num_sensors=2
+)
+
+
+unwrapped_obs = rand_env.observation_space.sample()
+custody_obs = custody_env.env.observation(unwrapped_obs)
+custody_obs_copy = custody_env.observation(custody_obs)
+custody_mask_obs = custody_mask_env.observation(custody_obs_copy)
+print(f"unwrapped obs  = \n{unwrapped_obs}")
+print(f"1-wrap obs = \n{custody_obs}")
+print(f"3-wrap obs = \n{custody_mask_obs}")
+assert custody_mask_env.observation_space.contains(custody_mask_obs)
+
 # %% Done
 print("done")
