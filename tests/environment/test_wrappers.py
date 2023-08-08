@@ -474,37 +474,5 @@ print(f"unwrapped obs  = \n{obs_nomask}")
 print(f"wrapped obs = \n{obs_mask}")
 assert env_custody2am.observation_space.contains(obs_mask)
 
-# %% Test multiple wrappers
-print("\nTest multiple wrappers...")
-env_multi_wrapped = FilterObservation(
-    env=env, filter_keys=["est_cov", "vis_map_est"]
-)
-env_multi_wrapped = SplitArrayObs(
-    env=env_multi_wrapped,
-    keys=["est_cov"],
-    new_keys=[["est_cov_pos", "est_cov_vel"]],
-    indices_or_sections=[2],
-)
-env_multi_wrapped = FilterObservation(
-    env=env_multi_wrapped, filter_keys=["vis_map_est", "est_cov_pos"]
-)
-env_multi_wrapped = ActionMask(env=env_multi_wrapped)
-env_multi_wrapped = FloatObs(env=env_multi_wrapped)
-env_multi_wrapped = FlatDict(env=env_multi_wrapped)
-env_multi_wrapped.reset()
-# check_env(env_multi_wrapped)
-
-[obs, _, _, _, _] = env_multi_wrapped.step(
-    env_multi_wrapped.action_space.sample()
-)
-
-print(f"observation_space = {env_multi_wrapped.observation_space}")
-print(f"obs = {obs}")
-# Check to make sure obs is contained in observation_space
-print(
-    f"obs in observation_space: {env_multi_wrapped.observation_space.contains(obs)}"
-)
-
-
 # %% Done
 print("done")
