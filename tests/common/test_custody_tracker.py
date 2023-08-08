@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 # Third Party Imports
-from numpy import ndarray
+from numpy import array, ndarray
 from numpy.random import rand
 
 # Punch Clock Imports
 from punchclock.common.custody_tracker import (  # CovarianceCustody,; TrPosCov,
     CustodyTracker,
+    DebugCustody,
     MaxPosStd,
     TrCov,
 )
 
 # %% Test custody functions
+print("\nTest DebugCustody...")
+funcDebug = DebugCustody(num_targets=2)
+custody = funcDebug.update(array([1, 0]))
+print(f"custody = {custody}")
+
 print("\nTest checkPosStdCustody...")
 funcMaxPosStd = MaxPosStd()
 custody = funcMaxPosStd(rand(2, 6, 6), 0.5)
@@ -60,6 +66,12 @@ ct = CustodyTracker(num_targets=3, config={"func": customCustodyFunc})
 custody = ct.update(obs=rand(3, 6, 6), b=False)
 print(f"custody = {custody}")
 
-
+# %% Test class with debug func
+print("\nTest CustodyTracker with DEbugCustody...")
+ct = CustodyTracker(
+    num_targets=2,
+    config={"func": DebugCustody(num_targets=2).update},
+)
+ct.update(obs=array([1, 0]))
 # %% done
 print("done")

@@ -9,7 +9,7 @@ from functools import partial
 from typing import Any, Callable
 
 # Third Party Imports
-from numpy import diagonal, ndarray, ones, sqrt, trace
+from numpy import bool_, diagonal, ndarray, ones, sqrt, trace
 
 
 # %% CustodyTracker class
@@ -57,6 +57,8 @@ class CustodyTracker:
         If using a custom custody function, recommend using partial() to fix as
         many arguments as possible. Keyword arguments can be used via
         CustodyTracker.update(..., `**kwargs`).
+
+        Custom custody function must return list of bools.
         """
         assert num_targets > 0, "num_targets must be >0."
 
@@ -138,7 +140,7 @@ class CustodyTracker:
             len(custody_status) == self.num_targets
         ), "custodyFunc must return an N-long list."
         assert all(
-            isinstance(x, bool) for x in custody_status
+            isinstance(x, (bool, bool_)) for x in custody_status
         ), "custodyFunc must return a list of bools."
 
         self.custody_status = custody_status
@@ -150,6 +152,33 @@ class CustodyTracker:
             out = deepcopy(self.custody_status)
 
         return out
+
+
+# %% Debug custody tracking function
+class DebugCustody:
+    """Used to debug CustodyTracker.
+
+    The input to DebugCustody.update() is the same as the output.
+    """
+
+    def __init__(self, num_targets: int):
+        """Initialize."""
+        self.num_targets = num_targets
+
+    def update(self, custody: ndarray) -> list[bool]:
+        """Input a 1d custody array, output a list of bools.
+
+        Args:
+            custody (ndarray): 1s and 0s. Must be 1d.
+
+        Returns:
+            list[bool]: 1s are converted to True, 0s to False.
+        """
+        assert custody.ndim == 1
+        assert all([c in [0, 1] for c in custody])
+        assert len(custody) == self.num_targets
+
+        return list(custody.astype(bool))
 
 
 # %% Covariance-based custody functions
