@@ -8,7 +8,6 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
-from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy import array, diag, float32, inf, int64, sum
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
@@ -493,8 +492,8 @@ custody_obs = custody_env.env.observation(unwrapped_obs)
 custody_obs_copy = custody_env.observation(custody_obs)
 custody_mask_obs = custody_mask_env.observation(custody_obs_copy)
 print(f"unwrapped obs  = \n{unwrapped_obs}")
-print(f"1-wrap obs = \n{custody_obs}")
-print(f"3-wrap obs = \n{custody_mask_obs}")
+print(f"custody obs = \n{custody_obs['custody']}")
+print(f"custody mask obs = \n{custody_mask_obs['custody']}")
 assert custody_mask_env.observation_space.contains(custody_mask_obs)
 
 # %% Done
