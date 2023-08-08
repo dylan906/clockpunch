@@ -1,4 +1,9 @@
 # README
+This repo (***punchclock***) is for a Gym/Gymnasium environment that models generic space object tracking sensors.
+Parts of the codebase mostly work, but everything is extremely fragile. 
+Also there is no documentation yet, so you are on your own for figuring out everything. 
+When I have time I'll add examples and documentation, but that may never happen.
+Good luck, we're all counting on you.
 
 ## Installation
 
