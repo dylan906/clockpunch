@@ -1209,7 +1209,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         env: gym.Env,
         key: Any,
         num_targets: int,
-        config: dict,
+        config: dict = None,
         target_names: list = None,
     ):
         """Wrap environment with CustodyWrapper observation space wrapper.
@@ -1220,7 +1220,7 @@ class CustodyWrapper(gym.ObservationWrapper):
                 to this key must conform to interface expected in CustodyTracker
                 and config.
             num_targets (int): Number of targets.
-            config (dict): See CustodyTracker for details.
+            config (dict, optional): See CustodyTracker for details. Defaults to None.
             target_names (list, optional): Target names. Used for debugging. Must
                 have length == num_targets. Defaults to None.
         """
