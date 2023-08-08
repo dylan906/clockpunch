@@ -388,7 +388,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
     Example (B = 2):
         env.observation_space = {
-            "vis_map": Box(0, 1, shape=(A, B))
+            "vis_map": MultiBinary((A, B))
         }
 
         env.action_space = MultiDiscrete([A+1, A+1])
@@ -398,7 +398,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
             renamed_key="action_mask")
 
         wrapped_env.observation_space = {
-            "action_mask": Box(0, 1, shape=(B*(A+1),))
+            "action_mask": Box(0, 1, shape=(B*(A+1),), dtype=int)
         }
     """
 
@@ -416,7 +416,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
                 - Dict observation space
                 - MultiDiscrete action space
                 - vis_map_key must be in observation space
-                - observation_space[vis_map_key] must be a Box
+                - observation_space[vis_map_key] must be a MultiBinary
                 - Number of columns in observation_space[vis_map_key] must be
                     same as length of action space.
             vis_map_key (str): An item in observation space.
@@ -434,8 +434,8 @@ class VisMap2ActionMask(gym.ObservationWrapper):
             vis_map_key in env.observation_space.spaces
         ), "vis_map_key must be in observation space."
         assert isinstance(
-            env.observation_space.spaces[vis_map_key], Box
-        ), "observation_space[vis_map_key] must be a gym.spaces.Box."
+            env.observation_space.spaces[vis_map_key], MultiBinary
+        ), "observation_space[vis_map_key] must be a gym.spaces.MultiBinary."
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "env.action_space must be a gym.spaces.MultiDiscrete."

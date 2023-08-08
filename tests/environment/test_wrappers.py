@@ -201,7 +201,7 @@ env_premask = RandomEnv(
     {
         "observation_space": Dict(
             {
-                "a": Box(0, 1, shape=(2, 3)),
+                "a": MultiBinary((2, 3)),
                 "b": Box(0, 1, shape=(1, 1)),
             }
         ),
