@@ -9,6 +9,7 @@ I'm trying to get better about that.
 ## [unreleased] - 20YY-MM-DD
 
 ### Added
+- Added wrapper to convert Box space to MultiBinary (#21)
 
 ### Changed
 
