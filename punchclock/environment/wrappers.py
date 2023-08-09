@@ -29,6 +29,7 @@ from numpy import (
     inf,
     int8,
     int64,
+    int_,
     multiply,
     ndarray,
     ones,
@@ -1242,7 +1243,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         """
         assert (
             key in env.observation_space.spaces
-        ), f"{key} must be in env.observation_space to use wrapper."
+        ), f"{key} must be in env.observation_space."
         assert (
             "custody" not in env.observation_space.spaces
         ), "'custody' is already in env.observation_space."
@@ -1593,3 +1594,68 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         assert self.mask1d_space.contains(full_action_mask_1d)
 
         return full_action_mask_1d
+
+
+class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
+    """Convert a Box space (which is an entry in a Dict space) to MultiBinary.
+
+    Overwrites value in Dict space.
+
+    Example:
+        env.observation_space = Dict(
+            {
+                "foo": Box(low=0, high=1, shape=(2, 2), dtype=float),
+            }
+
+        wrapped_env = ConvertObsBoxToMultiBinary(env, key = "foo")
+
+        wrapped_env.observation_space = Dict(
+            {
+                "foo": MultiBinary(2, 2),
+            }
+        )
+    """
+
+    def __init__(self, env: gym.Env, key: str):
+        """Wrap environment.
+
+        Args:
+            env (gym.Env): Must have Dict observation space.
+            key (str): Must be in env.observation_space. env.observation_space[key]
+                must be a Box space with high == 1, low == 0, and dtype != int.
+        """
+        assert isinstance(
+            env.observation_space.spaces[key], Box
+        ), f"env.observation_space.spaces[{key}] must be a Box."
+        assert (
+            key in env.observation_space.spaces
+        ), f"{key} must be in env.observation_space."
+        assert env.observation_space.spaces[key].dtype not in (
+            int,
+            int_,
+        ), f"""env.observation_space.spaces[{key}].dtype is already an int; no
+         need to wrap."""
+        assert all(
+            env.observation_space.spaces[key].low == 0
+        ), f"env.observation_space.spaces[{key}].low must = 0."
+        assert all(
+            env.observation_space.spaces[key].high == 1
+        ), f"env.observation_space.spaces[{key}].high must = 0."
+
+        super().__init__(env)
+
+        self.key = key
+        self.observation_space = deepcopy(env.observation_space)
+        self.observation_space[key] = MultiBinary(
+            env.observation_space[key].shape
+        )
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Convert Box observation to MultiBinary observation.
+
+        Output keys are same as input keys. Values not equal to self.key are unaffected.
+        Values in obs[self.key] are not changed, but dtype is.
+        """
+        new_obs = deepcopy(obs)
+        new_obs[self.key] = obs[self.key].astype(int)
+        return new_obs

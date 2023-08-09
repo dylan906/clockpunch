@@ -23,6 +23,7 @@ from punchclock.environment.wrappers import (
     ActionMask,
     Convert2dTo3dObsItems,
     ConvertCustody2ActionMask,
+    ConvertObsBoxToMultiBinary,
     CopyObsItem,
     CustodyWrapper,
     FlatDict,
@@ -525,6 +526,24 @@ print(f"custody action mask obs = \n{obs_2wrap['custody']}")
 print(f"visibility action mask obs = \n{obs_3wrap['vis_action_mask']}")
 assert env_3wrap.observation_space.contains(obs_3wrap)
 assert all(obs_2wrap["custody"] == obs_3wrap["vis_action_mask"])
+
+# %% Test ConvertObsBoxToMultiBinary
+print("\nTest ConvertObsBoxToMultiBinary...")
+box_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {"a": Box(low=0, high=1, shape=(2, 2), dtype=float)}
+        )
+    }
+)
+mb_env = ConvertObsBoxToMultiBinary(box_env, key="a")
+obs_unwrapped = box_env.observation_space.sample()
+obs_wrapped = mb_env.observation(obs_unwrapped)
+print(f"unwrapped obs  = \n{obs_unwrapped}")
+print(f"unwrapped dtype  = {obs_unwrapped['a'].dtype}")
+print(f"wrapped obs = \n{obs_wrapped}")
+print(f"wrapped dtype = {obs_wrapped['a'].dtype}")
+assert mb_env.observation_space.contains(obs_wrapped)
 
 # %% Done
 print("done")
