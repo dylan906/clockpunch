@@ -11,7 +11,7 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, MultiDiscrete
-from numpy import array, asarray, diagonal, float32, int64, ndarray, ones, zeros
+from numpy import array, asarray, float32, int64, ndarray, ones, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
@@ -30,8 +30,10 @@ class SSAScheduler(gym.Env):
             at time t. The 0-dim elements are position (km) and velocity (km/s)
             in ECI frame. For sensors, this is the true state; for targets this
             is the estimated state.
-        "est_cov" Box(low=-inf, high=inf, shape=(6, N)): Diagonals of target_filter's
-            estimate covariance matrix at time t.
+        # "est_cov" Box(low=-inf, high=inf, shape=(6, N)): Diagonals of target_filter's
+        #     estimate covariance matrix at time t.
+        "est_cov" Box(low=-inf, high=inf, shape=(N, 6, 6)): target_filter's estimate
+          covariance matrix at time t.
         "vis_map_est" Box(low=0, high=1, shape=(N, M), dtype=int): Visibility map
             at time t. Values are binary (0/1). 1 indicates the sensor-target pair
             can see each other.
@@ -152,7 +154,9 @@ class SSAScheduler(gym.Env):
                 "eci_state": Box(
                     low=-inf, high=inf, shape=(6, self.num_agents)
                 ),
-                "est_cov": Box(low=-inf, high=inf, shape=(6, self.num_targets)),
+                "est_cov": Box(
+                    low=-inf, high=inf, shape=(self.num_targets, 6, 6)
+                ),
                 "vis_map_est": Box(
                     low=0,
                     high=1,
@@ -230,8 +234,8 @@ class SSAScheduler(gym.Env):
                 "eci_state": ndarray[float] (6, self.num_agents),  # Dynamic
                     state of agents. The 0-dim elements are position (km) and velocity
                     (km/s) in ECI frame.
-                "est_cov": ndarray[float] (6, self.num_targets), # Diagonals
-                    of target_filter's estimate covariance matrix.
+                "est_cov": ndarray[float] (self.num_targets, 6, 6), Covariance
+                    matrices.
                 "vis_map_est": ndarray[int] (self.num_targets, self.num_sensors)
                     # Values are binary (0/1). 1 indicates the sensor-target pair
                     # can see each other.
@@ -242,7 +246,7 @@ class SSAScheduler(gym.Env):
                     of observation windows left in scenario for given target.
                 "num_tasked": ndarray[int] (1, self.num_targets),  # Number of
                     times target has been tasked during simulation.
-                } # noqa
+                }
         """
         # Calculate visibility matrix. Use ._getInfo() to ensure type checks are done.
         info_local = deepcopy(self._getInfo())
@@ -253,8 +257,8 @@ class SSAScheduler(gym.Env):
         vis_map_est = deepcopy(info_local["vis_map_est"])
 
         # Get the diagonal of each covariance matrix and arrange into (6, N) array
-        cov_copy = deepcopy(info_local["est_cov"])
-        cov_diags = diagonal(cov_copy, axis1=1, axis2=2).T
+        est_cov = deepcopy(info_local["est_cov"])
+        # cov_diags = diagonal(cov_copy, axis1=1, axis2=2).T
 
         obs_staleness_list = info_local["obs_staleness"]
 
@@ -262,7 +266,7 @@ class SSAScheduler(gym.Env):
 
         num_tasked_list = deepcopy(info_local["num_tasked"])
 
-        est_cov = cov_diags
+        # est_cov = cov_diags
         obs_staleness = asarray(obs_staleness_list, dtype=float32)
         obs_staleness = obs_staleness.reshape((1, -1))
         num_windows_left = asarray(num_windows_left_list)
