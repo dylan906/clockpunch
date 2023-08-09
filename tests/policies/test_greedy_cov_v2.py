@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 # Third Party Imports
-from gymnasium.spaces import Box, Dict, MultiDiscrete
-from numpy import Inf, array, vstack
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
+from numpy import Inf, array, diagonal, vstack
 from numpy.random import seed
 
 # Punch Clock Imports
@@ -23,10 +23,10 @@ obs_space = Dict(
     {
         "observations": Dict(
             {
-                "est_cov": Box(-Inf, Inf, shape=[6, num_targets], dtype=float),
-                "vis_map_est": Box(
-                    0, 1, shape=[num_targets, num_sensors], dtype=int
+                "est_cov": Box(
+                    -Inf, Inf, shape=[num_targets, 6, 6], dtype=float
                 ),
+                "vis_map_est": MultiBinary((num_targets, num_sensors)),
             }
         ),
         "action_mask": Box(0, 1, shape=[mask_dim], dtype=int),
@@ -50,7 +50,8 @@ print("\nCalculate Q...")
 covariance = obs_space.sample()["observations"]["est_cov"]
 vis_map = obs_space.sample()["observations"]["vis_map_est"]
 
-Q = policy.calcQ(covariance, vis_map)
+cov_diags = diagonal(covariance, 1, 2)
+Q = policy.calcQ(cov_diags, vis_map)
 print(f"Q = \n{Q}")
 
 # %% getCovVisMask

@@ -8,7 +8,8 @@ from warnings import warn
 
 # Third Party Imports
 import gymnasium as gym
-from numpy import multiply, ndarray, zeros
+from gymnasium.spaces import MultiBinary
+from numpy import diagonal, multiply, ndarray, zeros
 
 # Punch Clock Imports
 from punchclock.common.utilities import MaskConverter
@@ -27,6 +28,15 @@ class GreedyCovariance(CustomPolicy):
     Notation:
         M = number of sensors
         N = number of targets
+
+    Observation Space: A Dict with the following structure:
+        Dict({
+            "observations": Dict({
+                "est_cov": Box(low=-inf, high=inf, shape=(N, 6, 6)),
+                "vis_map_est": MultiBinary((N, M))
+            }),
+            "action_mask": MultiBinary((N+1, M)),
+        })
     """
 
     def __init__(
@@ -58,6 +68,36 @@ class GreedyCovariance(CustomPolicy):
         super().__init__(
             observation_space=observation_space, action_space=action_space
         )
+        assert all(
+            key in observation_space.spaces["observations"].spaces
+            for key in ["est_cov", "vis_map_est"]
+        ), """observation_space.spaces['observations'].spaces must contain
+            ['est_cov', 'vis_map_est']"""
+        assert (
+            len(
+                observation_space.spaces["observations"].spaces["est_cov"].shape
+            )
+            == 3
+        ), "'est_cov' must be 3d."
+        assert (
+            observation_space.spaces["observations"].spaces["est_cov"].shape[1]
+            == observation_space.spaces["observations"]
+            .spaces["est_cov"]
+            .shape[2]
+            == 6
+        ), "'est_cov' must have shape [N, 6, 6]."
+        assert isinstance(
+            observation_space.spaces["observations"].spaces["vis_map_est"],
+            MultiBinary,
+        ), "'vist_map_est' must be MultiBinary."
+
+        self.num_sensors = len(self.action_space.nvec)
+        # convert to int manually because nvec has a non-standard int type
+        self.num_targets = int(self.action_space.nvec[0] - 1)
+
+        assert observation_space.spaces["observations"].spaces[
+            "vis_map_est"
+        ].shape == (self.num_targets, self.num_sensors)
 
         if subsidy > 0:
             warn(
@@ -69,9 +109,6 @@ class GreedyCovariance(CustomPolicy):
         self.epsilon = epsilon
         self.mode = mode
         self.subsidy = subsidy
-        self.num_sensors = len(self.action_space.nvec)
-        # convert to int manually because nvec has a non-standard int type
-        self.num_targets = int(self.action_space.nvec[0] - 1)
         self.mask_converter = MaskConverter(
             num_targets=self.num_targets,
             num_sensors=self.num_sensors,
@@ -89,7 +126,8 @@ class GreedyCovariance(CustomPolicy):
         """
         [cov, vis_map, mask1d] = self.getCovVisMask(obs)
         mask2d = self.mask_converter.convertActionMaskFrom1dTo2d(mask1d)
-        Q = self.calcQ(cov, vis_map)
+        cov_diags = diagonal(cov, axis1=1, axis2=2)
+        Q = self.calcQ(cov_diags, vis_map)
         action = epsGreedyMask(
             Q=Q,
             epsilon=self.epsilon,
