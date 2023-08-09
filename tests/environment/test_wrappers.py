@@ -211,7 +211,7 @@ env_premask = RandomEnv(
     }
 )
 env_postmask = VisMap2ActionMask(
-    env_premask, vis_map_key="a", renamed_key="a_mask"
+    env_premask, vis_map_key="a", rename_key="a_mask"
 )
 unmasked_obs = env_premask.observation_space.sample()
 obs_mask = env_postmask.observation(unmasked_obs)
@@ -508,7 +508,7 @@ env_2wrap = ConvertCustody2ActionMask(env_1wrap, key="custody")
 env_3wrap = VisMap2ActionMask(
     env_2wrap,
     vis_map_key="debug_vismap",
-    renamed_key="vis_action_mask",
+    rename_key="vis_action_mask",
 )
 
 # unwrapped_obs = rand_env.observation_space.sample()
@@ -524,7 +524,7 @@ print(f"custody obs = \n{obs_1wrap['custody']}")
 print(f"custody action mask obs = \n{obs_2wrap['custody']}")
 print(f"visibility action mask obs = \n{obs_3wrap['vis_action_mask']}")
 assert env_3wrap.observation_space.contains(obs_3wrap)
-assert all(obs_2wrap['custody'] == obs_3wrap['vis_action_mask'])
+assert all(obs_2wrap["custody"] == obs_3wrap["vis_action_mask"])
 
 # %% Done
 print("done")

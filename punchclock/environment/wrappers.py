@@ -396,7 +396,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
         wrapped_env = VisMap2ActionMask(env,
             vis_map_key="vis_map",
-            renamed_key="action_mask")
+            rename_key="action_mask")
 
         wrapped_env.observation_space = {
             "action_mask": Box(0, 1, shape=(B*(A+1),), dtype=int)
@@ -408,7 +408,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         self,
         env: gym.Env,
         vis_map_key: str,
-        renamed_key: str = None,
+        rename_key: str = None,
         action_mask_on: bool = True,
     ):
         """Wrap environment with VisMap2ActionMask.
@@ -422,11 +422,11 @@ class VisMap2ActionMask(gym.ObservationWrapper):
                 - Number of columns in observation_space[vis_map_key] must be
                     same as length of action space.
             vis_map_key (str): An item in observation space.
-            renamed_key (str, optional): Optionally rename vis_map_key in wrapped
+            rename_key (str, optional): Optionally rename vis_map_key in wrapped
                 observation space. If None, key will not be changed. Defaults to
                 None.
             action_mask_on (bool, optional): If False, all values in wrapped
-                observation[renamed_key] will be 1. Otherwise, will be copies of
+                observation[rename_key] will be 1. Otherwise, will be copies of
                 vis_map_key. Defaults to True.
         """
         assert isinstance(
@@ -454,11 +454,11 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
         super().__init__(env)
 
-        if renamed_key is None:
-            renamed_key = vis_map_key
+        if rename_key is None:
+            rename_key = vis_map_key
 
         self.vis_map_key = vis_map_key
-        self.renamed_key = renamed_key
+        self.rename_key = rename_key
         self.action_mask_on = action_mask_on
         self.mask_space = flatten_space(self.action_space)
 
@@ -466,7 +466,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         new_obs_space = OrderedDict({})
         for k, space in env.observation_space.items():
             if k == vis_map_key:
-                new_obs_space[renamed_key] = self.mask_space
+                new_obs_space[rename_key] = self.mask_space
             else:
                 new_obs_space[k] = space
         self.observation_space = Dict(new_obs_space)
@@ -478,8 +478,8 @@ class VisMap2ActionMask(gym.ObservationWrapper):
             obs (dict): Must have self.vis_map_key in keys.
 
         Returns:
-            OrderedDict: Same as input obs except for modified renamed_key (if
-                renamed_key was provided on instantiation).
+            OrderedDict: Same as input obs except for modified rename_key (if
+                rename_key was provided on instantiation).
 
         Example (num_sensors = 2, num_targets = 3):
             obs = OrderedDict({"vis_map": array([[1, 0], [0, 0], [0, 0]])})
@@ -504,7 +504,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         obs_new = OrderedDict()
         for k, v in obs.items():
             if k == self.vis_map_key:
-                obs_new[self.renamed_key] = obs_mask
+                obs_new[self.rename_key] = obs_mask
             else:
                 obs_new[k] = v
 
@@ -1434,7 +1434,6 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         wrapped_env = ConvertCustody2ActionMask(
             env,
             key = "custody",
-            num_sensors = 2,
             )
 
         wrapped_env.observation_space = Dict(
@@ -1453,7 +1452,6 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         wrapped_env = ConvertCustody2ActionMask(
             env,
             key = "custody",
-            num_sensors = 2,
             rename_key = "foo"
             )
 
