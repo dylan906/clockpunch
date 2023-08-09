@@ -25,77 +25,69 @@ from punchclock.environment.env_utils import getVisMapEstOrTruth
 class SSAScheduler(gym.Env):
     """Class for SSA scheduling environment.
 
-    Description:
-        Observation Space: An OrderedDict with the following keys:
-            {
-                "eci_state": ndarray[float] (6, N+M),  # Dynamic state of agents
-                    at time t. The 0-dim elements are position (km) and velocity
-                    (km/s) in ECI frame. For sensors, this is the true state; for
-                    targets this is the estimated state.
-                "est_cov": ndarray[float] (6, N), # Diagonals of target_filter's
-                    estimate covariance matrix at time t.
-                "vis_map_est": ndarray[int] (N, M) # Visibility map at time t.
-                    Values are binary (0/1). 1 indicates the sensor-target pair
-                    can see each other.
-                "obs_staleness": ndarray[float] (1, N),  # The difference between
-                    the simulation time and the last time the given target was tasked
-                    (sec).
-                "num_windows_left": ndarray[int](1, N),  # Number of observation # noqa
-                    windows left in scenario for given target.
-                "num_tasked": ndarray[int] (1, N),  # Number of times target
-                    has been tasked during simulation.
-            }
-        Action Space: (M, ) gym.spaces.MultiDiscrete. Each entry is valued 0-N.
-            All action space instantiations are converted within SSAScheduler
-            to binary arrays representing sensor-target tasking pairs, a process
-            which is opaque to the user, but not necessary to see.
-        Info: Use ._getInfo() to get information which is not available in the
-            observation. Returns a dict with the following keys:
-            {
-                "num_steps": (int) Number of steps taken in the simulation so
-                    far.
-                "time_now": (float) Current simulation time (sec).
-                "mean_pos_var": (float) Mean of estimate position covariance across
-                    whole catalog.
-                "mean_vel_var": (float) Mean of estimate velocity covariance across
-                    whole catalog.
-                "est_x": (ndarray[float]) with shape (6, N+M) State estimates
-                    of all agents. Sensor states are truth values. ECI frame (km,
-                    km/s)
-                "est_cov": (ndarray[float]) with shape (N, 6, 6), Estimate covariance
-                    matrices for all targets.
-                "num_unique_targets_tasked": (int) Number of unique targets that
-                    have been tasked from the beginning of the simulation until
-                    the current step.
-                "num_non_vis_taskings_est": (int) Number of instances in which
-                    a sensor was tasked to an estimated non-visible target.
-                "num_non_vis_taskings_truth": (int) Number of instances in which
-                    a sensor was tasked to a truly non-visible target.
-                "num_multiple_taskings": (int) Number of instances in which multiple
-                    sensors were assigned to a single target.
-                "targets_tasked": (list) Non-repeating IDs of all targets tasked
-                    since simulation started,.
-                "true_states": (ndarray[float]) (6, N + M) True states of all agents.
-                "vis_map_est": (ndarray[int]) (N, M) Estimated visibility map.
-                "vis_map_truth": (ndarray[int]) (N, M) True visibility map.
-                "num_windows_left": list[int] N-long,  Number of observation
-                    windows left in scenario for given target.
-                "obs_staleness": list[float] N-long,  The difference between
-                    the simulation time and the last time the given target was tasked
-                    (sec).
-                "num_tasked": (list[int]) N-long, Number of times each target has
-                    been tasked.
-            }
+    Observation Space: A Dict with the following keys:
+        "eci_state" Box(low=-inf, high=inf, shape=(6, N+M)): Dynamic state of agents
+            at time t. The 0-dim elements are position (km) and velocity (km/s)
+            in ECI frame. For sensors, this is the true state; for targets this
+            is the estimated state.
+        "est_cov" Box(low=-inf, high=inf, shape=(6, N)): Diagonals of target_filter's
+            estimate covariance matrix at time t.
+        "vis_map_est" Box(low=0, high=1, shape=(N, M), dtype=int): Visibility map
+            at time t. Values are binary (0/1). 1 indicates the sensor-target pair
+            can see each other.
+        "obs_staleness" Box(low=0, high=inf, shape=(1, N)): The difference between
+            the simulation time and the last time the given target was tasked (sec).
+        "num_windows_left" Box(low=0, high=inf, shape=(1, N), dtype=int): Number
+            of observation windows left in scenario for given target.
+        "num_tasked" Box(low=0, high=inf, shape=(1, N), dtype=int): Number of times
+            target has been tasked during simulation.
+
+    Action Space: MultiDiscrete([[N + 1] * M). Each entry is valued 0-N.
+        All action space instantiations are converted within SSAScheduler to binary
+        arrays representing sensor-target tasking pairs, a process which is opaque
+        to the user, but not necessary to see.
+
+    Info: Use ._getInfo() to get information which is not available in the
+        observation. Returns a dict with the following keys:
+        "num_steps" (int): Number of steps taken in the simulation so far.
+        "time_now" (float): Current simulation time (sec).
+        "mean_pos_var" (float): Mean of estimate position covariance across whole
+            catalog.
+        "mean_vel_var" (float): Mean of estimate velocity covariance across whole
+            catalog.
+        "est_x" (ndarray[float]): with shape (6, N+M) State estimates
+            of all agents. Sensor states are truth values. ECI frame (km, km/s)
+        "est_cov" (ndarray[float]): with shape (N, 6, 6), Estimate covariance matrices
+            for all targets.
+        "num_unique_targets_tasked" (int): Number of unique targets that have been
+            tasked from the beginning of the simulation until the current step.
+        "num_non_vis_taskings_est" (int): Number of instances in which a sensor
+            was tasked to an estimated non-visible target.
+        "num_non_vis_taskings_truth" (int): Number of instances in which a sensor
+            was tasked to a truly non-visible target.
+        "num_multiple_taskings" (int): Number of instances in which multiple sensors
+            were assigned to a single target.
+        "targets_tasked" (list): Non-repeating IDs of all targets tasked since
+            simulation started,.
+        "true_states" (ndarray[float]): (6, N + M) True states of all agents.
+        "vis_map_est" (ndarray[int]): (N, M) Estimated visibility map.
+        "vis_map_truth" (ndarray[int]): (N, M) True visibility map.
+        "num_windows_left" list[int] N-long,  Number of observation windows left
+            in scenario for given target.
+        "obs_staleness" list[float]: N-long,  The difference between the simulation
+            time and the last time the given target was tasked (sec).
+        "num_tasked" (list[int]): N-long, Number of times each target has been
+            tasked.
 
     Attributes (not all-inclusive):
-        action_space (gym.spaces.MultiDiscrete): See Action Space.
+        action_space (MultiDiscrete): See Action Space.
         agents (list[Agent]): List of Agents (both Target and Sensor types).
         horizon (int): Number of steps in simulation.
         info (dict): See Info, above.
         num_agents (int): Number of agents in environment (targets and sensors).
         num_sensors (int): Number of sensors in environment.
         num_targets (int): Number of targets in environment.
-        observation_space (gym.spaces.Box): See Observation Space.
+        observation_space (Dict): See Observation Space.
         reward_func (RewardFunc): Reward function.
         reset_params (SSASchedulerParams): Parameters used to reset environment.
         sensor_ids (list): List of sensor IDs.
@@ -188,12 +180,14 @@ class SSAScheduler(gym.Env):
             (self.num_targets + 1) * ones([self.num_sensors])
         )
 
-    def reset(self, *, seed=None, options=None) -> tuple[ndarray, dict]:
+    def reset(
+        self, *, seed=None, options=None
+    ) -> tuple[OrderedDict, OrderedDict]:
         """Reset environment to original state.
 
         Returns:
-            observation (ndarray): See _getObs.
-            info (dict): See _getInfo.
+            observation (OrderedDict): See _getObs.
+            info (OrderedDict): See _getInfo.
         """
         # reset tasking metrics tracker
         self.tracker.reset()
@@ -226,7 +220,7 @@ class SSAScheduler(gym.Env):
         observation = self._getObs()
 
         # new gymnasium API requires reset() to return an info dict
-        return observation, {}
+        return observation, OrderedDict({})
 
     def _getObs(self) -> OrderedDict:
         """Get observation as dict.
