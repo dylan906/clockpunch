@@ -26,82 +26,82 @@ class SSAScheduler(gym.Env):
     """Class for SSA scheduling environment.
 
     Description:
-        Observation Space: An `OrderedDict` with the following keys:
+        Observation Space: An OrderedDict with the following keys:
             {
-                "eci_state": `ndarray[float]` (6, N+M),  # Dynamic state of agents
+                "eci_state": ndarray[float] (6, N+M),  # Dynamic state of agents
                     at time t. The 0-dim elements are position (km) and velocity
                     (km/s) in ECI frame. For sensors, this is the true state; for
                     targets this is the estimated state.
-                "est_cov": `ndarray[float]` (6, N), # Diagonals of target_filter's
+                "est_cov": ndarray[float] (6, N), # Diagonals of target_filter's
                     estimate covariance matrix at time t.
-                "vis_map_est": `ndarray[int]` (N, M) # Visibility map at time t.
+                "vis_map_est": ndarray[int] (N, M) # Visibility map at time t.
                     Values are binary (0/1). 1 indicates the sensor-target pair
                     can see each other.
-                "obs_staleness": `ndarray[float]` (1, N),  # The difference between
+                "obs_staleness": ndarray[float] (1, N),  # The difference between
                     the simulation time and the last time the given target was tasked
                     (sec).
-                "num_windows_left": `ndarray[int]`(1, N),  # Number of observation # noqa
+                "num_windows_left": ndarray[int](1, N),  # Number of observation # noqa
                     windows left in scenario for given target.
-                "num_tasked": `ndarray[int]` (1, N),  # Number of times target
+                "num_tasked": ndarray[int] (1, N),  # Number of times target
                     has been tasked during simulation.
             }
-        Action Space: (M, ) `gym.spaces.MultiDiscrete`. Each entry is valued 0-N.
-            All action space instantiations are converted within `SSAScheduler`
+        Action Space: (M, ) gym.spaces.MultiDiscrete. Each entry is valued 0-N.
+            All action space instantiations are converted within SSAScheduler
             to binary arrays representing sensor-target tasking pairs, a process
             which is opaque to the user, but not necessary to see.
-        Info: Use `._getInfo()` to get information which is not available in the
+        Info: Use ._getInfo() to get information which is not available in the
             observation. Returns a dict with the following keys:
             {
-                "num_steps": (`int`) Number of steps taken in the simulation so
+                "num_steps": (int) Number of steps taken in the simulation so
                     far.
-                "time_now": (`float`) Current simulation time (sec).
-                "mean_pos_var": (`float`) Mean of estimate position covariance across
+                "time_now": (float) Current simulation time (sec).
+                "mean_pos_var": (float) Mean of estimate position covariance across
                     whole catalog.
-                "mean_vel_var": (`float`) Mean of estimate velocity covariance across
+                "mean_vel_var": (float) Mean of estimate velocity covariance across
                     whole catalog.
-                "est_x": (`ndarray[float]`) with shape (6, N+M) State estimates
+                "est_x": (ndarray[float]) with shape (6, N+M) State estimates
                     of all agents. Sensor states are truth values. ECI frame (km,
                     km/s)
-                "est_cov": (`ndarray[float]`) with shape (N, 6, 6), Estimate covariance
+                "est_cov": (ndarray[float]) with shape (N, 6, 6), Estimate covariance
                     matrices for all targets.
-                "num_unique_targets_tasked": (`int`) Number of unique targets that
+                "num_unique_targets_tasked": (int) Number of unique targets that
                     have been tasked from the beginning of the simulation until
                     the current step.
-                "num_non_vis_taskings_est": (`int`) Number of instances in which
+                "num_non_vis_taskings_est": (int) Number of instances in which
                     a sensor was tasked to an estimated non-visible target.
-                "num_non_vis_taskings_truth": (`int`) Number of instances in which
+                "num_non_vis_taskings_truth": (int) Number of instances in which
                     a sensor was tasked to a truly non-visible target.
-                "num_multiple_taskings": (`int`) Number of instances in which multiple
+                "num_multiple_taskings": (int) Number of instances in which multiple
                     sensors were assigned to a single target.
-                "targets_tasked": (`list`) Non-repeating IDs of all targets tasked
+                "targets_tasked": (list) Non-repeating IDs of all targets tasked
                     since simulation started,.
-                "true_states": (`ndarray[float]`) (6, N + M) True states of all agents.
-                "vis_map_est": (`ndarray[int]`) (N, M) Estimated visibility map.
-                "vis_map_truth": (`ndarray[int]`) (N, M) True visibility map.
-                "num_windows_left": `list[int]` N-long,  Number of observation
+                "true_states": (ndarray[float]) (6, N + M) True states of all agents.
+                "vis_map_est": (ndarray[int]) (N, M) Estimated visibility map.
+                "vis_map_truth": (ndarray[int]) (N, M) True visibility map.
+                "num_windows_left": list[int] N-long,  Number of observation
                     windows left in scenario for given target.
-                "obs_staleness": `list[float]` N-long,  The difference between
+                "obs_staleness": list[float] N-long,  The difference between
                     the simulation time and the last time the given target was tasked
                     (sec).
-                "num_tasked": (`list[int]`) N-long, Number of times each target has
+                "num_tasked": (list[int]) N-long, Number of times each target has
                     been tasked.
             }
 
     Attributes (not all-inclusive):
-        action_space (`gym.spaces.MultiDiscrete`): See Action Space.
-        agents (`list[Agent]`): List of `Agent`s (both `Target` and `Sensor` types).
-        horizon (`int`): Number of steps in simulation.
-        info (`dict`): See Info, above.
-        num_agents (`int`): Number of agents in environment (targets and sensors).
-        num_sensors (`int`): Number of sensors in environment.
-        num_targets (`int`): Number of targets in environment.
-        observation_space (`gym.spaces.Box`): See Observation Space.
-        reward_func (`RewardFunc`): Reward function.
-        reset_params (`SSASchedulerParams`): Parameters used to reset environment.
-        sensor_ids (`list`): List of sensor IDs.
-        target_ids (`list`): List of target IDs.
-        time_step (`float`): Simulation time step (sec).
-        tracker (`TaskingMetricTracker`): Used to track metrics in simulation.
+        action_space (gym.spaces.MultiDiscrete): See Action Space.
+        agents (list[Agent]): List of Agents (both Target and Sensor types).
+        horizon (int): Number of steps in simulation.
+        info (dict): See Info, above.
+        num_agents (int): Number of agents in environment (targets and sensors).
+        num_sensors (int): Number of sensors in environment.
+        num_targets (int): Number of targets in environment.
+        observation_space (gym.spaces.Box): See Observation Space.
+        reward_func (RewardFunc): Reward function.
+        reset_params (SSASchedulerParams): Parameters used to reset environment.
+        sensor_ids (list): List of sensor IDs.
+        target_ids (list): List of target IDs.
+        time_step (float): Simulation time step (sec).
+        tracker (TaskingMetricTracker): Used to track metrics in simulation.
 
     Notation:
         N = number of targets
@@ -115,7 +115,7 @@ class SSAScheduler(gym.Env):
         """Initialize SSA scheduling environment.
 
         Args:
-            scenario_params (`SSASchedulerParams`): See `env_parameters.py` for
+            scenario_params (SSASchedulerParams): See env_parameters.py for
             documentation.
         """
         # %% Direct copy attributes (simple stuff)
@@ -132,7 +132,7 @@ class SSAScheduler(gym.Env):
         # self.policy = scenario_params.policy
         self.reward_func = scenario_params.reward_func
 
-        # initialize `info` (filled out in reset())
+        # initialize info (filled out in reset())
         self.info = {}
         self.info["num_targets"] = self.num_targets
         self.info["num_sensors"] = self.num_sensors
@@ -192,8 +192,8 @@ class SSAScheduler(gym.Env):
         """Reset environment to original state.
 
         Returns:
-            observation (`ndarray`): See `_getObs`.
-            info (`dict`): See `_getInfo`.
+            observation (ndarray): See _getObs.
+            info (dict): See _getInfo.
         """
         # reset tasking metrics tracker
         self.tracker.reset()
@@ -232,21 +232,21 @@ class SSAScheduler(gym.Env):
         """Get observation as dict.
 
         Returns:
-            `OrderedDict`: {
-                "eci_state": `ndarray[float]` (6, self.num_agents),  # Dynamic
+            OrderedDict: {
+                "eci_state": ndarray[float] (6, self.num_agents),  # Dynamic
                     state of agents. The 0-dim elements are position (km) and velocity
                     (km/s) in ECI frame.
-                "est_cov": `ndarray[float]` (6, self.num_targets), # Diagonals
+                "est_cov": ndarray[float] (6, self.num_targets), # Diagonals
                     of target_filter's estimate covariance matrix.
-                "vis_map_est": `ndarray[int]` (self.num_targets, self.num_sensors)
+                "vis_map_est": ndarray[int] (self.num_targets, self.num_sensors)
                     # Values are binary (0/1). 1 indicates the sensor-target pair
                     # can see each other.
-                "obs_staleness": `ndarray[float]` (1, self.num_targets),  # The
+                "obs_staleness": ndarray[float] (1, self.num_targets),  # The
                     difference between the simulation time and the last time the
                     given target was tasked (sec).
-                "num_windows_left": `ndarray[int]`(1, self.num_targets),  # Number
+                "num_windows_left": ndarray[int](1, self.num_targets),  # Number
                     of observation windows left in scenario for given target.
-                "num_tasked": `ndarray[int]` (1, self.num_targets),  # Number of
+                "num_tasked": ndarray[int] (1, self.num_targets),  # Number of
                     times target has been tasked during simulation.
                 } # noqa
         """
@@ -292,7 +292,7 @@ class SSAScheduler(gym.Env):
         """Returns info from environment.
 
         Returns:
-            `dict`: See SSAScheduler class description.
+            dict: See SSAScheduler class description.
         """
         # Check output types for more complicated outputs
         assert self.info["est_x"].shape == (
@@ -353,10 +353,10 @@ class SSAScheduler(gym.Env):
         """Calculates true reward received from environment.
 
         Args:
-            actions (`ndarray[int]`): (M, )
+            actions (ndarray[int]): (M, )
 
         Returns:
-            `float`: Reward earned from environment at single time step.
+            float: Reward earned from environment at single time step.
         """
         reward_earned = self.reward_func.calcNetReward(
             obs=self._getObs(),
@@ -369,27 +369,27 @@ class SSAScheduler(gym.Env):
         """Update information prior to tasking.
 
         Updates the following entries in self.info:
-            "time_now": (`float`) Current simulation time (sec).
-            "num_steps": (`int`) Number of steps taken in the simulation so far.
-            "num_unique_targets_tasked": (`int`) Number of unique targets that have
+            "time_now": (float) Current simulation time (sec).
+            "num_steps": (int) Number of steps taken in the simulation so far.
+            "num_unique_targets_tasked": (int) Number of unique targets that have
                 been tasked from the beginning of the simulation until the current
                 step.
-            "targets_tasked": (`list`) The target IDs that have been tasked since
+            "targets_tasked": (list) The target IDs that have been tasked since
                 the last reset.
-            "num_non_vis_taskings_est": (`int`) The number of times estimated
+            "num_non_vis_taskings_est": (int) The number of times estimated
                 non-visible targets have been tasked since the last reset.
-            "num_non_vis_taskings_truth": (`int`) The number of times truly non-visible
+            "num_non_vis_taskings_truth": (int) The number of times truly non-visible
                 targets have been tasked since the last reset.
-            "non_vis_by_sensor_est": (`ndarray[int]`) The number of times each
+            "non_vis_by_sensor_est": (ndarray[int]) The number of times each
                 sensor has been tasked to an estimated non-visible target.
-            "non_vis_by_sensor_truth": (`ndarray[int]`) The number of times each
+            "non_vis_by_sensor_truth": (ndarray[int]) The number of times each
                 sensor has been tasked to a truly non-visible target.
-            "num_multiple_taskings": (`int`) The number of times multiple tasking
+            "num_multiple_taskings": (int) The number of times multiple tasking
                 events (multiple sensors tasked to a single target) have occurred
                 since the last reset.
 
         Args:
-            action (`ndarray[int]`): (M,) In format of MultiDiscrete action space.
+            action (ndarray[int]): (M,) In format of MultiDiscrete action space.
         """
         # Update environment time; must be done before _taskAgents() so filters update
         # with correct time.
@@ -421,27 +421,27 @@ class SSAScheduler(gym.Env):
         """Update information after tasking has been complete.
 
         Updates the following entries in self.info:
-            "est_x": (`ndarray[float]`) with shape (6, N+M) State estimates
+            "est_x": (ndarray[float]) with shape (6, N+M) State estimates
                     of all agents. Sensor states are truth values. ECI frame (km,
                     km/s)
-            "est_cov": (`ndarray[float]`) with shape (N, 6, 6), Estimate covariance
+            "est_cov": (ndarray[float]) with shape (N, 6, 6), Estimate covariance
                 matrices for all targets.
-            "mean_pos_var": (`float`) Mean of estimate position covariance across
+            "mean_pos_var": (float) Mean of estimate position covariance across
                 whole catalog.
-            "mean_vel_var": (`float`) Mean of estimate velocity covariance across
+            "mean_vel_var": (float) Mean of estimate velocity covariance across
                 whole catalog.
-            "vis_map_est": (`ndarray[int]`) (N, M) Estimated visibility map.
-            "vis_map_truth": (`ndarray[int]`) (N, M) True visibility map.
-            "num_tasked": (`list[int]`) (N, ) Number of times each target has been
+            "vis_map_est": (ndarray[int]) (N, M) Estimated visibility map.
+            "vis_map_truth": (ndarray[int]) (N, M) True visibility map.
+            "num_tasked": (list[int]) (N, ) Number of times each target has been
                 tasked.
-            "true_states": (`ndarray[float]`) (6, N+M) Column i is true ECI state
+            "true_states": (ndarray[float]) (6, N+M) Column i is true ECI state
                 of i-th agent.
         """
         self.info["est_x"] = self.getEstStates()
 
         # Update covariance matrices of targets.
-        # NOTE: The diagonals are already recorded in `observation`, but storing
-        # in `info` to save off-diagonals.
+        # NOTE: The diagonals are already recorded in observation, but storing
+        # in info to save off-diagonals.
         covariance_list = [
             agent.target_filter.est_p
             for agent in self.agents
@@ -498,10 +498,10 @@ class SSAScheduler(gym.Env):
         self,
         actions_array: ndarray[int],
     ) -> None:
-        """Tasks agents according to their rows in `actions_array`.
+        """Tasks agents according to their rows in actions_array.
 
         Args:
-            actions_array (`ndarray[int]`): (N, M) array where N=number of targets and
+            actions_array (ndarray[int]): (N, M) array where N=number of targets and
                 M=number of sensors. Values are 0 or 1, where 1 indicates a sensor/target
                 pair action.
 
@@ -538,7 +538,7 @@ class SSAScheduler(gym.Env):
         For sensors, estimates are true.
 
         Returns:
-            `ndarray[float]`: (6, N+M) Each column is a state (estimate) in ECI
+            ndarray[float]: (6, N+M) Each column is a state (estimate) in ECI
                 frame (km, km/s).
         """
         # %% Get all states as list
@@ -564,13 +564,13 @@ class SSAScheduler(gym.Env):
         """Step environment forward given actions.
 
         Args:
-            action (`ndarray[int]`): See `__init__` for format details.
+            action (ndarray[int]): See __init__ for format details.
 
         Returns:
-            observation (`OrderedDict`): See `_getObs`
-            reward (`float`): See `_earnReward`
-            done (`bool`): True if `num_steps => max_steps`, False otherwise.
-            info (`dict`): See `_getInfo`
+            observation (OrderedDict): See _getObs
+            reward (float): See _earnReward
+            done (bool): True if num_steps => max_steps, False otherwise.
+            info (dict): See _getInfo
 
         Notation:
             N = number of targets
@@ -610,8 +610,8 @@ class SSAScheduler(gym.Env):
         info = deepcopy(self._getInfo())
 
         # ---for Gym 0.22---
-        # if using >0.22 Gym, need to specify `truncated` and `terminated` variables
-        # (instead of just `done`)
+        # if using >0.22 Gym, need to specify truncated and terminated variables
+        # (instead of just done)
         if self.info["num_steps"] == self.horizon:
             done = True
             print("Horizon reached, resetting...")
