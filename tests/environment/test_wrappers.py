@@ -532,15 +532,17 @@ print("\nTest ConvertObsBoxToMultiBinary...")
 box_env = RandomEnv(
     {
         "observation_space": Dict(
-            {"a": Box(low=0, high=1, shape=(2, 2), dtype=float)}
+            {"a": Box(low=0, high=1, shape=(2, 2), dtype=int)}
         )
     }
 )
 mb_env = ConvertObsBoxToMultiBinary(box_env, key="a")
 obs_unwrapped = box_env.observation_space.sample()
 obs_wrapped = mb_env.observation(obs_unwrapped)
+print(f"unwrapped space  = {box_env.observation_space}")
 print(f"unwrapped obs  = \n{obs_unwrapped}")
 print(f"unwrapped dtype  = {obs_unwrapped['a'].dtype}")
+print(f"wrapped space  = {mb_env.observation_space}")
 print(f"wrapped obs = \n{obs_wrapped}")
 print(f"wrapped dtype = {obs_wrapped['a'].dtype}")
 assert mb_env.observation_space.contains(obs_wrapped)

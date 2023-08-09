@@ -1630,11 +1630,10 @@ class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
         assert (
             key in env.observation_space.spaces
         ), f"{key} must be in env.observation_space."
-        assert env.observation_space.spaces[key].dtype not in (
+        assert env.observation_space.spaces[key].dtype in (
             int,
             int_,
-        ), f"""env.observation_space.spaces[{key}].dtype is already an int; no
-         need to wrap."""
+        ), f"env.observation_space.spaces[{key}].dtype must be int."
         assert all(
             env.observation_space.spaces[key].low == 0
         ), f"env.observation_space.spaces[{key}].low must = 0."
