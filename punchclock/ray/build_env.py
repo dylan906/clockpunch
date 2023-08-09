@@ -21,6 +21,7 @@ from punchclock.environment.wrappers import (
     ActionMask,
     Convert2dTo3dObsItems,
     ConvertCustody2ActionMask,
+    ConvertObsBoxToMultiBinary,
     CopyObsItem,
     CustodyWrapper,
     FlatDict,
@@ -152,6 +153,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "vis_map_action_mask": VisMap2ActionMask,
         "convert_2d_to_3d_obs_items": Convert2dTo3dObsItems,
         "convert_custody_2_action_mask": ConvertCustody2ActionMask,
+        "convert_obs_box_to_multibinary": ConvertObsBoxToMultiBinary,
     }
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
