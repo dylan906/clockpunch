@@ -5,6 +5,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 import json
+from collections import OrderedDict
 from copy import deepcopy
 from os import path
 
@@ -143,55 +144,62 @@ reward_params = {
 
 # assign build params as a dict for easier env recreation/changing
 # ActionMask wrapper required for SimRunner
-config = {
-    "time_step": time[1] - time[0],
-    "horizon": horizon,
-    "agent_params": agent_params,
-    "filter_params": filter_params,
-    "reward_params": reward_params,
-    "constructor_params": {
-        "wrappers": [
-            {
-                "wrapper": "filter_observation",
-                "wrapper_config": {
-                    "filter_keys": [
-                        "eci_state",
-                        "est_cov",
-                        "num_tasked",
-                        "num_windows_left",
-                        "obs_staleness",
-                        "vis_map_est",
-                    ]
+config = OrderedDict(
+    {
+        "time_step": time[1] - time[0],
+        "horizon": horizon,
+        "agent_params": agent_params,
+        "filter_params": filter_params,
+        "reward_params": reward_params,
+        "constructor_params": {
+            "wrappers": [
+                {
+                    "wrapper": "filter_observation",
+                    "wrapper_config": {
+                        "filter_keys": [
+                            "eci_state",
+                            "est_cov",
+                            "num_tasked",
+                            "num_windows_left",
+                            "obs_staleness",
+                            "vis_map_est",
+                        ]
+                    },
                 },
-            },
-            {
-                "wrapper": "copy_obs_items",
-                "wrapper_config": {
-                    "key": "vis_map_est",
-                    "new_key": "action_mask",
+                {
+                    "wrapper": "convert_obs_box_to_multibinary",
+                    "wrapper_config": {"key": "vis_map_est"},
                 },
-            },
-            {
-                "wrapper": "vis_map_action_mask",
-                "wrapper_config": {"vis_map_key": "action_mask"},
-            },
-            {
-                "wrapper": "nest_obs_items",
-                "wrapper_config": {
-                    "new_key": "observations",
-                    "keys_to_nest": [
-                        "eci_state",
-                        "est_cov",
-                        "num_tasked",
-                        "num_windows_left",
-                        "obs_staleness",
-                        "vis_map_est",
-                    ],
+                {
+                    "wrapper": "copy_obs_item",
+                    "wrapper_config": {
+                        "key": "vis_map_est",
+                        "new_key": "action_mask",
+                    },
                 },
-            },
-        ],
-    },
-}
+                {
+                    "wrapper": "vis_map_action_mask",
+                    "wrapper_config": {"vis_map_key": "action_mask"},
+                },
+                {
+                    "wrapper": "nest_obs_items",
+                    "wrapper_config": {
+                        "new_key": "observations",
+                        "keys_to_nest": [
+                            "eci_state",
+                            "est_cov",
+                            "num_tasked",
+                            "num_windows_left",
+                            "obs_staleness",
+                            "vis_map_est",
+                        ],
+                    },
+                },
+                {"wrapper": "flat_dict"},
+            ],
+        },
+    }
+)
 
 env = buildEnv(env_config=config)
 print(f"environment = {env}")
@@ -252,7 +260,25 @@ config_wrap["constructor_params"] = {
             "wrapper": "filter_observation",
             "wrapper_config": {"filter_keys": ["est_cov", "vis_map_est"]},
         },
-        {"wrapper": "action_mask"},
+        {
+            "wrapper": "convert_obs_box_to_multibinary",
+            "wrapper_config": {"key": "vis_map_est"},
+        },
+        {
+            "wrapper": "copy_obs_item",
+            "wrapper_config": {"key": "vis_map_est", "new_key": "action_mask"},
+        },
+        {
+            "wrapper": "vis_map_action_mask",
+            "wrapper_config": {"vis_map_key": "action_mask"},
+        },
+        {
+            "wrapper": "nest_obs_items",
+            "wrapper_config": {
+                "new_key": "observations",
+                "keys_to_nest": ["vis_map_est", "est_cov"],
+            },
+        },
         {"wrapper": "flat_dict"},
     ]
 }
@@ -280,8 +306,10 @@ print(
 )
 # %% Test with custom policy
 print("\nTest runSim() with CustomPolicy...")
-# Rebuild environment.
-env2 = buildEnv(config)
+# Rebuild environment, but without flattening (don't use last wrapper)
+config_noflat = deepcopy(config)
+del config_noflat["constructor_params"]["wrappers"][-1]
+env2 = buildEnv(config_noflat)
 env2.reset()
 # Build new policy
 obs_space = env2.observation_space
@@ -354,7 +382,7 @@ for env, act_mask_loc in zip(envs, obs_space_indices):
 
 # %% Test random initial conditions
 print("\nTest with random initial conditions and many targets...")
-config_rand = deepcopy(config)
+config_rand = deepcopy(config_noflat)
 config_rand["seed"] = rng.integers(99999999)
 print(f"seed = {config_rand['seed']}")
 
