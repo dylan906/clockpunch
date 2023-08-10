@@ -26,6 +26,7 @@ from punchclock.environment.wrappers import (
     ConvertObsBoxToMultiBinary,
     CopyObsItem,
     CustodyWrapper,
+    DiagonalObsItems,
     FlatDict,
     FloatObs,
     LinScaleDictObs,
@@ -479,6 +480,38 @@ obs3d = env_3d.observation(obs2d)
 print(f"unwrapped obs 2d = \n{obs2d}")
 print(f"wrapped obs 3d = \n{obs3d}")
 assert env_3d.observation_space.contains(obs3d)
+
+# %% Test DiagonalObsItems
+print("\nTest DiagonalObsItems...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(0, 1, shape=[3, 3, 2]),
+                "b": Box(0, 1, shape=[2, 3, 3], dtype=int),
+                "c": Box(0, 1, shape=[2]),
+            }
+        ),
+    },
+)
+
+diag_env = DiagonalObsItems(
+    rand_env, keys=["a", "b", "c"], axis1=[0, 1, 0], axis2=[1, 2, 1]
+)
+unwrapped_obs = rand_env.observation_space.sample()
+wrapped_obs = diag_env.observation(unwrapped_obs)
+print(
+    f"""Shape of unwrapped obs:
+    'a' = {unwrapped_obs['a'].shape}
+    'b' = {unwrapped_obs['b'].shape}"""
+)
+print(
+    f"""Shape of wrapped obs:
+    'a' = {wrapped_obs['a'].shape}
+    'b' = {wrapped_obs['b'].shape}"""
+)
+print(f"wrapped obs dtype of 'b' = {wrapped_obs['b'].dtype}")
+assert diag_env.observation_space.contains(wrapped_obs)
 
 # %% Test ConvertCustody2ActionMask
 print("\nTest ConvertCustody2ActionMask...")

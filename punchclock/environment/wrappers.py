@@ -1432,6 +1432,53 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
         return new_obs
 
 
+class DiagonalObsItems(SelectiveDictObsWrapper):
+    """Get diagonals of a multidimensional space."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        keys: list[str],
+        offset: list[int] = None,
+        axis1: list[int] = None,
+        axis2: list[int] = None,
+    ):
+        if offset is None:
+            offset = [0 for i in range(len(keys))]
+        if axis1 is None:
+            axis1 = [0 for i in range(len(keys))]
+        if axis2 is None:
+            axis2 = [1 for i in range(len(keys))]
+
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.Dict."
+        assert (
+            len(keys) == len(offset) == len(axis1) == len(axis2)
+        ), """Length of
+        keys, offset, axis1, and axis2 must be equal (if non-None are provided)."""
+        assert all(
+            len(env.observation_space.spaces[k].shape) > 1 for k in keys
+        ), """All specified subspaces must have dim > 1.
+        """
+
+        new_obs_space = deepcopy(env.observation_space)
+        for k, off, ax1, ax2 in zip(keys, offset, axis1, axis2):
+            orig_space = env.observation_space[k]
+            diag_obs = diagonal(
+                orig_space.sample(), offset=off, axis1=ax1, axis2=ax2
+            )
+            new_space_shape = diag_obs.shape
+            new_obs_space[k] = makeSpace(orig_space, shape=new_space_shape)
+
+        funcs = [
+            partial(diagonal, offset=o, axis1=a1, axis2=a2)
+            for (o, a1, a2) in zip(offset, axis1, axis2)
+        ]
+
+        super().__init__(env, funcs, keys, new_obs_space)
+
+
 # %% ConvertCustody2ActionMask
 class ConvertCustody2ActionMask(gym.ObservationWrapper):
     """Convert a MultiBinary custody array to a MultiBinary action mask.
