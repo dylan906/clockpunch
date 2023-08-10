@@ -9,6 +9,8 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
+from gymnasium.spaces import Box, MultiBinary, MultiDiscrete, Space
+from numpy import ndarray
 
 
 # %% Classes
@@ -121,3 +123,57 @@ def getWrapperList(env: gym.Env, wrappers: list = None) -> list:
         wrappers = getWrapperList(env.env, wrappers)
 
     return wrappers
+
+
+def makeSpace(
+    space: Space,
+    lows: ndarray | int = None,
+    highs: ndarray | int = None,
+    shape: list = None,
+    dtype: type = None,
+) -> Space:
+    """Make a space based on an original space.
+
+    Supports Box and MultiBinary spaces.
+
+    Any unused args are replaced with the same value(s) from the original space.
+
+    Args:
+        space (Space): _description_
+        lows (ndarray | int): _description_
+        highs (ndarray | int): _description_
+        shape (list): _description_
+        dtype (type): _description_
+
+    Returns:
+        gym.Space: _description_
+    """
+    if lows is None:
+        lows = getattr(space, "low", None)
+    if highs is None:
+        highs = getattr(space, "high", None)
+    if shape is None:
+        # All gym spaces by definition have shape
+        shape = getattr(space, "shape", None)
+    if dtype is None:
+        # All gym spaces by definition have dtype
+        dtype = getattr(space, "dtype", None)
+
+    # If shape is changed, reshape lows/highs to be single int. Assumes that all
+    # lows are same and all highs are same.
+    # Only applies to Box (MultiBinary has intrinsic lows/highs)
+    if shape != space.shape and isinstance(space, Box):
+        lows = lows.flat[0]
+        highs = highs.flat[0]
+
+    if isinstance(space, Box):
+        new_space = Box(
+            low=lows,
+            high=highs,
+            shape=shape,
+            dtype=dtype,
+        )
+    elif isinstance(space, MultiBinary):
+        new_space = MultiBinary(n=shape)
+
+    return new_space

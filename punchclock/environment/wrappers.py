@@ -25,6 +25,7 @@ from numpy import (
     array,
     concatenate,
     diag,
+    diagonal,
     float32,
     inf,
     int8,
@@ -46,6 +47,7 @@ from punchclock.common.custody_tracker import CustodyTracker
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
+    makeSpace,
 )
 
 
@@ -1747,12 +1749,9 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
             new_space_shape = [d for d in space_shape if d > 1]
             lows, highs = self.getLowsHighs(orig_space)
 
-            new_obs_space[k] = self.makeSpace(
+            new_obs_space[k] = makeSpace(
                 orig_space,
-                lows,
-                highs,
-                new_space_shape,
-                orig_space.dtype,
+                shape=new_space_shape,
             )
 
         # get list of squeeze functions (inputs for axis may be different)
@@ -1775,24 +1774,3 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
             highs = 1
 
         return lows, highs
-
-    def makeSpace(
-        self,
-        space: gym.Space,
-        lows: ndarray | int,
-        highs: ndarray | int,
-        shape: list,
-        dtype: type,
-    ) -> gym.Space:
-        """Make a Box or MultiBinary space."""
-        if isinstance(space, Box):
-            new_space = Box(
-                low=lows,
-                high=highs,
-                shape=shape,
-                dtype=dtype,
-            )
-        elif isinstance(space, MultiBinary):
-            new_space = MultiBinary(n=shape)
-
-        return new_space
