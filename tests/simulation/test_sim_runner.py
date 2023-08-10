@@ -167,10 +167,6 @@ config = OrderedDict(
                     },
                 },
                 {
-                    "wrapper": "convert_obs_box_to_multibinary",
-                    "wrapper_config": {"key": "vis_map_est"},
-                },
-                {
                     "wrapper": "copy_obs_item",
                     "wrapper_config": {
                         "key": "vis_map_est",
@@ -259,10 +255,6 @@ config_wrap["constructor_params"] = {
         {
             "wrapper": "filter_observation",
             "wrapper_config": {"filter_keys": ["est_cov", "vis_map_est"]},
-        },
-        {
-            "wrapper": "convert_obs_box_to_multibinary",
-            "wrapper_config": {"key": "vis_map_est"},
         },
         {
             "wrapper": "copy_obs_item",
@@ -424,7 +416,6 @@ try:
 except Exception as err:
     print(err)
 
-
 # %% Set toDataFrame()
 print("\nTest SimResults.toDataFrame...")
 results_df = results1.toDataFrame()
@@ -433,9 +424,7 @@ print(f"DataFrame columns = {results_df.columns}")
 fpath = path.dirname(path.realpath(__file__)) + "/data/test_df.pkl"
 results_df.to_pickle(fpath)
 
-
 df_loaded = read_pickle(fpath)
-
 
 # %% Test PrimitiveSimResults.toDataFrame()
 print("\nTest PrimitiveSimResults.toDataFrame...")
