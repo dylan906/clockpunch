@@ -489,7 +489,7 @@ rand_env = RandomEnv(
             {
                 "a": Box(0, 1, shape=[3, 3, 2]),
                 "b": Box(0, 1, shape=[2, 3, 3], dtype=int),
-                "c": Box(0, 1, shape=[2]),
+                "c": MultiBinary(n=[3, 3, 2]),
             }
         ),
     },
@@ -500,6 +500,7 @@ diag_env = DiagonalObsItems(
 )
 unwrapped_obs = rand_env.observation_space.sample()
 wrapped_obs = diag_env.observation(unwrapped_obs)
+print(f"wrapped observation space = {diag_env.observation_space}")
 print(
     f"""Shape of unwrapped obs:
     'a' = {unwrapped_obs['a'].shape}

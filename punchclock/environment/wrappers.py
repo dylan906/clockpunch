@@ -1433,7 +1433,43 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
 
 
 class DiagonalObsItems(SelectiveDictObsWrapper):
-    """Get diagonals of a multidimensional space."""
+    """Get diagonals of multidimensional space(s).
+
+    Example:
+        unwrapped_env.observation_space = Dict(
+            {
+                "a": Box(0, 1, shape=[2, 3, 3])
+            }
+
+        wrapped_env = DiagonalObsItems(
+            unwrapped_env,
+            keys=["a"],
+            axis1=[1],
+            axis2=[2])
+
+        wrapped_env.observation_space = Dict(
+            {
+                "a": Box(0, 1, shape=[2, 3])
+            }
+
+        obs = unwrapped_env.observation_space.sample()
+        print(obs)
+        # prints
+        # [[[1 0 0]
+        #   [0 0 1]
+        #   [0 1 1]]
+
+        # [[1 0 1]
+        #  [1 1 1]
+        #  [1 0 0]]]
+
+        print(wrapped_env.observation(obs))
+        # prints
+        # [[1 0 1]
+        #  [1 1 0]]
+
+    See numpy.diagonal for details.
+    """
 
     def __init__(
         self,
@@ -1443,6 +1479,22 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
         axis1: list[int] = None,
         axis2: list[int] = None,
     ):
+        """Get diagonal elements from multidimensional array.
+
+        See numpy.diagonal for details.
+
+        Args:
+            env (gym.Env): Must have Dict observation space.
+            keys (list[str]): Must be in observation space. Each corresponding
+                value must be a Space with >1 dims.
+            offset (list[int], optional): Offset from main diagonal. Defaults to 0.
+            axis1 (list[int], optional): Axis to be used as first axis of 2d sub-arrays
+                from which the diagonals should be taken. If used, must have same
+                length as keys. Defaults to 0.
+            axis2 (list[int], optional): Axis to be used as second axis of 2d sub-arrays
+                from which the diagonals should be taken. If used, must have same
+                length as keys. Defaults to 1.
+        """
         if offset is None:
             offset = [0 for i in range(len(keys))]
         if axis1 is None:
@@ -1455,13 +1507,15 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
         ), "env.observation_space must be a gymnasium.Dict."
         assert (
             len(keys) == len(offset) == len(axis1) == len(axis2)
-        ), """Length of
-        keys, offset, axis1, and axis2 must be equal (if non-None are provided)."""
+        ), """Lengths of keys, offset, axis1, and axis2 must be equal (if non-Nones
+        are provided)."""
         assert all(
-            len(env.observation_space.spaces[k].shape) > 1 for k in keys
-        ), """All specified subspaces must have dim > 1.
-        """
+            [len(env.observation_space.spaces[k].shape) > 1 for k in keys]
+        ), """All subspaces specified in keys must have dim > 1."""
 
+        # Loop through keys (and associated args) to recreate spaces with same
+        # space type (e.g. Box, MultiBinary), same dtype, same highs/lows, but
+        # different shapes.
         new_obs_space = deepcopy(env.observation_space)
         for k, off, ax1, ax2 in zip(keys, offset, axis1, axis2):
             orig_space = env.observation_space[k]
