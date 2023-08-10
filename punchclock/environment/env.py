@@ -30,8 +30,6 @@ class SSAScheduler(gym.Env):
             at time t. The 0-dim elements are position (km) and velocity (km/s)
             in ECI frame. For sensors, this is the true state; for targets this
             is the estimated state.
-        # "est_cov" Box(low=-inf, high=inf, shape=(6, N)): Diagonals of target_filter's
-        #     estimate covariance matrix at time t.
         "est_cov" Box(low=-inf, high=inf, shape=(N, 6, 6)): target_filter's estimate
           covariance matrix at time t.
         "vis_map_est" Box(low=0, high=1, shape=(N, M), dtype=int): Visibility map
