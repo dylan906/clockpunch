@@ -7,7 +7,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
-from typing import Any
+from typing import Any, Tuple
 
 # Third Party Imports
 import gymnasium as gym
@@ -34,6 +34,7 @@ from numpy import (
     ndarray,
     ones,
     split,
+    squeeze,
     stack,
     sum,
     zeros,
@@ -1676,3 +1677,122 @@ class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
         new_obs = deepcopy(obs)
         new_obs[self.key] = obs[self.key].astype(int)
         return new_obs
+
+
+class SqueezeObsItems(SelectiveDictObsWrapper):
+    """Squeeze a multidimensional space.
+
+    Supports Box and MultiBinary spaces.
+
+    Example:
+        env.observation_space = Dict(
+            {
+                "a": Box(low=0, high=1, shape=(2, 1, 2)),
+                "b": MultiBinary((2, 1, 2)),
+            }
+        )
+
+        env_wrapped = SqueezeObsItems(env, keys=["a", "b"])
+
+        env_wrapped.observation_space = Dict(
+            {
+                "a": Box(low=0, high=1, shape=(2, 2)),
+                "b": MultiBinary((2, 2)),
+            }
+        )
+
+    See numpy.squeeze for details.
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        keys: list[str],
+        axis: list[int] | list[Tuple[int]] = None,
+    ):
+        """Initialize wrapper.
+
+        Args:
+            env (gym.Env): Must have a Dict observation space.
+            keys (list[str]): Must be in observation space.
+            axis (list[int] | list[Tuple[int]], optional): Axis on which to squeeze.
+                See numpy.squeeze for details. If len == 1, then all keys will
+                be squeezed on same axis. Defaults to None.
+        """
+        if (axis is not None) and len(axis) == 1:
+            # Copy axis to be same length as keys, if axis was provided and short.
+            axis = [axis for i in range(len(keys))]
+        elif axis is None:
+            # If axis not provided, make list of Nones
+            axis = [None for i in range(len(keys))]
+
+        assert isinstance(
+            env.observation_space, gym.spaces.Dict
+        ), "env.observation_space must be a gymnasium.Dict."
+        assert all(
+            k in env.observation_space.spaces for k in keys
+        ), "All keys must be in observation space."
+        assert len(axis) == len(keys), "len(axis) != len(keys)."
+        for k in keys:
+            assert isinstance(
+                env.observation_space[k], (Box, MultiBinary)
+            ), f"{k} must be one of [Box, MultiBinary]."
+
+        new_obs_space = deepcopy(env.observation_space)
+        # Get shape of new observation space by checking length of .shape attr, then
+        # removing any 1s.
+        for k in keys:
+            orig_space = env.observation_space.spaces[k]
+            space_shape = orig_space.shape
+            new_space_shape = [d for d in space_shape if d > 1]
+            lows, highs = self.getLowsHighs(orig_space)
+
+            new_obs_space[k] = self.makeSpace(
+                orig_space,
+                lows,
+                highs,
+                new_space_shape,
+                orig_space.dtype,
+            )
+
+        # get list of squeeze functions (inputs for axis may be different)
+        funcs = [partial(squeeze, axis=a) for a in axis]
+
+        super().__init__(
+            env=env,
+            funcs=funcs,
+            keys=keys,
+            new_obs_space=new_obs_space,
+        )
+
+    def getLowsHighs(self, space: gym.Space) -> list[ndarray | int]:
+        """Get low and high values from a Gym space."""
+        if isinstance(space, Box):
+            lows = squeeze(space.low)
+            highs = squeeze(space.high)
+        elif isinstance(space, MultiBinary):
+            lows = 0
+            highs = 1
+
+        return lows, highs
+
+    def makeSpace(
+        self,
+        space: gym.Space,
+        lows: ndarray | int,
+        highs: ndarray | int,
+        shape: list,
+        dtype: type,
+    ) -> gym.Space:
+        """Make a Box or MultiBinary space."""
+        if isinstance(space, Box):
+            new_space = Box(
+                low=lows,
+                high=highs,
+                shape=shape,
+                dtype=dtype,
+            )
+        elif isinstance(space, MultiBinary):
+            new_space = MultiBinary(n=shape)
+
+        return new_space

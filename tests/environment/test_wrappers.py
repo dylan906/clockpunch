@@ -9,7 +9,7 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
-from numpy import array, diag, float32, inf, int64, sum
+from numpy import array, diag, inf, sum
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
@@ -35,6 +35,7 @@ from punchclock.environment.wrappers import (
     NestObsItems,
     SelectiveDictObsWrapper,
     SplitArrayObs,
+    SqueezeObsItems,
     SumArrayWrapper,
     VisMap2ActionMask,
 )
@@ -570,5 +571,25 @@ print(f"wrapped obs = \n{obs_wrapped}")
 print(f"wrapped dtype = {obs_wrapped['a'].dtype}")
 assert mb_env.observation_space.contains(obs_wrapped)
 
+# %% Test SqueezeObsItems
+print("\nTest SqueezeObsItems...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(low=0, high=1, shape=(2, 1, 2)),
+                "b": MultiBinary((2, 1, 2)),
+            }
+        )
+    }
+)
+squeeze_env = SqueezeObsItems(rand_env, keys=["a", "b"])
+
+unwrapped_obs = rand_env.observation_space.sample()
+wrapped_obs = squeeze_env.observation(unwrapped_obs)
+print(f"wrapped obs space = {squeeze_env.observation_space}")
+print(f"unwrapped obs  = \n{unwrapped_obs}")
+print(f"wrapped obs = \n{wrapped_obs}")
+assert squeeze_env.observation_space.contains(wrapped_obs)
 # %% Done
 print("done")

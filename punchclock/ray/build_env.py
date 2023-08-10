@@ -31,6 +31,7 @@ from punchclock.environment.wrappers import (
     MultiplyObsItems,
     NestObsItems,
     SplitArrayObs,
+    SqueezeObsItems,
     VisMap2ActionMask,
 )
 
@@ -154,6 +155,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "convert_2d_to_3d_obs_items": Convert2dTo3dObsItems,
         "convert_custody_2_action_mask": ConvertCustody2ActionMask,
         "convert_obs_box_to_multibinary": ConvertObsBoxToMultiBinary,
+        "squeeze_obs_items": SqueezeObsItems,
     }
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
