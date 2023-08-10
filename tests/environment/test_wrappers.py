@@ -353,19 +353,38 @@ assert env_minmax.observation_space.contains(obs_mask)
 
 # %% Test SplitArrayObs
 rand_env = RandomEnv(
-    {"observation_space": gym.spaces.Dict({"a": gym.spaces.Box(shape=(3, 2))})}
+    {
+        "observation_space": gym.spaces.Dict(
+            {
+                "a": gym.spaces.Box(low=0, high=1, shape=(2, 2)),
+                "b": gym.spaces.Box(low=0, high=1, shape=(3, 2, 2)),
+            }
+        )
+    }
 )
 env_split = SplitArrayObs(
     env=rand_env,
-    keys=["a"],
-    new_keys=[["aa", "bb"]],
+    keys=["a", "b"],
+    new_keys=[["a1", "a2"], ["b1", "b2"]],
     indices_or_sections=[2],
+    axes=[0, 1],
 )
-obs_presplit = rand_env.observation_space.sample()
-obs_split = env_split.observation(obs=obs_presplit)
-print(f"pre-split obs['est_cov'] = \n{obs_presplit['est_cov']}")
-print(f"post-split obs['est_cov_pos'] = \n{obs_split['est_cov_pos']}")
-print(f"post-split obs['est_cov_vel'] = \n{obs_split['est_cov_vel']}")
+obs_unwrapped = rand_env.observation_space.sample()
+obs_wrapped = env_split.observation(obs=obs_unwrapped)
+print(
+    f"""unwrapped obs shapes:
+'a' = {obs_unwrapped['a'].shape}
+'b' = {obs_unwrapped['b'].shape}"""
+)
+print(
+    f"""wrapped obs shapes:
+'a1'= {obs_wrapped['a1'].shape}
+'a2'= {obs_wrapped['a2'].shape}
+'b1'= {obs_wrapped['b1'].shape}
+'b2'= {obs_wrapped['b2'].shape}
+"""
+)
+assert env_split.observation_space.contains(obs_wrapped)
 
 # %% Test SelectiveDictObsWrapper
 print("\nTest SelectiveDictObsWrapper...")

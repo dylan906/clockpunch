@@ -1046,19 +1046,25 @@ class SplitArrayObs(gym.ObservationWrapper):
             axes,
         ):
             original_subspace = obs_space[key]
-            original_high = original_subspace.high[0, 0]
-            original_low = original_subspace.low[0, 0]
             original_dtype = original_subspace.dtype
+            original_high = split(
+                original_subspace.high, indices_or_sections=iors, axis=ax
+            )
+            original_low = split(
+                original_subspace.low, indices_or_sections=iors, axis=ax
+            )
             split_subspaces = split(
                 original_subspace.sample(),
                 indices_or_sections=iors,
                 axis=ax,
             )
-            for space, nk in zip(split_subspaces, new_keys):
+            for space, nk, o_low, o_high in zip(
+                split_subspaces, new_keys, original_low, original_high
+            ):
                 space_shape = space.shape
                 new_obs_space[nk] = Box(
-                    low=original_low,
-                    high=original_high,
+                    low=o_low,
+                    high=o_high,
                     shape=space_shape,
                     dtype=original_dtype,
                 )
