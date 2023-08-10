@@ -47,9 +47,9 @@ class BoxConfig(SpaceConfig):
         """Initialize BoxConfig.
 
         Args:
-            low (`ndarray`): See Gym.spaces.Box
-            high (`ndarray`): See Gym.spaces.Box
-            dtype (`str`): 'int' | 'float'
+            low (ndarray): See Gym.spaces.Box
+            high (ndarray): See Gym.spaces.Box
+            dtype (str): 'int' | 'float'
         """
         assert isinstance(low, ndarray), "low must be a numpy.ndarray."
         assert isinstance(high, ndarray), "high must be a numpy.ndarray."
@@ -145,7 +145,7 @@ class DictConfig(SpaceConfig):
         """Initialize DictConfig.
 
         Args:
-            spaces (`dict`): All values must be a SpaceConfig child class. Nested
+            spaces (dict): All values must be a SpaceConfig child class. Nested
                 DictConfigs are allowed. Note that the argument itself must be
                 a plain dict, but any nested dict-likes should be DictConfigs.
         """
@@ -223,10 +223,10 @@ def buildSpaceConfig(space: Space) -> SpaceConfig:
     """Build a SpaceConfig from a gym.spaces.Space.
 
     Args:
-        space (`Space`): A Gym space.
+        space (Space): A Gym space.
 
     Returns:
-        `SpaceConfig`: A JSON-able config to build a Gym space.
+        SpaceConfig: A JSON-able config to build a Gym space.
     """
     assert isinstance(space, Space)
     for k, v in gym_class_map.items():
@@ -245,7 +245,7 @@ def buildSpace(space_config: dict) -> Space:
 
     Intended for building spaces from a dict loaded from a JSON file.
 
-    space_config (`dict`): Keys are specific to each type of SpaceConfig, but must
+    space_config (dict): Keys are specific to each type of SpaceConfig, but must
         include "space". See SpaceConfig and child classes for details.
     """
     assert isinstance(space_config, dict), "space_config must be a dict."
@@ -298,17 +298,17 @@ def buildCustomPolicy(policy_config: dict) -> CustomPolicy:
     """Build a policy from a dict.
 
     Args:
-        policy_config (`dict`): Contains the following items:
+        policy_config (dict): Contains the following items:
             {
-                "policy" (`str`): The name of a recognized CustomPolicy.
-                "observation_space" (`dict`): All values and sub-values must be
+                "policy" (str): The name of a recognized CustomPolicy.
+                "observation_space" (dict): All values and sub-values must be
                     primitives. See buildSpace for details.
-                "action_space" (`dict`): All values and sub-values must be primitives.
+                "action_space" (dict): All values and sub-values must be primitives.
                     See buildSpace for details.
             }
 
     Returns:
-        `CustomPolicy`: See `CustomPolicy` base class.
+        CustomPolicy: See CustomPolicy base class.
     """
     policy_map = {
         "GreedyCovariance": GreedyCovariance,
