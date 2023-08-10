@@ -4,9 +4,10 @@ from __future__ import annotations
 
 # Standard Library Imports
 from copy import deepcopy
+from typing import Tuple
 
 # Third Party Imports
-from gymnasium.spaces import Box, Dict, MultiDiscrete, Space
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete, Space
 from numpy import array, float32, int64, ndarray
 
 # Punch Clock Imports
@@ -86,24 +87,52 @@ class BoxConfig(SpaceConfig):
 class MultiDiscreteConfig(SpaceConfig):
     """Config for gym.space.MultiDiscrete."""
 
-    def __init__(self, nvec: ndarray[int]):
+    def __init__(self, nvec: ndarray[int] | list[int]):
         """Initialize MultiDiscreteConfig.
 
         Args:
-            nvec (`ndarray`): See Gym.spaces.MultiDiscrete
+            nvec (ndarray[int] | list[int]): See Gym.spaces.MultiDiscrete
         """
         space = "MultiDiscrete"
         super().__init__(space)
         assert isinstance(nvec, ndarray), "nvec must be a numpy.ndarray."
         assert all(
             isinstance(i, (int, int64)) for i in nvec
-        ), "Entries of nvec must be ints."
+        ), "All entries of nvec must be ints."
 
         self.nvec = nvec.tolist()
 
     def fromSpace(md_space: MultiDiscrete) -> MultiDiscreteConfig:
         """Generate a MultiDiscreteConfig from a gym.spaces.MultiDiscrete."""
         space_config = MultiDiscreteConfig(nvec=md_space.nvec)
+        assert isinstance(space_config, SpaceConfig)
+
+        return space_config
+
+
+class MultiBinaryConfig(SpaceConfig):
+    """Config gym.space.MultiBinary."""
+
+    def __init__(self, n: list[int] | ndarray[int] | Tuple):
+        """Initialize MultiBinaryConfig.
+
+        Args:
+            n (list[int] | ndarray[int] | Tuple): See Gym.spaces.MultiBinary.
+        """
+        space = "MultiBinary"
+        super().__init__(space)
+        assert isinstance(
+            n, (ndarray, list, Tuple)
+        ), "n must be one of [ndarray, list, Tuple]."
+        assert all(
+            isinstance(i, int) for i in n
+        ), "All entries of n must be ints."
+
+        self.n = n
+
+    def fromSpace(mb_space: MultiBinary) -> MultiBinaryConfig:
+        """Generate a MultiBinaryConfig from a gym.spaces.MultiBinary."""
+        space_config = MultiBinaryConfig(n=mb_space.n)
         assert isinstance(space_config, SpaceConfig)
 
         return space_config
@@ -178,11 +207,13 @@ class DictConfig(SpaceConfig):
 config_map = {
     "Box": BoxConfig,
     "Dict": DictConfig,
+    "MultiBinary": MultiBinaryConfig,
     "MultiDiscrete": MultiDiscreteConfig,
 }
 gym_class_map = {
     "Box": Box,
     "Dict": Dict,
+    "MultiBinary": MultiBinary,
     "MultiDiscrete": MultiDiscrete,
 }
 

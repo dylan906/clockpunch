@@ -5,7 +5,7 @@
 from copy import deepcopy
 
 # Third Party Imports
-from gymnasium.spaces import Box, Dict, MultiDiscrete
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
 from numpy import array
 
 # Punch Clock Imports
@@ -13,6 +13,7 @@ from punchclock.common.utilities import loadJSONFile, saveJSONFile
 from punchclock.policies.policy_builder import (
     BoxConfig,
     DictConfig,
+    MultiBinaryConfig,
     MultiDiscreteConfig,
     buildCustomPolicy,
     buildSpace,
@@ -30,6 +31,9 @@ print(f"box config = {box_config}")
 
 md_config = MultiDiscreteConfig(nvec=array([3, 3, 3]))
 print(f"md config = {md_config}")
+
+mb_config = MultiBinaryConfig(n=[3, 2])
+print(f"mb config = {mb_config}")
 
 dict_config1 = DictConfig(spaces={"a": md_config})
 print(f"Dict config = {dict_config1}")
@@ -62,6 +66,7 @@ for i, config in enumerate(
     [
         box_config,
         md_config,
+        mb_config,
         dict_config1,
         dict_config2,
     ]
@@ -98,6 +103,7 @@ except Exception as err:
 # %% Test buildSpaceConfig
 gym_box = Box(low=array([0, 0]), high=array([1, 1]), dtype=int)
 gym_md = MultiDiscrete([3, 3, 3])
+gym_mb = MultiBinary([2, 3])
 gym_dict = Dict(
     {
         "a": gym_box,
@@ -107,7 +113,7 @@ gym_dict = Dict(
     }
 )
 
-gym_spaces = [gym_box, gym_md, gym_dict]
+gym_spaces = [gym_box, gym_md, gym_mb, gym_dict]
 for space in gym_spaces:
     config = buildSpaceConfig(space)
     print(f"config = {config}")
@@ -123,6 +129,7 @@ obs_space = {
             "low": [0, 0],
             "high": [1, 1],
         },
+        "b": {"space": "MultiBinary", "n": [2, 3]},
     },
     "action_mask": {
         "space": "Box",
