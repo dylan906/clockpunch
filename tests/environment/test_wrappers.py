@@ -108,32 +108,29 @@ act_sample = env.action_space.sample()
 
 # %% Test FloatObs
 print("\nTest FloatObs...")
-# Copy original environment and add a dict to obs space to test nested-dict handling
-copy_env = deepcopy(env)
-copy_env.observation_space["a_dict"] = gym.spaces.Dict(
+rand_env = RandomEnv(
     {
-        "param_int": gym.spaces.Box(0, 1, shape=(2, 2), dtype=int64),
-        "param_float": gym.spaces.Box(0, 1, shape=(2, 2), dtype=float32),
+        "observation_space": Dict(
+            {
+                "intspace": Box(low=0, high=1, shape=(3, 2), dtype=int),
+                "floatspace": Box(low=0, high=1, shape=(3, 2), dtype=float),
+                "mbspace": MultiBinary(3),
+            }
+        )
     }
 )
+
 # Test wrapper instantiation
-env_float = FloatObs(copy_env)
-# env should have ints
-# env_float.unwrapped should have ints
-# env_float should have floats
-print(f"original env obs space = {copy_env.observation_space}")
-print(f"unwrapped obs space = {env_float.unwrapped.observation_space}")
+env_float = FloatObs(rand_env)
+print(f"unwrapped obs space = {rand_env.observation_space}")
 print(f"wrapped obs space ={env_float.observation_space}")
 
 # Test .observation()
-obs = copy_env.observation_space.sample()
+obs = rand_env.observation_space.sample()
 obs_float = env_float.observation(obs)
-print(f"original obs = {obs}")
-print(f"wrapped observation = {obs_float}")
-print(
-    f"wrapped obs in wrapped obs space? "
-    f"{env_float.observation_space.contains(obs_float)}"
-)
+print(f"unwrapped obs = {obs}")
+print(f"wrapped obs = {obs_float}")
+assert env_float.observation_space.contains(obs_float)
 # %% Test NestObsItems
 print("Test NestObsItems...")
 env_prenest = RandomEnv(
@@ -333,31 +330,38 @@ except Exception as err:
     print(err)
 
 # %% Test MinMaxScaleDict wrapper
-env_minmax = MinMaxScaleDictObs(env=env)
-obs = env_minmax.observation(obs=env.observation_space.sample())
-
-# Test with 1d/non-Box obs
+# test with 2d box, 1d box, and multibinary
 rand_env = RandomEnv(
     {
-        "observation_space": gym.spaces.Dict(
+        "observation_space": Dict(
             {
-                "a": gym.spaces.MultiBinary([3]),
-            },
-        ),
-        "action_space": gym.spaces.Box(0, 1),
+                "a": Box(low=0, high=1, shape=(3, 2)),
+                "b": Box(low=0, high=1, shape=(3,)),
+                "c": MultiBinary(3),
+            }
+        )
     }
 )
-rand_minmax_env = MinMaxScaleDictObs(rand_env)
-new_obs = rand_minmax_env.observation(rand_env.observation_space.sample())
+
+env_minmax = MinMaxScaleDictObs(env=rand_env)
+
+obs_nomask = rand_env.observation_space.sample()
+obs_mask = env_minmax.observation(obs_nomask)
+print(f"unwrapped obs  = \n{obs_nomask}")
+print(f"wrapped obs = \n{obs_mask}")
+assert env_minmax.observation_space.contains(obs_mask)
 
 # %% Test SplitArrayObs
+rand_env = RandomEnv(
+    {"observation_space": gym.spaces.Dict({"a": gym.spaces.Box(shape=(3, 2))})}
+)
 env_split = SplitArrayObs(
-    env=env,
-    keys=["est_cov"],
-    new_keys=[["est_cov_pos", "est_cov_vel"]],
+    env=rand_env,
+    keys=["a"],
+    new_keys=[["aa", "bb"]],
     indices_or_sections=[2],
 )
-obs_presplit = env.observation_space.sample()
+obs_presplit = rand_env.observation_space.sample()
 obs_split = env_split.observation(obs=obs_presplit)
 print(f"pre-split obs['est_cov'] = \n{obs_presplit['est_cov']}")
 print(f"post-split obs['est_cov_pos'] = \n{obs_split['est_cov_pos']}")

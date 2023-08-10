@@ -76,21 +76,24 @@ class FloatObs(gym.ObservationWrapper):
     def _recursiveConvertDictSpace(
         self, obs_space: gym.spaces.Dict
     ) -> OrderedDict:
-        """Change all Box dtypes to floats.
+        """Convert fundamental spaces to Box with dtype == float.
 
-        Loop through a dict and convert all Box values that have
-        dtype == int into Boxes with dtype = float.
+        Loop through a dict and convert all Box values that have dtype == int and
+        Multibinary values into Boxes with dtype = float.
         """
         obs_space_new = gym.spaces.Dict({})
         for k, v in obs_space.items():
-            # recurse if entry is a Dict
             if isinstance(v, gym.spaces.Dict):
+                # recurse if entry is a Dict
                 obs_space_new[k] = self._recursiveConvertDictSpace(v)
-            # assign as-is if entry already is already a float
             elif isinstance(v, gym.spaces.Box) and v.dtype == float32:
+                # assign as-is if entry already is already a float
                 obs_space_new[k] = v
-            # replace entry with new Box w/ dtype = float
+            elif isinstance(v, MultiBinary):
+                # Convert MultiBinary into Box with 0/1 low/high
+                obs_space_new[k] = Box(low=0, high=1, shape=v.shape)
             else:
+                # replace entry with new Box w/ dtype = float
                 list_of_attrs = ["low", "high", "shape"]
                 kwargs = {key: getattr(v, key) for key in list_of_attrs}
                 kwargs["dtype"] = float32
@@ -825,6 +828,15 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
             env.observation_space, gym.spaces.Dict
         ), """The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict`
          observation space."""
+        for space in env.observation_space.spaces.values():
+            assert isinstance(
+                space, (Box, MultiBinary, MultiDiscrete)
+            ), """
+            All sub-spaces in env.observation_space must be one of [Box, MultiBinary,
+            MultiDiscrete]."""
+            assert (
+                len(space.shape) <= 2
+            ), """All sub-spaces in env.observation_space must have <=2 dims."""
 
         super().__init__(env)
 
