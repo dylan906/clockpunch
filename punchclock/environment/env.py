@@ -10,7 +10,7 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, Dict, MultiDiscrete
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
 from numpy import array, asarray, float32, int64, ndarray, ones, zeros
 
 # Punch Clock Imports
@@ -32,9 +32,9 @@ class SSAScheduler(gym.Env):
             is the estimated state.
         "est_cov" Box(low=-inf, high=inf, shape=(N, 6, 6)): target_filter's estimate
           covariance matrix at time t.
-        "vis_map_est" Box(low=0, high=1, shape=(N, M), dtype=int): Visibility map
-            at time t. Values are binary (0/1). 1 indicates the sensor-target pair
-            can see each other.
+        "vis_map_est" MultiBinary(n=(N, M)): Visibility map at time t. A 1 in the
+            [i, j]'th position indicates the [target, sensor] pair can see each
+            other.
         "obs_staleness" Box(low=0, high=inf, shape=(1, N)): The difference between
             the simulation time and the last time the given target was tasked (sec).
         "num_windows_left" Box(low=0, high=inf, shape=(1, N), dtype=int): Number
@@ -155,11 +155,8 @@ class SSAScheduler(gym.Env):
                 "est_cov": Box(
                     low=-inf, high=inf, shape=(self.num_targets, 6, 6)
                 ),
-                "vis_map_est": Box(
-                    low=0,
-                    high=1,
-                    shape=(self.num_targets, self.num_sensors),
-                    dtype=int,
+                "vis_map_est": MultiBinary(
+                    (self.num_targets, self.num_sensors),
                 ),
                 "obs_staleness": Box(
                     low=0, high=inf, shape=(1, self.num_targets)
