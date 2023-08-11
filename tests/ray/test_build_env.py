@@ -1,5 +1,6 @@
 """Tests for env_builder.py."""
-# NOTE: This test generates a new file in the same directory as the test script.
+# NOTE: This test generates a new file (config_test.json) in the same directory
+# as the test script.
 # %% Imports
 
 # Standard Library Imports
@@ -65,7 +66,6 @@ reward_params = {
     "penalty": 1,
 }
 
-
 # Set environment constructor params
 constructor_params = {
     "wrappers": [
@@ -75,8 +75,24 @@ constructor_params = {
                 "filter_keys": ["vis_map_est", "num_tasked", "est_cov"]
             },
         },
-        {"wrapper": "minmaxscale_dict_obs"},
-        {"wrapper": "action_mask"},
+        {
+            "wrapper": "copy_obs_item",
+            "wrapper_config": {"key": "vis_map_est", "new_key": "vm_copy"},
+        },
+        {
+            "wrapper": "vis_map_action_mask",
+            "wrapper_config": {
+                "vis_map_key": "vm_copy",
+                "rename_key": "action_mask",
+            },
+        },
+        {
+            "wrapper": "nest_obs_items",
+            "wrapper_config": {
+                "new_key": "observations",
+                "keys_to_nest": ["vis_map_est", "num_tasked", "est_cov"],
+            },
+        },
         {"wrapper": "flat_dict"},
     ]
 }
