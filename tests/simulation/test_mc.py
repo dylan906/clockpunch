@@ -2,6 +2,7 @@
 # NOTE: Running script saves multiple files.
 # %% Imports
 # Standard Library Imports
+import os
 from copy import deepcopy
 from multiprocessing import active_children
 
@@ -13,7 +14,8 @@ from punchclock.common.utilities import loadJSONFile
 from punchclock.simulation.mc import MonteCarloRunner
 
 # %% Load MC Config
-mc_config_path = "tests/simulation/data/test_mc_config"
+fpath = os.path.dirname(os.path.realpath(__file__))
+mc_config_path = fpath + "/data/test_mc_config"
 mc_config_loaded = loadJSONFile(mc_config_path + ".json")
 mc_config_loaded["num_episodes"] = 2
 print(mc_config_loaded)
