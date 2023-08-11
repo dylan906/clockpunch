@@ -1,8 +1,9 @@
 """Test for mc_config.py."""
-# NOTE: This script generates a .json file.
-# NOTE: This script requires config_env.json to run
+# NOTE: This script generates a file: "data/test_mc_config.json""
+# NOTE: This script requires "data/config_env.json" to run
 # %% Imports
 # Standard Library Imports
+import os
 from copy import deepcopy
 
 # Third Party Imports
@@ -20,7 +21,9 @@ from punchclock.simulation.sim_utils import buildCustomOrRayPolicy
 
 # %% Load env config
 print("\nLoad environment config...")
-env_config = loadJSONFile("tests/simulation/data/config_env.json")
+fpath = os.path.dirname(os.path.realpath(__file__))
+env_config_path = fpath + "/data/config_env.json"
+env_config = loadJSONFile(env_config_path)
 # env_config["seed"] = 9793741
 env_config["horizon"] = 2
 # %% Build policy configs
@@ -65,12 +68,12 @@ mc_config = MonteCarloConfig(
 
 # %% Save MCConfig as json
 print("\nSaving MCConfig...")
-results_path = "tests/simulation/data/test_mc_config"
+results_path = fpath + "/data/test_mc_config.json"
 mc_config.save(results_path, append_timestamp=False)
 
 # %% Load MC Config and check that policies can be built
 print("\nLoading JSON...")
-loaded_config = loadJSONFile(results_path + ".json")
+loaded_config = loadJSONFile(results_path)
 
 for p_config in loaded_config["policy_configs"]:
     policy = buildCustomOrRayPolicy(p_config)
