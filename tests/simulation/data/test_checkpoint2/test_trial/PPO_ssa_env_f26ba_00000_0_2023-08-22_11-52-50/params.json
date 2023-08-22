@@ -1,0 +1,275 @@
+{
+  "env": "ssa_env",
+  "env_config": {
+    "agent_params": {
+      "fixed_sensors": [
+        [
+          6378.1363,
+          0.0,
+          0.0,
+          0.0,
+          0.46369050901000003,
+          0.0
+        ],
+        [
+          0.0,
+          6378.1363,
+          0.0,
+          -0.46369050901000003,
+          0.0,
+          0.0
+        ]
+      ],
+      "fixed_targets": null,
+      "num_sensors": 2,
+      "num_targets": 4,
+      "sensor_dist": null,
+      "sensor_dist_frame": null,
+      "sensor_dist_params": null,
+      "sensor_dynamics": "terrestrial",
+      "target_dist": "normal",
+      "target_dist_frame": "COE",
+      "target_dist_params": [
+        [
+          5000,
+          200
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          3.141592653589793
+        ],
+        [
+          0,
+          6.283185307179586
+        ],
+        [
+          0,
+          6.283185307179586
+        ],
+        [
+          0,
+          6.283185307179586
+        ]
+      ],
+      "target_dynamics": "satellite"
+    },
+    "constructor_params": {
+      "wrappers": [
+        {
+          "wrapper": "filter_observation",
+          "wrapper_config": {
+            "filter_keys": [
+              "vis_map_est",
+              "num_tasked",
+              "est_cov"
+            ]
+          }
+        },
+        {
+          "wrapper": "copy_obs_item",
+          "wrapper_config": {
+            "key": "vis_map_est",
+            "new_key": "vm_copy"
+          }
+        },
+        {
+          "wrapper": "vis_map_action_mask",
+          "wrapper_config": {
+            "rename_key": "action_mask",
+            "vis_map_key": "vm_copy"
+          }
+        },
+        {
+          "wrapper": "nest_obs_items",
+          "wrapper_config": {
+            "keys_to_nest": [
+              "vis_map_est",
+              "num_tasked",
+              "est_cov"
+            ],
+            "new_key": "observations"
+          }
+        },
+        {
+          "wrapper": "flat_dict"
+        }
+      ]
+    },
+    "filter_params": {
+      "Q": [
+        [
+          0.001,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.001,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1e-05,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1e-05,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1e-05
+        ]
+      ],
+      "R": [
+        [
+          0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.1,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.001,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.001,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.001
+        ]
+      ],
+      "p_init": [
+        [
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          10.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.1,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1
+        ]
+      ]
+    },
+    "horizon": 10,
+    "reward_params": {
+      "inequality": ">",
+      "metric": "num_tasked",
+      "metric_value": 3,
+      "obs_or_info": "obs",
+      "penalty": 1,
+      "preprocessors": [
+        "min"
+      ],
+      "reward_func": "Threshold"
+    },
+    "time_step": 100
+  },
+  "framework": "torch",
+  "horizon": null,
+  "model": {
+    "custom_model": "action_mask_model"
+  },
+  "sgd_minibatch_size": 10,
+  "train_batch_size": 100
+}
