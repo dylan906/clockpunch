@@ -77,12 +77,12 @@ class MonteCarloRunner:
         assert save_format in [
             "pkl",
             "csv",
-        ], "save_format must be in recognized list"
+        ], "save_format must be in recognized list ['pkl', 'csv']"
         if single_sim_mode is True:
-            assert num_episodes == 1, (
-                "When using fixed initial conditions (single_sim_mode "
-                "== True), num_episodes must be 1."
-            )
+            assert (
+                num_episodes == 1
+            ), """When using fixed initial conditions (single_sim_mode
+                == True), num_episodes must be 1."""
         if "seed" in env_config.keys():
             assert isinstance(
                 env_config.get("seed"), int
@@ -90,15 +90,15 @@ class MonteCarloRunner:
 
             if single_sim_mode is True:
                 warn(
-                    "Initial conditions are fixed by both env_config['seed'] and "
-                    "single_sim_mode. Using env_config['seed'] to build "
-                    "environments."
+                    """Initial conditions are fixed by both env_config['seed']
+                    and single_sim_mode. Using env_config['seed'] to build
+                    environments."""
                 )
             elif single_sim_mode is False:
                 warn(
-                    "Environment config fixes initial conditions, but Monte Carlo "
-                    "config specified random initial conditions. All steps of all "
-                    "trials will be saved, which may result in large file sizes."
+                    """Environment config fixes initial conditions, but Monte Carlo
+                    config specified random initial conditions. All steps of all
+                    trials will be saved, which may result in large file sizes."""
                 )
 
         # Deepcopy args to prevent MCR from modifying args at higher scope.
