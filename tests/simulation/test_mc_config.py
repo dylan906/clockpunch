@@ -1,6 +1,9 @@
 """Test for mc_config.py."""
 # NOTE: This script generates a file: "data/test_mc_config.json""
 # NOTE: This script requires "data/config_env.json" to run
+# NOTE: This script requires a Ray checkpoint in "/data/test_checkpoint2/" to run
+# NOTE: If this script isn't working, try regenerating the Ray checkpoint by running
+# gen_checkpoint.py (in "data/")
 # %% Imports
 # Standard Library Imports
 import os
@@ -32,7 +35,11 @@ print("\nBuild policy configs...")
 # For Ray policies, configs are just checkpoint paths. For CustomPolicies, configs
 # are dicts.
 
-checkpoint_path = "tests/simulation/data/test_checkpoint/checkpoint_000200/policies/default_policy"
+checkpoint_path = (
+    fpath
+    + "/data/test_checkpoint2/test_trial/PPO_ssa_env_f26ba_00000_0_2023-08-22_11-52-50/checkpoint_000001/policies/default_policy"
+)
+# checkpoint_path = "tests/simulation/data/test_checkpoint/checkpoint_000200/policies/default_policy"
 results_dir = "tests/simulation/data/mc_results"
 
 test_env = buildEnv(env_config)

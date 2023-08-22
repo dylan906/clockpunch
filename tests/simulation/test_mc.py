@@ -1,5 +1,8 @@
 """Tests for mc.py."""
 # NOTE: Running script saves multiple files.
+# NOTE: This script requires "test_mc_config.json" to run
+# NOTE: If this test is not running correctly, first try running test_mc_config.py
+# to regenerate test_mc_config.json.
 # %% Imports
 # Standard Library Imports
 import os
