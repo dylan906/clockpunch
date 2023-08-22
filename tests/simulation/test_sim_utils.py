@@ -1,5 +1,9 @@
 """Tests for sim_utils.py."""
+# NOTE: This script requires a Ray checkpoint in "data/" to run.
 # %% Imports
+# Standard Library Imports
+import os
+
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiDiscrete
 from numpy import pi
@@ -77,7 +81,12 @@ print(f"COE init (in ECI frame) = \n{init_coe}")
 
 # %% Test buildCustomOrRayPolicy
 print("\nTest buildCustomOrRayPolicy...")
-ray_path = "tests/simulation/data/test_checkpoint/checkpoint_000200/policies/default_policy"
+# ray_path = "tests/simulation/data/test_checkpoint/checkpoint_000200/policies/default_policy"
+fpath = os.path.dirname(os.path.realpath(__file__))
+ray_path = (
+    fpath
+    + "/data/test_checkpoint2/test_trial/PPO_ssa_env_f26ba_00000_0_2023-08-22_11-52-50/checkpoint_000001/policies/default_policy"
+)
 
 ray_policy = buildCustomOrRayPolicy(config_or_path=ray_path)
 print(f"Ray policy = {ray_policy}")
