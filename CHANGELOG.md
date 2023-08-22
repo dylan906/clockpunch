@@ -31,12 +31,14 @@ I'm trying to get better about that.
 - Changed a couple of low-level attribute names that shadowed `builtin` and appeared throughout repo (#9).
 - Refactored `IntersectMask` wrapper to more generic `MultiplyObsItems` (#14).
 - `ActionMask` wrapper deprecated in favor of combination of modular wrappers that can be used in other use cases as well (#13).
+- saveJSONFile now works if you include ".json" in the file name.
 
 ### Deprecated
 
 ### Fixed
 - Fixed bug in `builtTuner()` that prevented environment from building in Ray 0.2.5 (#3).
 - Properly enforced order of `Dict` observation spaces in all relevant wrappers (#7).
+- MC tests (`mc_config.py` and `mc.py`) are no longer reliant on an old copy/pasted config file (#24). 
 
 ### Removed
 - Removed FilterCovElements wrapper, deprecated by SplitArrayObs and FilterObs (#5).
