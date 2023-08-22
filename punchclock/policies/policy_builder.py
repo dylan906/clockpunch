@@ -282,6 +282,8 @@ def _prepForSpaceInstantiation(space_config: dict) -> dict:
         for k, v in space_config.items():
             if isinstance(v, list):
                 new_config[k] = array(v)
+            else:
+                new_config[k] = v
             if k == "dtype":
                 new_config[k] = dtype_map[v]
     else:

@@ -93,17 +93,28 @@ print(f"Ray policy = {ray_policy}")
 
 custom_policy_config = {
     "policy": "RandomPolicy",
-    "observation_space": Dict(
-        {
-            "observations": Dict(
-                {
-                    "a": Box(0, 1, shape=(2, 2)),
-                }
-            ),
-            "action_mask": Box(0, 1, shape=(2, 2)),
-        }
-    ),
-    "action_space": MultiDiscrete([2, 2, 2]),
+    "observation_space": {
+        "space": "Dict",
+        "observations": {
+            "space": "Dict",
+            "a": {
+                "space": "Box",
+                "low": 0,
+                "high": 1,
+                "shape": [2, 2],
+            },
+        },
+        "action_mask": {
+            "space": "Box",
+            "low": 0,
+            "high": 1,
+            "shape": (2, 2),
+        },
+    },
+    "action_space": {
+        "space": "MultiDiscrete",
+        "nvec": [2, 2, 2],
+    },
 }
 custom_policy = buildCustomOrRayPolicy(config_or_path=custom_policy_config)
 print(f"Custom policy = {custom_policy}")
