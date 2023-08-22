@@ -63,7 +63,11 @@ def saveJSONFile(file_name: str, a_dict: dict) -> str:
         `str`: The output of json.dumps.
     """
     json_object = json.dumps(a_dict)
-    file_path_str = file_name + ".json"
+
+    if file_name[-5:] != ".json":
+        file_path_str = file_name + ".json"
+    else:
+        file_path_str = file_name
 
     with safe_open_w(file_path_str) as outfile:
         outfile.write(json_object)
