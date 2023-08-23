@@ -13,6 +13,7 @@ I'm trying to get better about that.
 
 ### Changed
 - Changed base env observation space. Full covariance matrices now included (vice just diagonals) (#15).
+- `VisMap2ActionMask` and `ConvertCustody2ActionMask` now return 2d action masks (#18).
 
 ### Deprecated
 
