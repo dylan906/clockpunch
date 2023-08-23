@@ -7,6 +7,7 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
+from gymnasium.spaces import Box
 from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
@@ -17,6 +18,7 @@ from punchclock.environment.wrapper_utils import (
     checkDictSpaceContains,
     getNumWrappers,
     getWrapperList,
+    remakeSpace,
 )
 
 # %% Tests
@@ -74,5 +76,18 @@ report = checkDictSpaceContains(
     },
 )
 print(f"Check dict report: {report}")
+
+# %% Test remakeSpace
+print("\nTest remakeSpace()...")
+space = Box(0, 1, shape=(2, 2), dtype=int)
+new_space = remakeSpace(space, shape=(3, 3))
+print(f"space = {space}")
+print(f"new_space = {new_space}")
+
+space = Box(0, 1, shape=(2, 2), dtype=int)
+new_space = remakeSpace(space, lows=-1, highs=5, dtype=float)
+print(f"space = {space}")
+print(f"new_space = {new_space}")
+
 # %% done
 print("done")

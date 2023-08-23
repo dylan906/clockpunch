@@ -125,29 +125,36 @@ def getWrapperList(env: gym.Env, wrappers: list = None) -> list:
     return wrappers
 
 
-def makeSpace(
+def remakeSpace(
     space: Space,
     lows: ndarray | int = None,
     highs: ndarray | int = None,
     shape: list = None,
     dtype: type = None,
 ) -> Space:
-    """Make a space based on an original space.
+    """Remake a space based on an original space.
+
+    Used to reshape a space or assign new lows/highs or dtype.
 
     Supports Box and MultiBinary spaces.
 
     Any unused args are replaced with the same value(s) from the original space.
 
     Args:
-        space (Space): _description_
-        lows (ndarray | int): _description_
-        highs (ndarray | int): _description_
-        shape (list): _description_
-        dtype (type): _description_
+        space (Space): Original space. Must be one of [Box, Multibinary].
+        lows (ndarray | int, optional): New low value(s). Defaults to None.
+        highs (ndarray | int, optional): New high value(s). Defaults to None.
+        shape (list, optional): New shape. Defaults to original shape.
+        dtype (type, optional): New dtype. Defaults to original dtype.
 
     Returns:
-        gym.Space: _description_
+        gym.Space: Same type of space as original space.
     """
+    supported_spaces = (Box, MultiBinary)
+    assert isinstance(
+        space, supported_spaces
+    ), "Original space must be one of supported spaces."
+
     if lows is None:
         lows = getattr(space, "low", None)
     if highs is None:

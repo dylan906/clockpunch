@@ -47,7 +47,7 @@ from punchclock.common.custody_tracker import CustodyTracker
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
-    makeSpace,
+    remakeSpace,
 )
 
 
@@ -1523,7 +1523,7 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
                 orig_space.sample(), offset=off, axis1=ax1, axis2=ax2
             )
             new_space_shape = diag_obs.shape
-            new_obs_space[k] = makeSpace(orig_space, shape=new_space_shape)
+            new_obs_space[k] = remakeSpace(orig_space, shape=new_space_shape)
 
         funcs = [
             partial(diagonal, offset=o, axis1=a1, axis2=a2)
@@ -1850,7 +1850,7 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
             new_space_shape = [d for d in space_shape if d > 1]
             lows, highs = self.getLowsHighs(orig_space)
 
-            new_obs_space[k] = makeSpace(
+            new_obs_space[k] = remakeSpace(
                 orig_space,
                 shape=new_space_shape,
             )
