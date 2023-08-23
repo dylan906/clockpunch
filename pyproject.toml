@@ -4,9 +4,7 @@ dynamic = ["version"]
 description = "blurb"
 readme = "README.md"
 requires-python = ">=3.8.5"
-authors = [
-    {name = "Dylan Penn", email = "dylan.penn@vt.edu"}
-]
+authors = [{ name = "Dylan Penn", email = "dylan.penn@vt.edu" }]
 
 dependencies = [
     "gymnasium==0.26.3",
@@ -28,7 +26,7 @@ dependencies = [
     "scikit-learn==1.3.0",
 ]
 
-[project.optional-dependencies] 
+[project.optional-dependencies]
 dev = [
     "flake8",
     "pylint",
@@ -47,9 +45,7 @@ dev = [
 ]
 
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel>=0.29.0"]
+requires = ["setuptools>=42", "wheel>=0.29.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -58,7 +54,7 @@ packages = [
 ]
 zip-safe = false
 [tool.setuptools.dynamic]
-version = {attr = "punchclock.__version__"}
+version = { attr = "punchclock.__version__" }
 
 [tool.isort]
 # Play nicely with black
@@ -70,9 +66,7 @@ line_length = 79
 # Enforce Unix line endings
 line_ending = "\n"
 # Whitelist first party imports
-known_first_party = [
-    "clockpunch",
-]
+known_first_party = ["clockpunch"]
 # Import headers
 import_heading_stdlib = "Standard Library Imports"
 import_heading_thirdparty = "Third Party Imports"
