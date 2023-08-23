@@ -20,7 +20,7 @@ dependencies = [
     "scipy>=1.9",
     "satvis==0.2.1",
     "TensorFlow==2.13",
-    "tensorflow_probability>=0.19", # an undefined dependency of Ray
+    "tensorflow_probability==0.21", # an undefined dependency of Ray
     "pygame==2.2.0",
     "pandas==2.0.2",
     "scikit-learn==1.3.0",
