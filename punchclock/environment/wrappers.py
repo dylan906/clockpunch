@@ -468,7 +468,6 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         self.rename_key = rename_key
         self.action_mask_on = action_mask_on
         num_rows, num_cols = env.observation_space[vis_map_key].shape
-        # self.mask_space = Box(0, 1, shape=(num_rows + 1, num_cols), dtype=int)
         self.mask_space = MultiBinary((num_rows + 1, num_cols))
 
         # Maintain same order of obs dict
