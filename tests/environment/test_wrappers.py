@@ -39,6 +39,7 @@ from punchclock.environment.wrappers import (
     SqueezeObsItems,
     SumArrayWrapper,
     VisMap2ActionMask,
+    WastedActionsMask,
 )
 
 # %% Build environment
@@ -625,5 +626,24 @@ print(f"wrapped obs space = {squeeze_env.observation_space}")
 print(f"unwrapped obs  = \n{unwrapped_obs}")
 print(f"wrapped obs = \n{wrapped_obs}")
 assert squeeze_env.observation_space.contains(wrapped_obs)
+
+# %% Test WastedActionsMask
+print("\nTest WastedActionsMask...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"vis_map": MultiBinary((3, 2))}),
+        "action_space": MultiDiscrete([4, 4]),
+    }
+)
+
+nam_env = WastedActionsMask(
+    rand_env, vis_map_key="vis_map", mask_key="null_mask"
+)
+
+unwrapped_obs = rand_env.observation_space.sample()
+wrapped_obs = nam_env.observation(unwrapped_obs)
+print(f"unwrapped obs  = \n{unwrapped_obs}")
+print(f"wrapped obs = \n{wrapped_obs}")
+assert nam_env.observation_space.contains(wrapped_obs)
 # %% Done
 print("done")

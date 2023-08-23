@@ -63,7 +63,7 @@ class FloatObs(gym.ObservationWrapper):
         """Wrap environment."""
         assert isinstance(
             env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
 
         super().__init__(env)
         self.observation_space = self._recursiveConvertDictSpace(
@@ -258,7 +258,7 @@ class ActionMask(gym.ObservationWrapper):
         """
         assert isinstance(
             env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert (
             "vis_map_est" in env.observation_space.spaces
         ), "vis_map_est must be an item in observation_space"
@@ -450,7 +450,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         ), f"observation_space[{vis_map_key}] must be 2d."
         assert isinstance(
             env.action_space, MultiDiscrete
-        ), "env.action_space must be a gym.spaces.MultiDiscrete."
+        ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
 
         vis_map_shape = env.observation_space.spaces[vis_map_key].shape
         assert vis_map_shape[1] == len(
@@ -644,7 +644,7 @@ class FlatDict(gym.ObservationWrapper):
 
         assert isinstance(
             env.observation_space, gym.spaces.Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert isinstance(keys, list), "keys must be a list-like."
 
         super().__init__(env)
@@ -1367,7 +1367,7 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
 
         assert isinstance(
             env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert len(diag_on_0_or_1) == len(
             keys
         ), "diag_on_0_or_1 must have same length as keys."
@@ -1507,7 +1507,7 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
 
         assert isinstance(
             env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert (
             len(keys) == len(offset) == len(axis1) == len(axis2)
         ), """Lengths of keys, offset, axis1, and axis2 must be equal (if non-Nones
@@ -1613,7 +1613,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
 
         assert isinstance(
             env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert (
             key in env.observation_space.spaces
         ), f"{key} is not in env.observation_space."
@@ -1622,7 +1622,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         ), f"env.observation_space[{key}] must be a MultiBinary."
         assert isinstance(
             env.action_space, MultiDiscrete
-        ), "env.action_space must be a gym.spaces.MultiDiscrete."
+        ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
 
         super().__init__(env)
 
@@ -1830,7 +1830,7 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
 
         assert isinstance(
             env.observation_space, gym.spaces.Dict
-        ), "env.observation_space must be a gymnasium.Dict."
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert all(
             k in env.observation_space.spaces for k in keys
         ), "All keys must be in observation space."
@@ -1874,3 +1874,99 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
             highs = 1
 
         return lows, highs
+
+
+class WastedActionsMask(gym.ObservationWrapper):
+    """Mask null action if target(s) available to sensor.
+
+    Notation:
+        M : Number of sensors.
+        N : Number of targets.
+
+    Observation space must be a Dict.
+
+    Observation space must contain sensor-target visibility map in the form of
+    a (N, M) binary array.
+
+    Wrapped observation space is same as unwrapped observation space, with an additional
+    item: a 2d action mask. The key for the new item is set on instantiation. The
+    action mask is a (N+1, M) binary array. The bottom row corresponds to null
+    actions.
+
+    For every column in the visibility map, if there is a 1 anywhere, the appended
+    mask value is 0. Otherwise, the value is 1.
+    """
+
+    def __init__(
+        self, env: gym.Env, vis_map_key: ndarray, mask_key: str = None
+    ):
+        """Wrap environment with WastedActionsMask.
+
+        Args:
+            env (gym.Env): Must have a Dict observation space.
+            vis_map_key (ndarray): Corresponds to item in observation space.
+                Corresponding value must be a (N, M) binary array.
+            mask_key (str, optional): The key of the new action mask entry in the
+                wrapped observation space. Defaults to 'mask'.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
+        assert (
+            vis_map_key in env.observation_space.spaces
+        ), f"{vis_map_key} must be in observation space."
+        assert isinstance(
+            env.observation_space.spaces[vis_map_key], MultiBinary
+        ), f"env.observation_space[{vis_map_key}] must be a MultiBinary."
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
+        assert (
+            len(env.action_space.nvec)
+            == env.observation_space.spaces[vis_map_key].shape[1]
+        ), f"""Length of action space must match number of columns in
+        observation_space[{vis_map_key}]."""
+        assert all(
+            env.action_space.nvec == env.action_space.nvec[0]
+        ), "Action space must have same number in all entries."
+
+        if mask_key is None:
+            assert (
+                "mask" not in env.observation_space.spaces
+            ), """A new mask key
+            was not provided, but the default name, 'mask' shadows an existing
+            observation space key. Either provide an argument to mask_key or change
+            the observation space to not have 'mask' in the keys."""
+            mask_key = "mask"
+
+        super().__init__(env)
+
+        self.vis_map_key = vis_map_key
+        self.mask_key = mask_key
+        self.num_sensors = len(env.action_space)
+        self.num_targets = env.action_space.nvec[0] - 1
+        self.observation_space[mask_key] = MultiBinary(
+            (self.num_targets + 1, self.num_sensors)
+        )
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Mask null-action from sensors that have visible targets.
+
+        Returns:
+            OrderedDict: Appends an extra item from the input obs. KEy of extra
+                item is determined at instantiation.
+        """
+        mask = ones((self.num_targets + 1, self.num_sensors), dtype=int)
+        for i, col in enumerate(obs[self.vis_map_key].T):
+            new_col = deepcopy(col)
+            if any(col == 1):
+                new_col = append(new_col, 0)
+            else:
+                new_col = append(new_col, 1)
+
+            mask[:, i] = new_col
+
+        new_obs = deepcopy(obs)
+        new_obs[self.mask_key] = mask
+
+        return new_obs
