@@ -387,12 +387,12 @@ class CopyObsItem(gym.ObservationWrapper):
 
 # %% VisMap2ActionMask
 class VisMap2ActionMask(gym.ObservationWrapper):
-    """Convert visibility map within an observation space into an action mask.
+    """Convert visibility map within an observation space into a 2d action mask.
 
-    Append a row of 1's to the bottom of a visibility map, then flatten.
+    Append a row of 1's to the bottom of a visibility map.
 
     Set action_mask_on == False to make the modified observation space item always
-    a flattened array of 1s.
+    an array of 1s.
 
     Example (B = 2):
         env.observation_space = {
@@ -406,7 +406,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
             rename_key="action_mask")
 
         wrapped_env.observation_space = {
-            "action_mask": Box(0, 1, shape=(B*(A+1),), dtype=int)
+            "action_mask": Box(0, 1, shape=((A+1), B), dtype=int)
         }
 
     """
@@ -467,7 +467,8 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         self.vis_map_key = vis_map_key
         self.rename_key = rename_key
         self.action_mask_on = action_mask_on
-        self.mask_space = flatten_space(self.action_space)
+        num_rows, num_cols = env.observation_space[vis_map_key].shape
+        self.mask_space = Box(0, 1, shape=(num_rows + 1, num_cols), dtype=int)
 
         # Maintain same order of obs dict
         new_obs_space = OrderedDict({})
@@ -489,29 +490,28 @@ class VisMap2ActionMask(gym.ObservationWrapper):
                 rename_key was provided on instantiation).
 
         Example (num_sensors = 2, num_targets = 3):
-            obs = OrderedDict({"vis_map": array([[1, 0], [0, 0], [0, 0]])})
-            action_mask = VisMap2ActionMask.observation(obs, num_sensors = 2)
-            # action_mask = [1, 0, 0, 1, 0, 0, 0, 1]
-            #               [Sensor_1  , Sensor_2  ]
-            #                         ^           ^
-            #                       inaction always valid (=1)
+            obs = OrderedDict({"vis_map": array([[1, 0],
+                                                 [0, 0],
+                                                 [0, 0]])})
+            action_mask = VisMap2ActionMask.observation(obs)
+            # action_mask = array([[1, 0],
+            #                      [0, 0],
+            #                      [0, 0],
+            #                      [1, 1]])  <- inaction always 1 (valid)
         """
         mask = obs[self.vis_map_key]
         m = mask.shape[1]
         mask = append(mask, ones(shape=(1, m), dtype=int64), axis=0)
-        mask_flat = gym.spaces.flatten(self.mask_space, mask.transpose())
 
-        if self.action_mask_on is True:
-            obs_mask = mask_flat
-        else:
+        if self.action_mask_on is False:
             # Get pass-thru action mask (no actions are masked)
-            obs_mask = ones(shape=mask_flat.shape, dtype=int64)
+            mask = ones(shape=mask.shape, dtype=int64)
 
         # Maintain same order of obs dict
         obs_new = OrderedDict()
         for k, v in obs.items():
             if k == self.vis_map_key:
-                obs_new[self.rename_key] = obs_mask
+                obs_new[self.rename_key] = mask
             else:
                 obs_new[k] = v
 
