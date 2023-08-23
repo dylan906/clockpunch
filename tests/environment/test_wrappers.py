@@ -9,7 +9,7 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
-from numpy import array, diag, inf, sum
+from numpy import array, array_equal, diag, inf, sum
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
@@ -583,7 +583,7 @@ print(f"custody obs = \n{obs_1wrap['custody']}")
 print(f"custody action mask obs = \n{obs_2wrap['custody']}")
 print(f"visibility action mask obs = \n{obs_3wrap['vis_action_mask']}")
 assert env_3wrap.observation_space.contains(obs_3wrap)
-assert all(obs_2wrap["custody"] == obs_3wrap["vis_action_mask"])
+assert array_equal(obs_2wrap["custody"], obs_3wrap["vis_action_mask"])
 
 # %% Test ConvertObsBoxToMultiBinary
 print("\nTest ConvertObsBoxToMultiBinary...")
