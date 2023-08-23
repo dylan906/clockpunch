@@ -141,7 +141,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "filter_observation": FilterObservation,
         "flatten_observation": FlattenObservation,
         "float_obs": FloatObs,
-        "action_mask": ActionMask,
+        # "action_mask": ActionMask,
         "flat_dict": FlatDict,
         "linscale_dict_obs": LinScaleDictObs,
         # "rescale_dict_obs" here for backward compatibility
