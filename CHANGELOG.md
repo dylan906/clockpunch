@@ -12,6 +12,7 @@ I'm trying to get better about that.
 - Added wrapper to convert Box space to MultiBinary (#21)
 
 ### Changed
+- Changed base env observation space. Full covariance matrices now included (vice just diagonals) (#15).
 
 ### Deprecated
 
