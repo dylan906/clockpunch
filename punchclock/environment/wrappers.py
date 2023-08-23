@@ -935,6 +935,62 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         return x
 
 
+# %% SelectiveDictObsWrapper
+class SelectiveDictObsWrapper(gym.ObservationWrapper):
+    """Base class for wrappers that apply a function to a selection of Dict entries."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        funcs: list[Callable],
+        keys: list[str],
+        new_obs_space: gym.spaces.Space,
+    ):
+        """Initialize base class and check observation space for correctness.
+
+        Args:
+            env (gym.Env): Must have Dict observation space.
+            funcs (list[Callable]): List of functions to be paired with list of
+                keys. Paired functions will be applied to keys.
+            keys (list[str]): List of keys to be operated on by funcs.
+            new_obs_space (gym.spaces.Space): Observation space of wrapped env.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), """Observation space must be a gym.spaces.Dict."""
+
+        super().__init__(env)
+        self.observation_space = new_obs_space
+
+        self.processor = SelectiveDictProcessor(funcs, keys)
+
+        assert self.checkObsSpace(), """Observation not contained in new observation
+        space. Check your observation space and/or observation."""
+
+        return
+
+    def observation(self, obs: OrderedDict) -> dict:
+        """Get wrapped observation from a Dict observation space."""
+        new_obs = self.processor.applyFunc(obs)
+        return new_obs
+
+    def checkObsSpace(self) -> bool:
+        """Check input observation space for consistency.
+
+        Use this method on instantiation of SelectiveDictObsWrapper to make sure
+            that the correct-shaped observation space was input to be compatible
+            with wrapped observations.
+
+        Returns:
+            bool: True if wrapped observation is contained in wrapped observation
+                space.
+        """
+        obs = self.env.observation_space.sample()
+        wrapped_obs = self.observation(obs)
+        check_result = self.observation_space.contains(wrapped_obs)
+        return check_result
+
+
 # %% SplitArrayObs
 class SplitArrayObs(gym.ObservationWrapper):
     """Split array entries in a Dict observation space into multiple entries.
@@ -1013,16 +1069,20 @@ class SplitArrayObs(gym.ObservationWrapper):
             [isinstance(space, Box) for space in relevant_spaces]
         ), "All spaces specified in keys must be Box spaces in unwrapped environment."
 
-        # %% Set attributes
         super().__init__(env)
-        self.keys = keys
-        self.new_keys = new_keys
-        self.indices_or_sections = indices_or_sections
-        self.axes = axes
         self.key_map = {k: v for (k, v) in zip(keys, new_keys)}
+
+        # Store partials of split() to apply to selective dict entries using
+        # SelectiveDictProcessor (sdp).
+        funcs = [
+            partial(split, indices_or_sections=iors, axis=ax)
+            for iors, ax, in zip(indices_or_sections, axes)
+        ]
+        self.sdp = SelectiveDictProcessor(funcs, keys)
 
         # Redefine env.observation_space
         self.observation_space = self.buildNewObsSpace(
+            env,
             self.key_map,
             env.observation_space,
             indices_or_sections,
@@ -1031,6 +1091,7 @@ class SplitArrayObs(gym.ObservationWrapper):
 
     def buildNewObsSpace(
         self,
+        env: gym.Env,
         key_map: dict,
         obs_space: gym.spaces.Dict,
         indices_or_sections: list[int | ndarray],
@@ -1041,7 +1102,7 @@ class SplitArrayObs(gym.ObservationWrapper):
         # space. Need to add new items and make sure they are the correct size
         # (which will be different than unwrapped).
         new_obs_space = Dict(
-            {k: deepcopy(v) for (k, v) in self.observation_space.items()}
+            {k: deepcopy(v) for (k, v) in env.observation_space.items()}
         )
         for (key, new_keys), iors, ax in zip(
             key_map.items(),
@@ -1049,97 +1110,39 @@ class SplitArrayObs(gym.ObservationWrapper):
             axes,
         ):
             original_subspace = obs_space[key]
-            original_dtype = original_subspace.dtype
-            original_high = split(
-                original_subspace.high, indices_or_sections=iors, axis=ax
-            )
-            original_low = split(
-                original_subspace.low, indices_or_sections=iors, axis=ax
-            )
             split_subspaces = split(
                 original_subspace.sample(),
                 indices_or_sections=iors,
                 axis=ax,
             )
-            for space, nk, o_low, o_high in zip(
-                split_subspaces, new_keys, original_low, original_high
-            ):
-                space_shape = space.shape
-                new_obs_space[nk] = Box(
-                    low=o_low,
-                    high=o_high,
-                    shape=space_shape,
-                    dtype=original_dtype,
+            for arr, nk in zip(split_subspaces, new_keys):
+                new_obs_space[nk] = remakeSpace(
+                    space=original_subspace, shape=arr.shape
                 )
             new_obs_space.spaces.pop(key)
 
         return new_obs_space
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
-        """Get wrapped observation.
+        """Wrap an observation with SplitArrayObs.
 
         Args:
-            obs (OrderedDict): Has original (unwrapped) keys.
+            obs (OrderedDict): Unwrapped observation.
 
         Returns:
-            OrderedDict: Replaces some unwrapped keys (as specified during instantiation)
-                with new keys (also as specified during instantiation).
+            OrderedDict: Selected keys (determined at instantiation) are deleted
+                and replaced with two keys each. The replacement values are split
+                arrays. New items are at end of returned OrderedDict.
         """
-        # Deepcopy is needed so original obs isn't modified
         new_obs = deepcopy(obs)
-        for (key, new_keys), i, axis in zip(
-            self.key_map.items(),
-            self.indices_or_sections,
-            self.axes,
-        ):
-            # After splitting observation, the ob is now a list of multiple arrays.
-            # So we assign each array to a new item in the new obs dict. Also have
-            # to delete the replaced key.
-            split_ob = split(obs[key], indices_or_sections=i, axis=axis)
-            ob = {k: v for (k, v) in zip(new_keys, split_ob)}
-            new_obs.pop(key)
-            new_obs.update(ob)
+        # replace select arrays with lists of arrays
+        split_arrays = self.sdp.applyFunc(new_obs)
+        # reassign entries of lists of arrays to separate OrderedDict items
+        for k, v in self.key_map.items():
+            new_obs[v[0]] = split_arrays[k][0]
+            new_obs[v[1]] = split_arrays[k][1]
+            new_obs.pop(k)
 
-        return new_obs
-
-
-# %% SelectiveDictObsWrapper
-class SelectiveDictObsWrapper(gym.ObservationWrapper):
-    """Base class for wrappers that apply a function to a selection of Dict entries."""
-
-    def __init__(
-        self,
-        env: gym.Env,
-        funcs: list[Callable],
-        keys: list[str],
-        new_obs_space: gym.spaces.Space,
-    ):
-        """Initialize base class and check observation space for correctness.
-
-        Args:
-            env (gym.Env): Must have Dict observation space.
-            funcs (list[Callable]): List of functions to be paired with list of
-                keys. Paired functions will be applied to keys.
-            keys (list[str]): List of keys to be operated on by funcs.
-            new_obs_space (gym.spaces.Space): Observation space of wrapped env.
-        """
-        assert isinstance(
-            env.observation_space, Dict
-        ), """Observation space must be a gym.spaces.Dict."""
-
-        super().__init__(env)
-        self.observation_space = new_obs_space
-
-        self.processor = SelectiveDictProcessor(funcs, keys)
-
-        assert self.checkObsSpace(), """Observation not contained in new observation
-        space. Check your observation space and/or observation."""
-
-        return
-
-    def observation(self, obs: OrderedDict) -> dict:
-        """Get wrapped observation from a Dict observation space."""
-        new_obs = self.processor.applyFunc(obs)
         return new_obs
 
     def checkObsSpace(self) -> bool:
