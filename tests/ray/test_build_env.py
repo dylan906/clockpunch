@@ -108,7 +108,7 @@ env_config = {
     "constructor_params": constructor_params,
 }
 
-# Set model (neural net) config to use custom ActionMask model. This line isn't
+# Set model (neural net) config to use custom MyActionMask model. This line isn't
 # actually used in this test, but is here as an example.
 ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
 

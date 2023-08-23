@@ -14,7 +14,7 @@ from punchclock.nets.action_mask_model import MyActionMaskModel
 def buildRayActionMaskPolicy(
     checkpoint_path: str,
 ) -> dict | Policy:
-    """Build Ray policy using ActionMask model from a checkpoint path.
+    """Build Ray policy using MyActionMask model from a checkpoint path.
 
     Args:
         checkpoint_path (`str`): Checkpoint path.
