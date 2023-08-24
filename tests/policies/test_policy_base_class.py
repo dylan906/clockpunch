@@ -4,7 +4,7 @@
 import gymnasium as gym
 
 # Punch Clock Imports
-from punchclock.environment.wrappers import MakeDict
+from punchclock.environment.obs_wrappers import MakeDict
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 
 

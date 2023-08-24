@@ -19,7 +19,7 @@ from punchclock.common.math import getCircOrbitVel
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.env import SSAScheduler
 from punchclock.environment.env_parameters import SSASchedulerParams
-from punchclock.environment.wrappers import (
+from punchclock.environment.obs_wrappers import (
     ActionMask,
     Convert2dTo3dObsItems,
     ConvertCustody2ActionMask,
