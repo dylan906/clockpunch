@@ -11,17 +11,15 @@ from punchclock.environment.reward_wrappers import BinaryReward
 print("\nTest BinaryReward...")
 rand_env = RandomEnv(
     {
-        "observation_space": Dict(
-            {
-                "a": Box(0, 1),
-            }
-        )
+        "observation_space": Dict({"a": MultiBinary((2, 2))}),
+        "action_space": MultiDiscrete([3, 3]),
     }
 )
-binary_env = BinaryReward(rand_env)
-(obs, reward, term, trunc, info) = binary_env.step(
-    binary_env.action_space.sample()
-)
+binary_env = BinaryReward(rand_env, "a", reward=0.1)
+action = binary_env.action_space.sample()
+(obs, reward, term, trunc, info) = binary_env.step(action)
+print(f"obs['a'] = {obs['a']}")
+print(f"action = {action}")
 print(f"reward={reward}")
 # %% Done
 print("done")
