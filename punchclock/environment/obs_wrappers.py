@@ -1,4 +1,4 @@
-"""SSAScheduler wrappers module."""
+"""SSAScheduler observation wrappers module."""
 # %% Imports
 from __future__ import annotations
 

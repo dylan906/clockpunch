@@ -1,4 +1,4 @@
-"""Tests for wrappers.py."""
+"""Tests for obs_wrappers.py."""
 # %% Imports
 from __future__ import annotations
 
