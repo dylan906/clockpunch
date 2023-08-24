@@ -37,6 +37,9 @@ class RewardBase(ABC, Wrapper):
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "env.action_space must be a MultiDiscrete."
+        assert all(
+            env.action_space.nvec == env.action_space.nvec[0]
+        ), "All values in action_space.nvec must be same."
 
     @final
     def step(self, action):
@@ -129,7 +132,7 @@ class VismaskViolationReward(RewardBase):
                 space. Value associated with action_mask_key must be (N, M) binary
                 array where a 1 indicates the sensor-target the pairing is a valid
                 action).
-            reward (float, optional): Reward generated per valid sensor-target
+            reward (float, optional): Reward generated per (in)valid sensor-target
                 assignment. Defaults to 1.
             reward_valid_actions (bool, optional): If True, valid actions are rewarded.
                 If False, invalid actions are reward. Defaults to True.
@@ -156,7 +159,7 @@ class VismaskViolationReward(RewardBase):
         obs: OrderedDict,
         reward: Any,
         termination: Any,
-        truncationAny: Any,
+        truncation: Any,
         info: Any,
         action: ndarray[int],
     ) -> float:
@@ -189,4 +192,78 @@ class VismaskViolationReward(RewardBase):
 
         reward = sum(reward_mat)
 
+        return reward
+
+
+# %% Reward Null Action
+class NullActionReward(RewardBase):
+    """Rewards selection (or non-selection) of null actions.
+
+    The null action is the max value allowed in a MultiDiscrete action space. All
+        values in action space must be identical.
+
+    Example:
+        action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
+        wrapped_env = NullActionReward(env)
+        action = array([0, 1, 3])
+        reward = 0 + 0 + 1 = 1
+
+    Example:
+        action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
+        wrapped_env = NullActionReward(env, reward_null_actions=False)
+        action = array([0, 1, 3])
+        reward = 1 + 1 + 0 = 2
+
+    """
+
+    def __init__(
+        self, env: Env, reward: float = 1, reward_null_actions: bool = True
+    ):
+        """Wrap environment.
+
+        Args:
+            env (Env): See RewardBase for requirements.
+            reward (float, optional): Reward generated per (non-)null action assignment.
+                Defaults to 1.
+            reward_null_actions (bool, optional): If True, reward is assigned for
+                null actions. If False, reward is assigned for non-null actions.
+                Defaults to True.
+        """
+        super().__init__(env)
+        self.reward_per_null_action = reward
+        self.reward_null_actions = reward_null_actions
+        self.null_action_index = env.action_space.nvec[0] - 1
+
+    def calcReward(
+        self,
+        obs: Any,
+        reward: Any,
+        termination: Any,
+        truncationAny: Any,
+        info: Any,
+        action: ndarray[int],
+    ) -> float:
+        """Calculate null action reward.
+
+        Args:
+            obs, reward, termination, truncation, info: Unused.
+            action (ndarray[int]): A (N,) array of ints where the i-th value is
+                the i-th sensor and the value denotes the target number (0 to N-1);
+                a value of N denotes null action.
+
+        Returns:
+            float: Total reward for step.
+        """
+        if self.reward_null_actions is True:
+            # Reward null actions
+            reward = (
+                self.reward_per_null_action
+                * (action == self.null_action_index).sum()
+            )
+        else:
+            # reward non-null actions (aka active actions)
+            reward = (
+                self.reward_per_null_action
+                * (action != self.null_action_index).sum()
+            )
         return reward
