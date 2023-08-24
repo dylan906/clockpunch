@@ -82,47 +82,69 @@ class RewardBase(ABC, Wrapper):
 
 
 # %% Binary Reward
-class BinaryReward(RewardBase):
-    """Grants a constant reward per sensor assigned to valid target.
+class VismaskViolationReward(RewardBase):
+    """Grants a constant reward per sensor assigned to valid (or invalid) action.
+
+    Use to reward tasking sensors to valid targets or penalize for tasking to invalid
+    ones.
 
     Nomenclature:
         M: Number of sensors.
         N: Number of targets.
 
     Example:
-        # for 3 sensors, 2 targets
-        vis_map = array([[1, 1, 1],
+        # for 3 sensors, 2 targets, reward valid actions
+        wrapped_env = VismaskViolationReward(env, "mask")
+        vis_mask = array([[1, 1, 1],
                          [0, 0, 1]])
         action = array([0, 1, 2])
-        reward = 1 + 0 + 0 = 1
+        # reward = 1 + 0 + 0 = 1
 
         Sensor 0 earns 1 reward because it tasked a visible target.
         Sensor 1 earns 0 reward because it tasked a non-visible target.
         Sensor 2 earns 0 reward because it tasked null-action.
+
+    Example:
+        # for 3 sensors, 2 targets, penalize invalid actions
+        wrapped_env = VismaskViolationReward(env, "mask", reward=-1,
+            reward_valid_actions=False)
+        vis_mask = array([[1, 1, 1],
+                         [0, 0, 1]])
+        action = array([0, 1, 2])
+        # reward = 0 + -1 + 0 = -1
     """
 
-    def __init__(self, env: Env, vis_map_key: str, reward: float = 1):
+    def __init__(
+        self,
+        env: Env,
+        action_mask_key: str,
+        reward: float = 1,
+        reward_valid_actions: bool = True,
+    ):
         """Wrap environment.
 
         Args:
             env (Env): See RewardBase for requirements.
-            vis_map_key (str): Key corresponding to vis status map in observation
-                space. Value associated with vis_map_key must be (N, M) binary
-                array where a 1 indicates the sensor-target pair have access to
-                each other (the pairing is a valid action).
+            action_mask_key (str): Key corresponding to action mask in observation
+                space. Value associated with action_mask_key must be (N, M) binary
+                array where a 1 indicates the sensor-target the pairing is a valid
+                action).
             reward (float, optional): Reward generated per valid sensor-target
                 assignment. Defaults to 1.
+            reward_valid_actions (bool, optional): If True, valid actions are rewarded.
+                If False, invalid actions are reward. Defaults to True.
         """
         super().__init__(env)
         assert (
-            vis_map_key in env.observation_space.spaces
-        ), f"'{vis_map_key}' not in env.observation_space."
+            action_mask_key in env.observation_space.spaces
+        ), f"'{action_mask_key}' not in env.observation_space."
         assert isinstance(
-            env.observation_space.spaces[vis_map_key], MultiBinary
-        ), f"env.observation_space['{vis_map_key}'] must be MultiBinary."
+            env.observation_space.spaces[action_mask_key], MultiBinary
+        ), f"env.observation_space['{action_mask_key}'] must be MultiBinary."
 
-        self.vis_map_key = vis_map_key
+        self.action_mask_key = action_mask_key
         self.reward_per_valid = reward
+        self.reward_valid_actions = reward_valid_actions
         self.action_converter = partial(
             actionSpace2Array,
             num_sensors=len(env.action_space),
@@ -141,7 +163,7 @@ class BinaryReward(RewardBase):
         """Calculate binary reward.
 
         Args:
-            obs (OrderedDict): Must have vis_map_key in it.
+            obs (OrderedDict): Must have action_mask_key in it.
             reward, termination, truncation, info: Unused.
             action (ndarray[int]): A (N,) array of ints where the i-th value is
                 the i-th sensor and the value denotes the target number (0 to N-1);
@@ -152,10 +174,19 @@ class BinaryReward(RewardBase):
         """
         action_2d = self.action_converter(action)
         action_2d_nonulls = action_2d[:-1, :]
-        vis_map = obs[self.vis_map_key]
-        reward_mat = multiply(
-            self.reward_per_valid * vis_map, action_2d_nonulls
-        )
+        vis_mask = obs[self.action_mask_key]
+
+        if self.reward_valid_actions is True:
+            # Reward valid actions
+            reward_mat = multiply(
+                self.reward_per_valid * vis_mask, action_2d_nonulls
+            )
+        else:
+            # Reward invalid actions
+            reward_mat = multiply(
+                self.reward_per_valid * (1 - vis_mask), action_2d_nonulls
+            )
+
         reward = sum(reward_mat)
 
         return reward
