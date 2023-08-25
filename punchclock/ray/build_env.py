@@ -13,6 +13,12 @@ from datetime import datetime
 import gymnasium as gym
 from gymnasium.wrappers.filter_observation import FilterObservation
 from gymnasium.wrappers.flatten_observation import FlattenObservation
+from punch.environment.reward_wrappers import (
+    AssignObsToReward,
+    NullActionReward,
+    ThresholdReward,
+    VismaskViolationReward,
+)
 
 # Punch Clock Imports
 from punchclock.common.utilities import array2List
@@ -138,6 +144,7 @@ def buildEnv(env_config: dict) -> gym.Env:
     # of the inputs. Use wrapper_map to map wrapper names (`str`s) to wrapper function
     # (`Callable`s). Order of wrappers matters.
     wrapper_map = {
+        # Observation Space Wrappers
         "filter_observation": FilterObservation,
         "flatten_observation": FlattenObservation,
         "float_obs": FloatObs,
@@ -158,6 +165,11 @@ def buildEnv(env_config: dict) -> gym.Env:
         "convert_obs_box_to_multibinary": ConvertObsBoxToMultiBinary,
         "squeeze_obs_items": SqueezeObsItems,
         "diagonal_obs_items": DiagonalObsItems,
+        # Reward Wrappers
+        "assign_obs_to_reward": AssignObsToReward,
+        "null_action_reward": NullActionReward,
+        "threshold_reward": ThresholdReward,
+        "vismask_violation_reward": VismaskViolationReward,
     }
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
