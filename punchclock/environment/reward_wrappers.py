@@ -7,7 +7,7 @@ from functools import partial
 from typing import Any, Union, final
 
 # Third Party Imports
-from gymnasium import Env, Wrapper
+from gymnasium import Env, RewardWrapper, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
 from numpy import float32, int8, int_, multiply, ndarray, sum
 
@@ -307,6 +307,9 @@ class ThresholdReward(RewardBase):
         """
         super().__init__(env)
 
+        assert (
+            metric_key in env.observation_space.spaces
+        ), f"{metric_key} must be in observation_space.spaces."
         assert env.observation_space.spaces[metric_key].shape == (
             1,
         ), f"observation_space['{metric_key}'] must be a (1,)-sized space."
@@ -359,4 +362,50 @@ class ThresholdReward(RewardBase):
         else:
             TypeError("inbounds is neither True nor False")
 
+        return reward
+
+
+class AssignObsToReward(RewardBase):
+    """Get an item in the observation space and assign reward to the value.
+
+    Does not modify observation.
+    """
+
+    def __init__(self, env: Env, key: str):
+        """Wrap environment with AssignObsToReward.
+
+        Args:
+            env (Env): See RewardBase for requirements.
+            key (str): Key corresponding to value in observation space
+                that will be assigned to reward.
+        """
+        super().__init__(env)
+
+        assert (
+            key in env.observation_space.spaces
+        ), f"{key} must be in observation_space.spaces."
+        assert env.observation_space.spaces[key].shape == (
+            1,
+        ), f"observation_space['{key}'] must be a (1,)-sized space."
+        assert env.observation_space.spaces[key].dtype in (
+            float,
+            int,
+            float32,
+            int_,
+            int8,
+        ), f"{key} must correspond to a scalar value."
+
+        self.key = key
+
+    def calcReward(
+        self,
+        obs: OrderedDict,
+        reward: Any,
+        termination: Any,
+        truncationAny: Any,
+        info: Any,
+        action: Any,
+    ):
+        """Calculate reward."""
+        reward = obs[self.key]
         return reward

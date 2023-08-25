@@ -7,6 +7,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.environment.reward_wrappers import (
+    AssignObsToReward,
     NullActionReward,
     ThresholdReward,
     VismaskViolationReward,
@@ -84,5 +85,18 @@ thresh_env = ThresholdReward(rand_env, "b", 1)
     thresh_env.action_space.sample()
 )
 print(f"reward (MultiBinary space) = {reward}")
+# %% Test AssignObsToReward
+print("\nTest AssignObsToReward...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"a": Box(low=-1, high=1)}),
+        "action_space": MultiDiscrete([1]),
+    }
+)
+
+ass_env = AssignObsToReward(rand_env, "a")
+(obs, reward, term, trunc, info) = ass_env.step(ass_env.action_space.sample())
+print(f"obs = {obs}")
+print(f"reward = {reward}")
 # %% Done
 print("done")
