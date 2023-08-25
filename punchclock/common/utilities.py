@@ -8,6 +8,7 @@ import os
 import os.path
 from ast import literal_eval
 from itertools import groupby
+from operator import ge, gt, le, lt
 
 # Third Party Imports
 from gymnasium.spaces import Box, MultiDiscrete
@@ -347,3 +348,17 @@ def array2List(obj):
     if isinstance(obj, ndarray):
         return obj.tolist()
     raise TypeError("Not serializable")
+
+
+# %% Get inequality func from str
+def getInequalityFunc(inequality_str: str) -> Callable:
+    """Get inequality from string representation."""
+    inequality_map = {"<=": le, ">=": ge, "<": lt, ">": gt}
+
+    assert (
+        inequality_str in inequality_map.keys()
+    ), "inequality_str must be one of ['<=', '>=', '<', '>']."
+
+    inequality_func = inequality_map[inequality_str]
+
+    return inequality_func
