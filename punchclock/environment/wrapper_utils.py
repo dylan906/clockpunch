@@ -10,7 +10,7 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, MultiBinary, MultiDiscrete, Space
-from numpy import ndarray
+from numpy import ndarray, ravel
 
 
 # %% Classes
@@ -170,8 +170,10 @@ def remakeSpace(
     # lows are same and all highs are same.
     # Only applies to Box (MultiBinary has intrinsic lows/highs)
     if shape != space.shape and isinstance(space, Box):
-        lows = lows.flat[0]
-        highs = highs.flat[0]
+        # lows = lows.flat[0]
+        # highs = highs.flat[0]
+        lows = ravel(lows)[0]
+        highs = ravel(highs)[0]
 
     if isinstance(space, Box):
         new_space = Box(
