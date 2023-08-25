@@ -1,19 +1,18 @@
 """Reward wrappers."""
 # %% Imports
 # Standard Library Imports
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import partial
 from typing import Any, Union, final
 
 # Third Party Imports
-from gymnasium import Env, RewardWrapper, Wrapper
-from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import multiply, ndarray, ones, sum
+from gymnasium import Env, Wrapper
+from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
+from numpy import float32, int8, int_, multiply, ndarray, sum
 
 # Punch Clock Imports
-from punchclock.common.utilities import actionSpace2Array
-from punchclock.environment.env import SSAScheduler
+from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
 
 
 class RewardBase(ABC, Wrapper):
@@ -266,4 +265,98 @@ class NullActionReward(RewardBase):
                 self.reward_per_null_action
                 * (action != self.null_action_index).sum()
             )
+        return reward
+
+
+# %% Threshold Reward
+class ThresholdReward(RewardBase):
+    """Gives a reward if a metric meets an inequality operation.
+
+    Specify a metric in the observation space and a threshold to measure that
+        metric against. If the metric is <= (by default) the metric, then a reward
+        is granted. The reward per step is set on instantiation and does not change.
+        The inequality is set on instantiation (can be <=, >=, <, or >) and does
+        not change.
+
+    The metric specified in the observation space must be a (1,)-shaped space.
+        Typical use case is a Box or MultiBinary.
+
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        metric_key: str,
+        metric_threshold: Union[float, int],
+        reward: float = 1,
+        inequality: str = "<=",
+    ):
+        """Wrap environment with ThresholdReward.
+
+        Args:
+            env (Env): See RewardBase for requirements.
+            metric_key (str): Key corresponding to metric in observation space
+                that will be thresholded.
+            metric_threshold (Union[float, int]): Threshold to evaluate metric
+                against.
+            reward (float, optional): Reward generated per step that inequality
+                evaluates to True. Defaults to 1.
+            inequality (str, optional): String representation of inequality operator
+                to use in threshold operation. Must be one of ['<=', '>=', '<', '>'].
+                Defaults to "<=".
+        """
+        super().__init__(env)
+
+        assert env.observation_space.spaces[metric_key].shape == (
+            1,
+        ), f"observation_space['{metric_key}'] must be a (1,)-sized space."
+        assert env.observation_space.spaces[metric_key].dtype in (
+            float,
+            int,
+            float32,
+            int_,
+            int8,
+        ), f"{metric_key} must correspond to a scalar value."
+        assert isinstance(
+            metric_threshold, (int, float)
+        ), "metric_threshold must be a float or int."
+
+        self.metric_key = metric_key
+        self.reward_per_step = reward
+        # getInequalityFunc checks arg type
+        self.inequalityFunc = getInequalityFunc(inequality)
+        self.threshold = metric_threshold
+
+    def calcReward(
+        self,
+        obs: OrderedDict,
+        reward: Any,
+        termination: Any,
+        truncationAny: Any,
+        info: Any,
+        action: Any,
+    ) -> float:
+        """Calculate threshold reward.
+
+        Args:
+            obs (OrderedDict): _description_
+            reward, termination, truncation, info, action: Unused.
+
+        Returns:
+            float: Either 0 (if inequality evaluates to False) or reward (if inequality
+                evalutes to True) specified on instantiation.
+        """
+        metric = obs[self.metric_key]
+
+        inbounds = self.inequalityFunc(metric, self.threshold)
+        # bool comparisons with numpy behave weirdly, so leave inbounds as a singleton
+        # array, then check if True/False is in the array. Saves from having to
+        # write odd-looking logic to do numpy bool comparisons.
+        if True in inbounds:
+            reward = self.reward_per_step
+        elif False in inbounds:
+            reward = 0
+        else:
+            TypeError("inbounds is neither True nor False")
+
         return reward
