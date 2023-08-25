@@ -15,6 +15,7 @@ from numpy import float32, int8, int_, multiply, ndarray, sum
 from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
 
 
+# %% Base class for reward configuration wrappers
 class RewardBase(ABC, Wrapper):
     """ABC for reward scheme wrapper.
 
@@ -80,6 +81,53 @@ class RewardBase(ABC, Wrapper):
         Returns:
             float | int: Wrapped reward.
         """
+        return reward
+
+
+# %% Assign observation space variable to reward
+class AssignObsToReward(RewardBase):
+    """Get an item in the observation space and assign reward to the value.
+
+    Does not modify observation.
+    """
+
+    def __init__(self, env: Env, key: str):
+        """Wrap environment with AssignObsToReward.
+
+        Args:
+            env (Env): See RewardBase for requirements.
+            key (str): Key corresponding to value in observation space
+                that will be assigned to reward.
+        """
+        super().__init__(env)
+
+        assert (
+            key in env.observation_space.spaces
+        ), f"{key} must be in observation_space.spaces."
+        assert env.observation_space.spaces[key].shape == (
+            1,
+        ), f"observation_space['{key}'] must be a (1,)-sized space."
+        assert env.observation_space.spaces[key].dtype in (
+            float,
+            int,
+            float32,
+            int_,
+            int8,
+        ), f"{key} must correspond to a scalar value."
+
+        self.key = key
+
+    def calcReward(
+        self,
+        obs: OrderedDict,
+        reward: Any,
+        termination: Any,
+        truncationAny: Any,
+        info: Any,
+        action: Any,
+    ):
+        """Calculate reward."""
+        reward = obs[self.key]
         return reward
 
 
@@ -269,36 +317,30 @@ class NullActionReward(RewardBase):
 
 
 # %% Threshold Reward
-class ThresholdReward(RewardBase):
-    """Gives a reward if a metric meets an inequality operation.
+class ThresholdReward(RewardWrapper):
+    """Gives a reward if unwrapped reward meets an inequality operation.
 
-    Specify a metric in the observation space and a threshold to measure that
-        metric against. If the metric is <= (by default) the metric, then a reward
-        is granted. The reward per step is set on instantiation and does not change.
+    Overrides unwrapped reward.
+
+    If unwrapped reward is <= (by default) the threshold, then a reward is granted.
+        The reward per step is set on instantiation and does not change.
         The inequality is set on instantiation (can be <=, >=, <, or >) and does
         not change.
-
-    The metric specified in the observation space must be a (1,)-shaped space.
-        Typical use case is a Box or MultiBinary.
-
     """
 
     def __init__(
         self,
         env: Env,
-        metric_key: str,
-        metric_threshold: Union[float, int],
+        unwrapped_reward_threshold: Union[float, int],
         reward: float = 1,
         inequality: str = "<=",
     ):
         """Wrap environment with ThresholdReward.
 
         Args:
-            env (Env): See RewardBase for requirements.
-            metric_key (str): Key corresponding to metric in observation space
-                that will be thresholded.
-            metric_threshold (Union[float, int]): Threshold to evaluate metric
-                against.
+            env (Env): A Gymnasium environment.
+            unwrapped_reward_threshold (Union[float, int]): Threshold to evaluate
+                unwrapped reward against.
             reward (float, optional): Reward generated per step that inequality
                 evaluates to True. Defaults to 1.
             inequality (str, optional): String representation of inequality operator
@@ -307,105 +349,26 @@ class ThresholdReward(RewardBase):
         """
         super().__init__(env)
 
-        assert (
-            metric_key in env.observation_space.spaces
-        ), f"{metric_key} must be in observation_space.spaces."
-        assert env.observation_space.spaces[metric_key].shape == (
-            1,
-        ), f"observation_space['{metric_key}'] must be a (1,)-sized space."
-        assert env.observation_space.spaces[metric_key].dtype in (
-            float,
-            int,
-            float32,
-            int_,
-            int8,
-        ), f"{metric_key} must correspond to a scalar value."
-        assert isinstance(
-            metric_threshold, (int, float)
-        ), "metric_threshold must be a float or int."
-
-        self.metric_key = metric_key
         self.reward_per_step = reward
         # getInequalityFunc checks arg type
         self.inequalityFunc = getInequalityFunc(inequality)
-        self.threshold = metric_threshold
+        self.threshold = unwrapped_reward_threshold
 
-    def calcReward(
-        self,
-        obs: OrderedDict,
-        reward: Any,
-        termination: Any,
-        truncationAny: Any,
-        info: Any,
-        action: Any,
-    ) -> float:
+    def reward(self, reward: float) -> float:
         """Calculate threshold reward.
 
-        Args:
-            obs (OrderedDict): _description_
-            reward, termination, truncation, info, action: Unused.
-
         Returns:
-            float: Either 0 (if inequality evaluates to False) or reward (if inequality
-                evalutes to True) specified on instantiation.
+            float: Either 0 (if inequality evaluates to False) or self.reward_per_step
+                (if inequality evaluates to True) specified on instantiation.
         """
-        metric = obs[self.metric_key]
-
-        inbounds = self.inequalityFunc(metric, self.threshold)
-        # bool comparisons with numpy behave weirdly, so leave inbounds as a singleton
-        # array, then check if True/False is in the array. Saves from having to
-        # write odd-looking logic to do numpy bool comparisons.
-        if True in inbounds:
-            reward = self.reward_per_step
-        elif False in inbounds:
-            reward = 0
+        inbounds = self.inequalityFunc(reward, self.threshold)
+        # inequalityFunc returns numpy bool, which needs to be compared with "=="
+        # instead of "is"
+        if inbounds == True:  # noqa
+            new_reward = self.reward_per_step
+        elif inbounds == False:  # noqa
+            new_reward = 0
         else:
             TypeError("inbounds is neither True nor False")
 
-        return reward
-
-
-class AssignObsToReward(RewardBase):
-    """Get an item in the observation space and assign reward to the value.
-
-    Does not modify observation.
-    """
-
-    def __init__(self, env: Env, key: str):
-        """Wrap environment with AssignObsToReward.
-
-        Args:
-            env (Env): See RewardBase for requirements.
-            key (str): Key corresponding to value in observation space
-                that will be assigned to reward.
-        """
-        super().__init__(env)
-
-        assert (
-            key in env.observation_space.spaces
-        ), f"{key} must be in observation_space.spaces."
-        assert env.observation_space.spaces[key].shape == (
-            1,
-        ), f"observation_space['{key}'] must be a (1,)-sized space."
-        assert env.observation_space.spaces[key].dtype in (
-            float,
-            int,
-            float32,
-            int_,
-            int8,
-        ), f"{key} must correspond to a scalar value."
-
-        self.key = key
-
-    def calcReward(
-        self,
-        obs: OrderedDict,
-        reward: Any,
-        termination: Any,
-        truncationAny: Any,
-        info: Any,
-        action: Any,
-    ):
-        """Calculate reward."""
-        reward = obs[self.key]
-        return reward
+        return new_reward
