@@ -33,6 +33,7 @@ from punchclock.environment.obs_wrappers import (
     NestObsItems,
     SplitArrayObs,
     SqueezeObsItems,
+    SumArrayWrapper,
     VisMap2ActionMask,
 )
 from punchclock.environment.reward_wrappers import (
@@ -165,6 +166,7 @@ def buildEnv(env_config: dict) -> gym.Env:
         "convert_obs_box_to_multibinary": ConvertObsBoxToMultiBinary,
         "squeeze_obs_items": SqueezeObsItems,
         "diagonal_obs_items": DiagonalObsItems,
+        "sum_array_wrapper": SumArrayWrapper,
         # Reward Wrappers
         "assign_obs_to_reward": AssignObsToReward,
         "null_action_reward": NullActionReward,
