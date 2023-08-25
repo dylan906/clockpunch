@@ -1180,10 +1180,6 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
             axis (int | None, optional): Axis along which to sum key values. If
                 None, all elements of array will be summed. Defaults to None.
         """
-        assert all(
-            [isinstance(env.observation_space.spaces[k], Box) for k in keys]
-        ), "Keys must correspond to Box spaces in env.observation_space."
-
         funcs = [partial(self.wrapSum, axis=axis)]
         obs_space = Dict(
             {k: deepcopy(v) for (k, v) in env.observation_space.items()}
