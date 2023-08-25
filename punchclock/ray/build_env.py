@@ -13,12 +13,6 @@ from datetime import datetime
 import gymnasium as gym
 from gymnasium.wrappers.filter_observation import FilterObservation
 from gymnasium.wrappers.flatten_observation import FlattenObservation
-from punch.environment.reward_wrappers import (
-    AssignObsToReward,
-    NullActionReward,
-    ThresholdReward,
-    VismaskViolationReward,
-)
 
 # Punch Clock Imports
 from punchclock.common.utilities import array2List
@@ -40,6 +34,12 @@ from punchclock.environment.obs_wrappers import (
     SplitArrayObs,
     SqueezeObsItems,
     VisMap2ActionMask,
+)
+from punchclock.environment.reward_wrappers import (
+    AssignObsToReward,
+    NullActionReward,
+    ThresholdReward,
+    VismaskViolationReward,
 )
 
 # %% Functions
