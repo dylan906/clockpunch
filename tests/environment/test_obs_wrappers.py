@@ -438,23 +438,29 @@ print(f"wrapped obs = {cw.observation(obs)['custody']}")
 
 # %% Test SumArrayWrapper
 print("\nTest SumArrayWrapper...")
-saw = SumArrayWrapper(env=env, keys=["est_cov"])
-saw_uw_obs = env.observation_space.sample()
-saw_wr_obs = saw.observation(saw_uw_obs)
-print(f"unwrapped obs 1 = {saw_uw_obs['est_cov']}")
-print(f"wrapped obs 1 = {saw_wr_obs['est_cov']}")
 
-saw = SumArrayWrapper(env=env, keys=["est_cov"], axis=0)
-saw_uw_obs = env.observation_space.sample()
-saw_wr_obs = saw.observation(saw_uw_obs)
-print(f"unwrapped obs 2 = {saw_uw_obs['est_cov']}")
-print(f"wrapped obs 2 = {saw_wr_obs['est_cov']}")
+rand_env = RandomEnv(
+    {"observation_space": gym.spaces.Dict({"a": Box(0, 1, shape=(2, 3))})}
+)
 
-# Test with 3d observation space
+# Test with defaults
+saw = SumArrayWrapper(rand_env, keys=["a"])
+saw_uw_obs = rand_env.observation_space.sample()
+saw_wr_obs = saw.observation(saw_uw_obs)
+print(f"unwrapped obs 1 = {saw_uw_obs['a']}")
+print(f"wrapped obs 1 = {saw_wr_obs['a']}")
+
+# Test with specifying axis
+saw = SumArrayWrapper(rand_env, keys=["a"], axis=0)
+saw_uw_obs = rand_env.observation_space.sample()
+saw_wr_obs = saw.observation(saw_uw_obs)
+print(f"unwrapped obs 2 = {saw_uw_obs['a']}")
+print(f"wrapped obs 2 = {saw_wr_obs['a']}")
+
+# Test with MultiBinary space
 rand_env = RandomEnv(
     {
-        "observation_space": Dict({"a": Box(0, 1, shape=[2, 3, 4])}),
-        "action_space": Discrete(1),
+        "observation_space": Dict({"a": MultiBinary([2, 3, 4])}),
     },
 )
 saw_rand = SumArrayWrapper(env=rand_env, keys=["a"], axis=0)
