@@ -127,7 +127,7 @@ class AssignObsToReward(RewardBase):
         action: Any,
     ):
         """Calculate reward."""
-        reward = obs[self.key]
+        reward = obs[self.key][0]
         return reward
 
 
