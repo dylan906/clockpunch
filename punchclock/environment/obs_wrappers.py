@@ -1188,19 +1188,29 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
             v = obs_space[k]
             if axis is None:
                 # corner case for sum of all elements of array
-                new_shape = (1,)
+                new_shape = [
+                    1,
+                ]
             else:
                 # Get new shape by deleting axis-th index of v.shape
                 new_shape = list(v.shape)
                 del new_shape[axis]
-                new_shape = array(new_shape)
 
             # Even if unwrapped space has bounded lows/highs, summing means that
-            # wrapped obs space will have unbounded lows/highs
+            # wrapped obs space will have unbounded lows/highs.
+            # Adding MultiBinaries produces a Box.
+            # MultiBinary has dtype == int8; set new space.dtype == int to stay
+            # generic and consistent with numpy defaults.
+            if isinstance(v, MultiBinary):
+                new_dtype = int
+            elif isinstance(v, Box):
+                new_dtype = float
+
             obs_space[k] = Box(
                 low=-inf,
                 high=inf,
                 shape=new_shape,
+                dtype=new_dtype,
             )
 
         super().__init__(
