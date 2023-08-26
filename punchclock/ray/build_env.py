@@ -120,10 +120,9 @@ def buildEnv(env_config: dict) -> gym.Env:
     # Iterate along list of input wrappers and wrap the env according to the order
     # of the inputs. Order of wrappers matters.
     # Wrapper names must match the wrapper class name in the relevant module.
-    # Trey 3 modules to get wrappers.
-
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
-        wrapper = getWrapper(wrapper_dict)
+        wrapper_name = wrapper_dict["wrapper"]
+        wrapper = getWrapper(wrapper_name)
 
         # Use blank dict for unprovided wrapper configs. Not all wrappers even
         # have configs, so need to have a default kwargs.
@@ -133,25 +132,39 @@ def buildEnv(env_config: dict) -> gym.Env:
     return env
 
 
-def getWrapper(wrapper_dict: dict) -> Wrapper:
+def getWrapper(wrapper_name: str) -> Wrapper:
+    """Get a Gymnasium wrapper class from a str of the wrapper.
+
+    Args:
+        wrapper_name (str): Name of wrapper.
+
+    Returns:
+        Wrapper: See Gymnasium documentation.
+    """
     # Wrapper names must match the wrapper class name in the relevant module.
-    # Trey 3 modules to get wrappers.
+    # Try 3 modules to get wrappers.
     try:
-        wrapper = getattr(gym_wrappers, wrapper_dict["wrapper"], {})
+        # standard gym wrappers
+        wrapper = getattr(gym_wrappers, wrapper_name, {})
     except Exception:
         pass
 
     if wrapper == {}:
+        # custom observation wrappers
         try:
-            wrapper = getattr(obs_wrappers, wrapper_dict["wrapper"], {})
+            wrapper = getattr(obs_wrappers, wrapper_name, {})
         except Exception:
             pass
 
     if wrapper == {}:
+        # custom reward wrappers
         try:
-            wrapper = getattr(reward_wrappers, wrapper_dict["wrapper"], {})
+            wrapper = getattr(reward_wrappers, wrapper_name, {})
         except Exception:
             pass
+
+    if wrapper == {}:
+        raise ValueError(f"Wrapper '{wrapper_name}' not found.")
 
     return wrapper
 
