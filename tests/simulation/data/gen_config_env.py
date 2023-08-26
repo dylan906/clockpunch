@@ -72,24 +72,24 @@ constructor_params = {
             },
         },
         {
-            "wrapper": "copy_obs_item",
+            "wrapper": "CopyObsItem",
             "wrapper_config": {"key": "vis_map_est", "new_key": "vm_copy"},
         },
         {
-            "wrapper": "vis_map_action_mask",
+            "wrapper": "VisMap2ActionMask",
             "wrapper_config": {
                 "vis_map_key": "vm_copy",
                 "rename_key": "action_mask",
             },
         },
         {
-            "wrapper": "nest_obs_items",
+            "wrapper": "NestObsItems",
             "wrapper_config": {
                 "new_key": "observations",
                 "keys_to_nest": ["vis_map_est", "num_tasked", "est_cov"],
             },
         },
-        {"wrapper": "flat_dict"},
+        {"wrapper": "FlatDict"},
     ]
 }
 

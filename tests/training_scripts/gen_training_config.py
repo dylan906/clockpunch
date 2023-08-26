@@ -65,7 +65,7 @@ constructor_params = {
             },
         },
         {"wrapper": "action_mask"},
-        {"wrapper": "flat_dict"},
+        {"wrapper": "FlatDict"},
     ]
 }
 

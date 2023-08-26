@@ -167,18 +167,18 @@ config = OrderedDict(
                     },
                 },
                 {
-                    "wrapper": "copy_obs_item",
+                    "wrapper": "CopyObsItem",
                     "wrapper_config": {
                         "key": "vis_map_est",
                         "new_key": "action_mask",
                     },
                 },
                 {
-                    "wrapper": "vis_map_action_mask",
+                    "wrapper": "VisMap2ActionMask",
                     "wrapper_config": {"vis_map_key": "action_mask"},
                 },
                 {
-                    "wrapper": "nest_obs_items",
+                    "wrapper": "NestObsItems",
                     "wrapper_config": {
                         "new_key": "observations",
                         "keys_to_nest": [
@@ -191,7 +191,7 @@ config = OrderedDict(
                         ],
                     },
                 },
-                {"wrapper": "flat_dict"},
+                {"wrapper": "FlatDict"},
             ],
         },
     }
@@ -257,21 +257,21 @@ config_wrap["constructor_params"] = {
             "wrapper_config": {"filter_keys": ["est_cov", "vis_map_est"]},
         },
         {
-            "wrapper": "copy_obs_item",
+            "wrapper": "CopyObsItem",
             "wrapper_config": {"key": "vis_map_est", "new_key": "action_mask"},
         },
         {
-            "wrapper": "vis_map_action_mask",
+            "wrapper": "VisMap2ActionMask",
             "wrapper_config": {"vis_map_key": "action_mask"},
         },
         {
-            "wrapper": "nest_obs_items",
+            "wrapper": "NestObsItems",
             "wrapper_config": {
                 "new_key": "observations",
                 "keys_to_nest": ["vis_map_est", "est_cov"],
             },
         },
-        {"wrapper": "flat_dict"},
+        {"wrapper": "FlatDict"},
     ]
 }
 
