@@ -11,36 +11,13 @@ from datetime import datetime
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.wrappers.filter_observation import FilterObservation
-from gymnasium.wrappers.flatten_observation import FlattenObservation
+from gymnasium import Wrapper
+from gymnasium import wrappers as gym_wrappers
 
 # Punch Clock Imports
 from punchclock.common.utilities import array2List
+from punchclock.environment import obs_wrappers, reward_wrappers
 from punchclock.environment.env import SSAScheduler, SSASchedulerParams
-from punchclock.environment.obs_wrappers import (
-    Convert2dTo3dObsItems,
-    ConvertCustody2ActionMask,
-    ConvertObsBoxToMultiBinary,
-    CopyObsItem,
-    CustodyWrapper,
-    DiagonalObsItems,
-    FlatDict,
-    FloatObs,
-    LinScaleDictObs,
-    MinMaxScaleDictObs,
-    MultiplyObsItems,
-    NestObsItems,
-    SplitArrayObs,
-    SqueezeObsItems,
-    SumArrayWrapper,
-    VisMap2ActionMask,
-)
-from punchclock.environment.reward_wrappers import (
-    AssignObsToReward,
-    NullActionReward,
-    ThresholdReward,
-    VismaskViolationReward,
-)
 
 # %% Functions
 
@@ -141,46 +118,42 @@ def buildEnv(env_config: dict) -> gym.Env:
 
     # %% Wrap environment
     # Iterate along list of input wrappers and wrap the env according to the order
-    # of the inputs. Use wrapper_map to map wrapper names (`str`s) to wrapper function
-    # (`Callable`s). Order of wrappers matters.
-    wrapper_map = {
-        # Observation Space Wrappers
-        "filter_observation": FilterObservation,
-        "flatten_observation": FlattenObservation,
-        "float_obs": FloatObs,
-        # "action_mask": ActionMask,
-        "flat_dict": FlatDict,
-        "linscale_dict_obs": LinScaleDictObs,
-        # "rescale_dict_obs" here for backward compatibility
-        "rescale_dict_obs": LinScaleDictObs,
-        "minmaxscale_dict_obs": MinMaxScaleDictObs,
-        "splitarray_obs": SplitArrayObs,
-        "custody": CustodyWrapper,
-        "multiply_obs_items": MultiplyObsItems,
-        "nest_obs_items": NestObsItems,
-        "copy_obs_item": CopyObsItem,
-        "vis_map_action_mask": VisMap2ActionMask,
-        "convert_2d_to_3d_obs_items": Convert2dTo3dObsItems,
-        "convert_custody_2_action_mask": ConvertCustody2ActionMask,
-        "convert_obs_box_to_multibinary": ConvertObsBoxToMultiBinary,
-        "squeeze_obs_items": SqueezeObsItems,
-        "diagonal_obs_items": DiagonalObsItems,
-        "sum_array_wrapper": SumArrayWrapper,
-        # Reward Wrappers
-        "assign_obs_to_reward": AssignObsToReward,
-        "null_action_reward": NullActionReward,
-        "threshold_reward": ThresholdReward,
-        "vismask_violation_reward": VismaskViolationReward,
-    }
+    # of the inputs. Order of wrappers matters.
+    # Wrapper names must match the wrapper class name in the relevant module.
+    # Trey 3 modules to get wrappers.
 
     for wrapper_dict in env_config["constructor_params"]["wrappers"]:
-        wrapper = wrapper_map[wrapper_dict["wrapper"]]
+        wrapper = getWrapper(wrapper_dict)
+
         # Use blank dict for unprovided wrapper configs. Not all wrappers even
         # have configs, so need to have a default kwargs.
         kwargs = wrapper_dict.get("wrapper_config", {})
         env = wrapper(env, **kwargs)
 
     return env
+
+
+def getWrapper(wrapper_dict: dict) -> Wrapper:
+    # Wrapper names must match the wrapper class name in the relevant module.
+    # Trey 3 modules to get wrappers.
+    try:
+        wrapper = getattr(gym_wrappers, wrapper_dict["wrapper"], {})
+    except Exception:
+        pass
+
+    if wrapper == {}:
+        try:
+            wrapper = getattr(obs_wrappers, wrapper_dict["wrapper"], {})
+        except Exception:
+            pass
+
+    if wrapper == {}:
+        try:
+            wrapper = getattr(reward_wrappers, wrapper_dict["wrapper"], {})
+        except Exception:
+            pass
+
+    return wrapper
 
 
 def genConfigFile(
