@@ -48,13 +48,7 @@ filter_params = {
     "p_init": 10 * temp_matrix,
 }
 
-policy_params = {
-    "policy": "BinaryPolicy",
-    "penalties": {
-        "multi_assignment": 100,
-        "non_vis_assignment": 100,
-    },
-}
+
 # Set environment constructor params
 constructor_params = {
     "wrappers": [
@@ -73,7 +67,7 @@ constructor_params = {
             "wrapper": "VisMap2ActionMask",
             "wrapper_config": {
                 "vis_map_key": "vis_map_copy",
-                "rename_key": "vis_mask",
+                "rename_key": "action_mask",
             },
         },
         {
@@ -96,7 +90,8 @@ builder_params = {
     "horizon": 10,
     "agent_params": agent_params,
     "filter_params": filter_params,
-    "policy_params": policy_params,
+    # "policy_params": policy_params,
+    "reward_params": {},
     "time_step": 100,
     "constructor_params": constructor_params,
 }
