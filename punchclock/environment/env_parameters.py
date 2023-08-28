@@ -68,7 +68,7 @@ class SSASchedulerParams:
         horizon: int,
         agent_params: dict,
         filter_params: dict,
-        reward_params: dict,
+        reward_params: dict = None,
         time_step: float = 100,
         seed: int = None,
     ):
@@ -233,8 +233,10 @@ class SSASchedulerParams:
         self.filter_params = filter_params
 
         # %% Reward function lookup
+        # TODO: Remove reward function config from base env (#27)
         # Lookup and build reward function.
-        self.reward_func = self.buildRewardFunc(reward_params)
+        # self.reward_func = self.buildRewardFunc(reward_params)
+        self.reward_func = None
         # %% Build agents
         num_agents = agent_params["num_sensors"] + agent_params["num_targets"]
         # ---Generate initial states---

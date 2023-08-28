@@ -191,7 +191,9 @@ class SSAScheduler(gym.Env):
         # reset tasking metrics tracker
         self.tracker.reset()
         # Reset reward function
-        self.reward_func.reset()
+        # TODO: Remove reward func from base env (#27)
+        # self.reward_func.reset()
+
         # reset parameters that always start at 0
         self.info["num_steps"] = 0
         self.info["time_now"] = 0.0
@@ -351,12 +353,12 @@ class SSAScheduler(gym.Env):
         Returns:
             float: Reward earned from environment at single time step.
         """
-        reward_earned = self.reward_func.calcNetReward(
-            obs=self._getObs(),
-            info=self._getInfo(),
-            actions=actions,
-        )
-        return reward_earned
+        # reward_earned = self.reward_func.calcNetReward(
+        #     obs=self._getObs(),
+        #     info=self._getInfo(),
+        #     actions=actions,
+        # )
+        return 1
 
     def updateInfoPreTasking(self, action: ndarray[int]):
         """Update information prior to tasking.
