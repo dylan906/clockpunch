@@ -422,7 +422,6 @@ env_custody = RandomEnv(
 cw = CustodyWrapper(
     env_custody,
     key="a",
-    num_targets=3,
     config={
         "func": "tr_cov",
         "threshold": 1,
@@ -567,7 +566,6 @@ rand_env = RandomEnv(
 env_1wrap = CustodyWrapper(
     rand_env,
     key="debug_custody",
-    num_targets=num_targets,
     config={"func": DebugCustody(num_targets=num_targets).update},
 )
 env_2wrap = ConvertCustody2ActionMask(env_1wrap, key="custody")

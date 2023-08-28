@@ -1245,14 +1245,13 @@ class CustodyWrapper(gym.ObservationWrapper):
     space, just adds "custody" to end of (ordered) dict.
 
     Unwrapped observation space is required to have `key` as an item, which
-    must be a 2d Box space.
+    must be a 3d Box space.
     """
 
     def __init__(
         self,
         env: gym.Env,
         key: Any,
-        num_targets: int,
         config: dict = None,
         target_names: list = None,
         initial_status: list[bool] = None,
@@ -1264,10 +1263,9 @@ class CustodyWrapper(gym.ObservationWrapper):
             key (Any): A key contained in the observation space. The value corresponding
                 to this key must conform to interface expected in CustodyTracker
                 and config.
-            num_targets (int): Number of targets.
             config (dict, optional): See CustodyTracker for details. Defaults to None.
             target_names (list, optional): Target names. Used for debugging. Must
-                have length == num_targets. Defaults to None.
+                have length == env.action_space.nvec[0]. Defaults to None.
             initial_status (list[bool], optional): See CustodyTracker for details.
                 Defaults to None.
         """
@@ -1277,6 +1275,12 @@ class CustodyWrapper(gym.ObservationWrapper):
         assert (
             "custody" not in env.observation_space.spaces
         ), "'custody' is already in env.observation_space."
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "Action space must be MultiDiscrete."
+
+        num_targets = env.action_space.nvec[0] - 1
+
         if target_names is not None:
             assert (
                 len(target_names) == num_targets
