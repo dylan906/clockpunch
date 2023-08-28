@@ -27,3 +27,4 @@ punchclock\
     - `python punchclock/training_scripts/run_tune_script.py tests/training_scripts/config_training_test.json`
     - Note: Running the above line will save files to `tests/training_scripts/test_results`
 - Note: If you want to change test parameters but don't want to manually modify `config_test.json`, you can modify and run the script `gen_training_config.py` to generate new config files.
+  - This is the recommended way to modify the config file.
