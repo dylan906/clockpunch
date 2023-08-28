@@ -60,9 +60,7 @@ constructor_params = {
     "wrappers": [
         {
             "wrapper": "FilterObservation",
-            "wrapper_config": {
-                "filter_keys": ["vis_map_est", "est_cov"]
-            },
+            "wrapper_config": {"filter_keys": ["vis_map_est", "est_cov"]},
         },
         {
             "wrapper": "CopyObsItem",
@@ -78,7 +76,7 @@ constructor_params = {
                 "rename_key": "vis_mask",
             },
         },
-                {
+        {
             "wrapper": "NestObsItems",
             "wrapper_config": {
                 "new_key": "observations",
