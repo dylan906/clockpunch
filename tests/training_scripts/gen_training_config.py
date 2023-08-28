@@ -59,12 +59,35 @@ policy_params = {
 constructor_params = {
     "wrappers": [
         {
-            "wrapper": "filter_observation",
+            "wrapper": "FilterObservation",
             "wrapper_config": {
-                "filter_keys": ["vis_map_est", "num_tasked", "est_cov"]
+                "filter_keys": ["vis_map_est", "est_cov"]
             },
         },
-        {"wrapper": "action_mask"},
+        {
+            "wrapper": "CopyObsItem",
+            "wrapper_config": {
+                "key": "vis_map_est",
+                "new_key": "vis_map_copy",
+            },
+        },
+        {
+            "wrapper": "VisMap2ActionMask",
+            "wrapper_config": {
+                "vis_map_key": "vis_map_copy",
+                "rename_key": "vis_mask",
+            },
+        },
+                {
+            "wrapper": "NestObsItems",
+            "wrapper_config": {
+                "new_key": "observations",
+                "keys_to_nest": [
+                    "vis_map_est",
+                    "est_cov",
+                ],
+            },
+        },
         {"wrapper": "FlatDict"},
     ]
 }
