@@ -143,27 +143,18 @@ def getWrapper(wrapper_name: str) -> Wrapper:
     """
     # Wrapper names must match the wrapper class name in the relevant module.
     # Try 3 modules to get wrappers.
-    try:
-        # standard gym wrappers
-        wrapper = getattr(gym_wrappers, wrapper_name, {})
-    except Exception:
-        pass
-
-    if wrapper == {}:
-        # custom observation wrappers
+    wrapper_modules = [gym_wrappers, obs_wrappers, reward_wrappers]
+    for wm in wrapper_modules:
         try:
-            wrapper = getattr(obs_wrappers, wrapper_name, {})
+            wrapper = getattr(wm, wrapper_name, {})
         except Exception:
             pass
 
-    if wrapper == {}:
-        # custom reward wrappers
-        try:
-            wrapper = getattr(reward_wrappers, wrapper_name, {})
-        except Exception:
-            pass
+        if wrapper != {}:
+            break
 
     if wrapper == {}:
+        # If wrapper not found in wrapper_modules, raise error
         raise ValueError(f"Wrapper '{wrapper_name}' not found.")
 
     return wrapper
