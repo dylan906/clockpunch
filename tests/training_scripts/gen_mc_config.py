@@ -129,7 +129,7 @@ mc_config = MonteCarloConfig(
     print_status=True,
 )
 
-mc_config_path = fpath + "/test_mc_config.json"
+mc_config_path = fpath + "/config_mc_test.json"
 mc_config.save(mc_config_path, append_timestamp=False)
 
 print("done")
