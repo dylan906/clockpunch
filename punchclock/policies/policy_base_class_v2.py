@@ -38,8 +38,10 @@ class CustomPolicy:
             observation_space.spaces["observations"], gym.spaces.Dict
         ), "observation_space['observations'] must be a gym.spaces.Dict."
         assert isinstance(
-            observation_space.spaces["action_mask"], gym.spaces.Box
-        ), "observation_space['action_mask'] must be a gym.spaces.Box."
+            observation_space.spaces["action_mask"],
+            (gym.spaces.Box, gym.spaces.MultiBinary),
+        ), """observation_space['action_mask'] must be one of (gym.spaces.Box,
+        gym.spaces.MultiBinary)."""
 
         assert isinstance(
             action_space,

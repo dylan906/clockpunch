@@ -196,7 +196,8 @@ class SimRunner:
             and ("observations" in env.observation_space.spaces)
             and (
                 isinstance(
-                    env.observation_space.spaces["action_mask"], gym.spaces.Box
+                    env.observation_space.spaces["action_mask"],
+                    (gym.spaces.Box, gym.spaces.MultiBinary),
                 )
             )
             and (
