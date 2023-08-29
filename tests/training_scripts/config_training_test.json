@@ -279,7 +279,7 @@
         "stop": {
             "episodes_total": 1
         },
-        "name": "test_results",
+        "name": "training_results",
         "local_dir": "tests/training_scripts"
     }
 }
