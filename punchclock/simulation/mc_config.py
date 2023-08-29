@@ -49,7 +49,18 @@ class MonteCarloConfig:
             must be 1, and all steps from all trials will be saved. Defaults
             to False.
         """
-        assert all(isinstance(pc, (str, dict)) for pc in policy_configs)
+        assert isinstance(num_episodes, int)
+        assert isinstance(policy_configs, list, "policy_configs must be a list")
+
+        assert all(
+            isinstance(pc, (str, dict)) for pc in policy_configs
+        ), "All entries of policy_configs must be either a dict or str."
+        assert isinstance(env_config, dict)
+        assert isinstance(results_dir, str)
+
+        if trial_names is not None:
+            assert isinstance(trial_names, list)
+            assert len(trial_names) == len(policy_configs)
 
         self.config = {
             "num_episodes": num_episodes,
