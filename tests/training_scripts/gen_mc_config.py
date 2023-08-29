@@ -9,7 +9,7 @@ import os
 from numpy import diag, pi
 
 # Punch Clock Imports
-from punchclock.common.utilities import array2List
+from punchclock.common.utilities import array2List, loadJSONFile, saveJSONFile
 from punchclock.policies.policy_builder import buildSpaceConfig
 from punchclock.ray.build_env import buildEnv
 from punchclock.simulation.mc_config import MonteCarloConfig
@@ -116,15 +116,23 @@ policy_config = {
 # %% MC Results path
 fpath = os.path.dirname(os.path.realpath(__file__))
 results_dir = fpath + "/data"
-# %% Gen Config
+# %% Handling env config
 
 # convert to json-able for saving
 env_config_json = json.dumps(env_config, default=array2List)
+with open(fpath + "/env_config.json", "w") as outfile:
+    outfile.write(env_config_json)
 
+# env_config only works in MonteCarloConfig if it is loaded from a saved jon. Not
+# sure why.
+# TODO: Fix.
+env_config_loaded = loadJSONFile(fpath + "/env_config.json")
+
+# %% Gen MC config
 mc_config = MonteCarloConfig(
     num_episodes=1,
     policy_configs=policy_config,
-    env_config=env_config_json,
+    env_config=env_config_loaded,
     results_dir=results_dir,
     print_status=True,
 )
