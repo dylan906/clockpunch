@@ -154,7 +154,7 @@ config = OrderedDict(
         "constructor_params": {
             "wrappers": [
                 {
-                    "wrapper": "filter_observation",
+                    "wrapper": "FilterObservation",
                     "wrapper_config": {
                         "filter_keys": [
                             "eci_state",
@@ -253,7 +253,7 @@ config_wrap = deepcopy(config)
 config_wrap["constructor_params"] = {
     "wrappers": [
         {
-            "wrapper": "filter_observation",
+            "wrapper": "FilterObservation",
             "wrapper_config": {"filter_keys": ["est_cov", "vis_map_est"]},
         },
         {
