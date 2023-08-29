@@ -1,8 +1,8 @@
 """Tests for mc.py."""
 # NOTE: Running script saves multiple files.
-# NOTE: This script requires "test_mc_config.json" to run
-# NOTE: If this test is not running correctly, first try running test_mc_config.py
-# to regenerate test_mc_config.json.
+# NOTE: This script requires "config_mc.json" to run
+# NOTE: If this test is not running correctly, first try running config_mc.py
+# to regenerate config_mc.json.
 # %% Imports
 # Standard Library Imports
 import os
@@ -18,7 +18,7 @@ from punchclock.simulation.mc import MonteCarloRunner
 
 # %% Load MC Config
 fpath = os.path.dirname(os.path.realpath(__file__))
-mc_config_path = fpath + "/data/test_mc_config"
+mc_config_path = fpath + "/data/config_mc"
 mc_config_loaded = loadJSONFile(mc_config_path + ".json")
 mc_config_loaded["num_episodes"] = 2
 print(mc_config_loaded)

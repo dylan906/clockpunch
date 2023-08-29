@@ -1,5 +1,5 @@
 """Test for mc_config.py."""
-# NOTE: This script generates a file: "data/test_mc_config.json""
+# NOTE: This script generates a file: "data/config_mc.json""
 # NOTE: This script requires "data/config_env.json" to run
 # NOTE: This script requires a Ray checkpoint in "/data/test_checkpoint2/" to run
 # NOTE: If this script isn't working, try regenerating the Ray checkpoint by running
@@ -74,7 +74,7 @@ mc_config = MonteCarloConfig(
 
 # %% Save MCConfig as json
 print("\nSaving MCConfig...")
-results_path = fpath + "/data/test_mc_config.json"
+results_path = fpath + "/data/config_mc.json"
 mc_config.save(results_path, append_timestamp=False)
 
 # %% Load MC Config and check that policies can be built
