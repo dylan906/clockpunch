@@ -131,7 +131,7 @@ env_config_loaded = loadJSONFile(fpath + "/env_config.json")
 # %% Gen MC config
 mc_config = MonteCarloConfig(
     num_episodes=1,
-    policy_configs=policy_config,
+    policy_configs=[policy_config],
     env_config=env_config_loaded,
     results_dir=results_dir,
     print_status=True,
