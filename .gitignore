@@ -4,13 +4,11 @@
 *:Zone.Identifier
 *.out
 
-tests/simulation/data/*.json
 tests/simulation/data/*.csv
 tests/simulation/data/*.pkl
 tests/simulation/data/mc_results/*.csv
 tests/simulation/data/mc_results/*.json
 tests/simulation/data/mc_results/*.pkl
-!tests/simulation/data/config_env.json
 tests/simulation/data/mc_results/*/
 
 tests/policies/data/*.json
