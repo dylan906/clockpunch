@@ -66,7 +66,7 @@ reward_params = {
 constructor_params = {
     "wrappers": [
         {
-            "wrapper": "filter_observation",
+            "wrapper": "FilterObservation",
             "wrapper_config": {
                 "filter_keys": ["vis_map_est", "num_tasked", "est_cov"]
             },
