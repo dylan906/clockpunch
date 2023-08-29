@@ -115,7 +115,7 @@ policy_config = {
 
 # %% MC Results path
 fpath = os.path.dirname(os.path.realpath(__file__))
-results_dir = fpath + "/data"
+results_dir = fpath + "/mc_results"
 # %% Handling env config
 
 # convert to json-able for saving

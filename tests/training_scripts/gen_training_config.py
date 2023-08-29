@@ -125,7 +125,7 @@ run_config = {
     "stop": {
         "episodes_total": num_episodes,
     },
-    "name": "test_results",
+    "name": "training_results",
     "local_dir": "tests/training_scripts",
 }
 # %% Gen Config
