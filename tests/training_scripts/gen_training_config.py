@@ -1,4 +1,4 @@
-"""Generate config files for testing training scripts."""
+"""Generate config files for testing run_tune_script."""
 # %% Imports
 # Third Party Imports
 from numpy import diag, pi
