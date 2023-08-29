@@ -50,7 +50,7 @@ class MonteCarloConfig:
             to False.
         """
         assert isinstance(num_episodes, int)
-        assert isinstance(policy_configs, list, "policy_configs must be a list")
+        assert isinstance(policy_configs, list), "policy_configs must be a list"
 
         assert all(
             isinstance(pc, (str, dict)) for pc in policy_configs
