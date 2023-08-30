@@ -21,6 +21,8 @@ I'm trying to get better about that.
 ### Deprecated
 
 ### Fixed
+- `/training_scripts` reorganized and file names made consistent with each other (#30).
+- Custom policies and simulation runner now accept envs with both `Box` and `MultiBinary` action masks (#31)
 
 ### Removed
 
