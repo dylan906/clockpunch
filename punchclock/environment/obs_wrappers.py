@@ -854,7 +854,10 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
                 # 1s in obs.
                 new_obs_space[k] = deepcopy(space)
             else:
-                new_obs_space[k] = remakeSpace(space=space, lows=0, highs=1)
+                # remake space with same shape, but new low/high/dtype.
+                new_obs_space[k] = remakeSpace(
+                    space=space, lows=0, highs=1, dtype=float
+                )
         self.observation_space = Dict(new_obs_space)
         return
 

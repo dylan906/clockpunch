@@ -341,6 +341,7 @@ rand_env = RandomEnv(
                 "a": Box(low=0, high=1, shape=(3, 2)),
                 "b": Box(low=0, high=1, shape=(3,)),
                 "c": MultiBinary(3),
+                "d": Box(low=0, high=inf, dtype=int),
             }
         )
     }

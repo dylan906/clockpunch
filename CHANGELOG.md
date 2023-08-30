@@ -26,6 +26,7 @@ I'm trying to get better about that.
 - Custom policies and simulation runner now accept envs with both `Box` and `MultiBinary` action masks (#31).
 - `MinMaxScaleDictObs` wrapper now doesn't convert arrays of 1s to 0s (#33).
 - Fixed bug where `MultiBinaryConfig.fromSpace()` would error on 1d spaces (#34).
+- Fixed dtype bug in `MinMaxScaleDictObs` (#35).
 
 ### Removed
 
