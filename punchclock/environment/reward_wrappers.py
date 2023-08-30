@@ -395,9 +395,6 @@ class LogisticTransformReward(TransformReward):
             k (float, optional): Steepness parameter. Defaults to 1.0.
             L (float, optional): Max value of output. Defaults to 1.0.
         """
-        self.x0 = x0
-        self.k = k
-        self.L = L
-        logisticPartial = partial(logistic, x0=self.x0, k=self.k, L=self.L)
+        logisticPartial = partial(logistic, x0=x0, k=k, L=L)
 
         super().__init__(env, logisticPartial)
