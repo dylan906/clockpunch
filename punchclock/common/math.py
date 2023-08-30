@@ -17,14 +17,14 @@ def nearestPD(original_mat: ndarray) -> ndarray:
     r"""Find the nearest positive-definite matrix to input.
 
     References:
-        #. :cite:t:`derrico_nearestspd`
-        #. :cite:t:`higham_laa_1988_pd`
+        #. :cite:t:derrico_nearestspd
+        #. :cite:t:higham_laa_1988_pd
 
     Args:
-        original_mat (``ndarray``): original matrix that is not positive definite.
+        original_mat (ndarray): original matrix that is not positive definite.
 
     Returns:
-        ``ndarray``: updated matrix, corrected to be positive definite.
+        ndarray: updated matrix, corrected to be positive definite.
     """
     # symmetrize matrix, perform singular value decomposition, compute symmetric polar factor
     sym_mat = (original_mat + original_mat.T) / 2
@@ -40,13 +40,13 @@ def nearestPD(original_mat: ndarray) -> ndarray:
         return sym_pd_mat
 
     _spacing = spacing(norm(original_mat))
-    # The above is different from [1]. It appears that MATLAB's `chol` Cholesky
+    # The above is different from [1]. It appears that MATLAB's chol Cholesky
     # decomposition will accept matrixes with exactly 0-eigenvalue, whereas
-    # numpy cholesky will not. So where [1] uses `eps(min_eig)` (where `eps` is Matlab
-    # for `np.spacing`), we use the above definition. CAVEAT: our `spacing`
-    # will be much larger than [1]'s `eps(min_eig)`, since `min_eig` is usually on
-    # the order of 1e-16, and `eps(1e-16)` is on the order of 1e-34, whereas
-    # `spacing` will, for Gaussian random matrixes of small dimension, be on
+    # numpy cholesky will not. So where [1] uses eps(min_eig) (where eps is Matlab
+    # for np.spacing), we use the above definition. CAVEAT: our spacing
+    # will be much larger than [1]'s eps(min_eig), since min_eig is usually on
+    # the order of 1e-16, and eps(1e-16) is on the order of 1e-34, whereas
+    # spacing will, for Gaussian random matrixes of small dimension, be on
     # the order of 1e-16. In practice, both ways converge, as the unit test
     # below suggests.
     identity = eye(original_mat.shape[0])
@@ -60,13 +60,13 @@ def nearestPD(original_mat: ndarray) -> ndarray:
 
 
 def isPD(matrix: ndarray) -> bool:
-    """Determine whether a matrix is positive-definite, via ``numpy.linalg.cholesky``.
+    """Determine whether a matrix is positive-definite, via numpy.linalg.cholesky.
 
     Args:
-        matrix (``ndarray``): input matrix to be checked for positive definiteness.
+        matrix (ndarray): input matrix to be checked for positive definiteness.
 
     Returns:
-        ``bool``: whether the given matrix is numerically positive definiteness.
+        bool: whether the given matrix is numerically positive definiteness.
     """
     try:
         cholesky(matrix)
@@ -80,10 +80,10 @@ def getCircOrbitVel(r: float) -> float:
     """Calculates circular Earth-orbit velocity given radius.
 
     Args:
-        r (`float`): Circular orbit radius (km)
+        r (float): Circular orbit radius (km)
 
     Returns:
-        `float`: Circular orbit velocity (km/s)
+        float: Circular orbit velocity (km/s)
     """
     mu = getConstants()["mu"]
 
@@ -99,13 +99,13 @@ def logistic(
     """Logistic function.
 
     Args:
-        x (`float`): Input to logistic function.
-        x0 (`float`, optional): Value of x at sigmoid's midpoint. Defaults to 0.0.
-        k (`float`, optional): Steepness parameter. Defaults to 1.0.
-        L: (`float`, optional): Max value of curve. Defaults to 1.0.
+        x (float): Input to logistic function.
+        x0 (float, optional): Value of x at sigmoid's midpoint. Defaults to 0.0.
+        k (float, optional): Steepness parameter. Defaults to 1.0.
+        L: (float, optional): Max value of output. Defaults to 1.0.
 
     Returns:
-        `float`: Output.
+        float: Output.
 
     See Wikipedia for logistic function details.
     """
@@ -126,15 +126,15 @@ def saturate(
     If a threshold is None, then values will not be saturated in that direction.
 
     Args:
-        values (`list`): List of values.
-        setpoint (`float`): The point that values will be evaluated against.
-        min_threshold (`float`, optional): Values less than or equal to setpoint
+        values (list): List of values.
+        setpoint (float): The point that values will be evaluated against.
+        min_threshold (float, optional): Values less than or equal to setpoint
             are set to min_threshold. Defaults to None.
-        max_threshold (`float`, optional): Values greater than setpoint are set
+        max_threshold (float, optional): Values greater than setpoint are set
             to max_threshold. Defaults to None.
 
     Returns:
-        `list`: Saturated values.
+        list: Saturated values.
     """
     new_values = [None] * len(values)
     for i, val in enumerate(values):
