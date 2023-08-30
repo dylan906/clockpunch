@@ -9,9 +9,11 @@ from typing import Any, Union, final
 # Third Party Imports
 from gymnasium import Env, RewardWrapper, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
+from gymnasium.wrappers import TransformReward
 from numpy import float32, int8, int_, multiply, ndarray, sum
 
 # Punch Clock Imports
+from punchclock.common.math import logistic
 from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
 
 
@@ -372,3 +374,30 @@ class ThresholdReward(RewardWrapper):
             TypeError("inbounds is neither True nor False")
 
         return new_reward
+
+
+# %% Logistic transform
+class LogisticTransformReward(TransformReward):
+    """Transform reward through logistic function."""
+
+    def __init__(
+        self,
+        env: Env,
+        x0: float = 0.0,
+        k: float = 1.0,
+        L: float = 1.0,
+    ):
+        """Wrap environment with LogisticTransformReward.
+
+        Args:
+            env (Env): A Gymnasium environment.
+            x0 (float, optional): Value of x at sigmoid's midpoint. Defaults to 0.0.
+            k (float, optional): Steepness parameter. Defaults to 1.0.
+            L (float, optional): Max value of output. Defaults to 1.0.
+        """
+        self.x0 = x0
+        self.k = k
+        self.L = L
+        logisticPartial = partial(logistic, x0=self.x0, k=self.k, L=self.L)
+
+        super().__init__(env, logisticPartial)
