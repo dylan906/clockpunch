@@ -227,6 +227,7 @@ class NestObsItems(gym.ObservationWrapper):
 
 # %% ActionMask
 class ActionMask(gym.ObservationWrapper):
+    # NOTE: DEPRECATED: Do not use.
     """Mask invalid actions based on estimated sensor-target visibility.
 
     Observation space is an `OrderedDict` with the following structure:
@@ -686,7 +687,7 @@ class FlatDict(gym.ObservationWrapper):
 
 # %% MakeDict
 class MakeDict(gym.ObservationWrapper):
-    """Wraps the observation space in a 1-item Dict.
+    """Wrap the observation space in a 1-item Dict.
 
     wrapped_obs_space = Dict({
         "obs": unwrapped_obs_space
