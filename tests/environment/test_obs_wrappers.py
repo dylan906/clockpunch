@@ -349,6 +349,7 @@ rand_env = RandomEnv(
 env_minmax = MinMaxScaleDictObs(env=rand_env)
 
 obs_nomask = rand_env.observation_space.sample()
+obs_nomask["c"] = array([1, 1, 1], dtype=int)
 obs_mask = env_minmax.observation(obs_nomask)
 print(f"unwrapped obs  = \n{obs_nomask}")
 print(f"wrapped obs = \n{obs_mask}")

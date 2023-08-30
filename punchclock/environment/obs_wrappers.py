@@ -823,6 +823,8 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
     Each value in the observation space is scaled by
         X_scaled = X_std * (max - min) + min.
 
+    MultiBinary observations are not scaled (output = input).
+
     See sklearn.preprocessing.MinMaxScaler for algorithm details.
     """
 
@@ -834,10 +836,9 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
          observation space."""
         for space in env.observation_space.spaces.values():
             assert isinstance(
-                space, (Box, MultiBinary, MultiDiscrete)
+                space, (Box, MultiBinary)
             ), """
-            All sub-spaces in env.observation_space must be one of [Box, MultiBinary,
-            MultiDiscrete]."""
+            All sub-spaces in env.observation_space must be one of [Box, MultiBinary]."""
             assert (
                 len(space.shape) <= 2
             ), """All sub-spaces in env.observation_space must have <=2 dims."""
@@ -848,7 +849,12 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         # NOTE: Any subspace with dtype==int will be changed to float.
         new_obs_space = OrderedDict({})
         for k, space in env.observation_space.spaces.items():
-            new_obs_space[k] = remakeSpace(space=space, lows=0, highs=1)
+            if isinstance(space, MultiBinary):
+                # Don't rescale MultiBinary spaces. Handles edge case with all
+                # 1s in obs.
+                new_obs_space[k] = deepcopy(space)
+            else:
+                new_obs_space[k] = remakeSpace(space=space, lows=0, highs=1)
         self.observation_space = Dict(new_obs_space)
         return
 
@@ -868,9 +874,14 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         # work. Then need to convert back to 1d before passing back out.
         # Convert dtypes to float32 to match observation_space (float32 is default
         # dtype for gym Box spaces).
+        # Skip MultiBinary observations.
 
         new_obs = {}
         for k, v in obs.items():
+            if isinstance(self.observation_space[k], MultiBinary):
+                new_obs[k] = v
+                continue
+
             v, reshaped = self.make2d(v)
             v, flip = self.transposeHorizontalArray(v)
             # set clip=True to prevent occasional out-of-bounds returns from
