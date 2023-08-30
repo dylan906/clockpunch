@@ -103,7 +103,8 @@ except Exception as err:
 # %% Test buildSpaceConfig
 gym_box = Box(low=array([0, 0]), high=array([1, 1]), dtype=int)
 gym_md = MultiDiscrete([3, 3, 3])
-gym_mb = MultiBinary([2, 3])
+gym_mb1 = MultiBinary(2)
+gym_mb2 = MultiBinary([2, 3])
 gym_dict = Dict(
     {
         "a": gym_box,
@@ -113,7 +114,7 @@ gym_dict = Dict(
     }
 )
 
-gym_spaces = [gym_box, gym_md, gym_mb, gym_dict]
+gym_spaces = [gym_box, gym_md, gym_mb1, gym_mb2, gym_dict]
 for space in gym_spaces:
     config = buildSpaceConfig(space)
     print(f"config = {config}")

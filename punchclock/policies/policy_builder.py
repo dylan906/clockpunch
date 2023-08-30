@@ -119,20 +119,21 @@ class MultiDiscreteConfig(SpaceConfig):
 class MultiBinaryConfig(SpaceConfig):
     """Config gym.space.MultiBinary."""
 
-    def __init__(self, n: list[int] | ndarray[int] | Tuple):
+    def __init__(self, n: int | list[int] | ndarray[int] | Tuple):
         """Initialize MultiBinaryConfig.
 
         Args:
-            n (list[int] | ndarray[int] | Tuple): See Gym.spaces.MultiBinary.
+            n (int | list[int] | ndarray[int] | Tuple): See Gym.spaces.MultiBinary.
         """
         space = "MultiBinary"
         super().__init__(space)
         assert isinstance(
-            n, (ndarray, list, Tuple)
-        ), "n must be one of [ndarray, list, Tuple]."
-        assert all(
-            isinstance(i, int) for i in n
-        ), "All entries of n must be ints."
+            n, (int, ndarray, list, Tuple)
+        ), "n must be one of [int, ndarray, list, Tuple]."
+        if not isinstance(n, int):
+            assert all(
+                isinstance(i, int) for i in n
+            ), "All entries of n must be ints."
 
         self.n = n
 
