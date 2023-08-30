@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Tuple
+from typing import Tuple, final
 
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete, Space
@@ -17,7 +18,7 @@ from punchclock.policies.random_policy import RandomPolicy
 
 
 # %% Gym Space Configs
-class SpaceConfig:
+class SpaceConfig(ABC):
     """Base class for Gym space config.
 
     All space configs have "space" as an attribute that is a str. SpaceConfigs are
@@ -33,6 +34,11 @@ class SpaceConfig:
         # Need a dedicated method at the base class to allow DictConfig to have
         # a nested version.
         return vars(self)
+
+    @abstractmethod
+    def fromSpace(self, space: Space) -> SpaceConfig:
+        """Convert a gym Space into a SpaceConfig."""
+        return space_config
 
 
 class BoxConfig(SpaceConfig):
