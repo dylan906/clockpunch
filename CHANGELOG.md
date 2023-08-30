@@ -24,6 +24,7 @@ I'm trying to get better about that.
 ### Fixed
 - `/training_scripts` reorganized and file names made consistent with each other (#30).
 - Custom policies and simulation runner now accept envs with both `Box` and `MultiBinary` action masks (#31).
+- `MinMaxScaleDictObs` wrapper now doesn't convert arrays of 1s to 0s (#33).
 
 ### Removed
 
