@@ -30,6 +30,7 @@ I'm trying to get better about that.
 - Base env now does not update measurements if estimated non-visible target is tasked (#36).
 
 ### Removed
+- Removed old (non-functional) UCB policy (#37).
 
 ## [0.6.1] - 2023-08-08
 
