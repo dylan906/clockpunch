@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import final
 
 # Third Party Imports
-from gymnasium import Dict, MultiBinary, MultiDiscrete
+from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
 from numpy import ndarray
 
 
@@ -50,6 +50,9 @@ class CustomPolicy(ABC):
             action_space,
             MultiDiscrete,
         ), "Action space must be MultiDiscrete."
+        assert all(
+            action_space.nvec == action_space.nvec[0]
+        ), """All values in action_space.nvec must be same."""
 
         self.observation_space = observation_space
         self.action_space = action_space
