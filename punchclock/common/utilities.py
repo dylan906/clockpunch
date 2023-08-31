@@ -212,7 +212,9 @@ class MaskConverter:
         flat_mask = flatten(self.mask2d_space, mask2d.transpose())
         return flat_mask
 
-    def convert2dVisMaskTo1dActionMask(self, vis_mask):
+    def convert2dVisMaskTo1dActionMask(
+        self, vis_mask: ndarray[int]
+    ) -> ndarray[int]:
         """Convert a 2d visibility mask to a flat action mask (includes inaction).
 
         in = [
@@ -231,6 +233,27 @@ class MaskConverter:
         vis_mask = vis_mask.astype(int)
         flat_mask = self.convertActionMaskFrom2dTo1d(vis_mask)
         return flat_mask
+
+    def convert2dVisMaskTo2dActionMask(
+        self, vis_mask: ndarray[int]
+    ) -> ndarray[int]:
+        """Convert a 2d vis mask to a 2d action mask.
+
+        Appends a row of 1s to bottom of vis mask, denoting inaction.
+
+        Args:
+            vis_mask (ndarray[int]): (N, M) Binary array.
+
+        Returns:
+            ndarray[int]: (N+1, M) Binary array.
+        """
+        action_mask2d = vstack(
+            (
+                vis_mask,
+                ones((1, self.num_sensors), dtype=int),
+            )
+        )
+        return action_mask2d
 
     def removeInactionsFrom1dMask(self, mask1d: ndarray) -> ndarray:
         """Convert 1d mask with inactions to 1d mask without inactions.
