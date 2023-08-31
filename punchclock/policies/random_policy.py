@@ -69,8 +69,6 @@ class RandomPolicy(CustomPolicy):
             mask = None
         else:
             mask = obs["action_mask"]
-            # # Convert mask from 1d array to 2d array
-            # mask = unflatten(self.action_mask_space, mask_flat).transpose()
 
         action = epsGreedyMask(Q=Q, epsilon=1, mask=mask)
         action_flat = flatten(self.action_space, action)
