@@ -33,7 +33,6 @@ class GreedyCovariance(CustomPolicy):
         Dict({
             "observations": Dict({
                 "est_cov": Box(low=-inf, high=inf, shape=(N, 6, 6)),
-                "vis_map_est": MultiBinary((N, M))
             }),
             "action_mask": MultiBinary((N+1, M)),
         })
@@ -68,11 +67,9 @@ class GreedyCovariance(CustomPolicy):
         super().__init__(
             observation_space=observation_space, action_space=action_space
         )
-        assert all(
-            key in observation_space.spaces["observations"].spaces
-            for key in ["est_cov", "vis_map_est"]
-        ), """observation_space.spaces['observations'].spaces must contain
-            ['est_cov', 'vis_map_est']"""
+        assert (
+            "est_cov" in observation_space.spaces["observations"].spaces
+        ), """observation_space.spaces['observations'] must contain 'est_cov'."""
         assert (
             len(
                 observation_space.spaces["observations"].spaces["est_cov"].shape
@@ -86,24 +83,16 @@ class GreedyCovariance(CustomPolicy):
             .shape[2]
             == 6
         ), "'est_cov' must have shape [N, 6, 6]."
-        assert isinstance(
-            observation_space.spaces["observations"].spaces["vis_map_est"],
-            MultiBinary,
-        ), "'vist_map_est' must be MultiBinary."
 
         self.num_sensors = len(self.action_space.nvec)
         # convert to int manually because nvec has a non-standard int type
         self.num_targets = int(self.action_space.nvec[0] - 1)
 
-        assert observation_space.spaces["observations"].spaces[
-            "vis_map_est"
-        ].shape == (self.num_targets, self.num_sensors)
-
         if subsidy > 0:
             warn(
-                f"Subsidy > 0 used (subsidy = {subsidy}). Make sure you used a "
-                "small enough positive value so that the subsidized action does not "
-                "beat out the unsubsidized actions."
+                f"""Subsidy > 0 used (subsidy = {subsidy}). Make sure you used a
+                small enough positive value so that the subsidized action does not
+                beat out the unsubsidized actions."""
             )
 
         self.epsilon = epsilon
@@ -124,60 +113,33 @@ class GreedyCovariance(CustomPolicy):
         Returns:
             `ndarray[int]`: (M, ) Valued 0-N denoting actions. N = inaction.
         """
-        [cov, vis_map, mask1d] = self.getCovVisMask(obs)
-        mask2d = self.mask_converter.convertActionMaskFrom1dTo2d(mask1d)
+        # epsGreedyMask handles action masking
+
+        cov = obs["observations"]["est_cov"]
+        action_mask = obs["action_mask"]
+
         cov_diags = diagonal(cov, axis1=1, axis2=2)
-        Q = self.calcQ(cov_diags, vis_map)
+        Q = self.calcQ(cov_diags)
         action = epsGreedyMask(
             Q=Q,
             epsilon=self.epsilon,
-            mask=mask2d,
+            mask=action_mask,
         )
         # is_valid = isActionValid(mask=mask2d, action=action)
         # print(f"policy action is valid? {is_valid}")
 
         return action
 
-    def getCovVisMask(
-        self, obs: dict
-    ) -> Tuple[ndarray[float], ndarray[int], ndarray[int]]:
-        """Get covariance diagonals, visibility map, and action mask.
-
-        Args:
-            obs (`dict`): Must follow this structure:
-            {
-                "observations": {
-                    "est_cov": values,
-                    "vis_map": values
-                }
-                "action_mask": values
-            }
-
-        Returns:
-            cov (`ndarray[float]`): (6, N) Diagonals of covariance matrices.
-            vis_map (`ndarray[int]`): (N, M) Sensor-target visibility map. Values
-                are 0 or 1.
-            action_mask (`ndarray[int]`): ((N * M) + M, ) Binary values where 0
-                indicates a masked (forbidden) action.
-        """
-        cov = obs["observations"]["est_cov"]
-        vis_map = obs["observations"]["vis_map_est"]
-        action_mask = obs["action_mask"]
-
-        return (cov, vis_map, action_mask)
-
     def calcQ(
         self,
         cov_diags: ndarray[float],
-        vis_map: ndarray[int],
+        # vis_map: ndarray[int],
     ) -> ndarray[float]:
         """Calculate estimated action-value (Q).
 
         Args:
             cov_diags (`ndarray[float]`): (6, N), Diagonals of covariance matrices
                 of N targets.
-            vis_map (`ndarray[int]`): (N, M), 0 or 1 -valued visibility map indicating
-                sensor-target pairs' visibility status (1=visible).
 
         Returns:
             Q (`ndarray[float]`): (N+1, M), Estimated reward, including subsidies.
@@ -201,9 +163,5 @@ class GreedyCovariance(CustomPolicy):
             for targ in range(self.num_targets):
                 # Use sum of cropped covariance
                 Q[targ, sens] = sum(cov_cropped[:, targ])
-
-        # convert Q-values to 0 for non-visible target-sensor pairs (leave subsidy
-        # row alone)
-        Q[:-1, :] = multiply(Q[:-1, :], vis_map)
 
         return Q
