@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import final
 
 # Third Party Imports
-import gymnasium as gym
+from gymnasium import Dict, MultiBinary, MultiDiscrete
 from numpy import ndarray
 
 
@@ -17,8 +17,8 @@ class CustomPolicy(ABC):
 
     def __init__(
         self,
-        observation_space: gym.spaces.Dict,
-        action_space: gym.spaces.MultiDiscrete,
+        observation_space: Dict,
+        action_space: MultiDiscrete,
     ):
         """Initialize base class.
 
@@ -29,28 +29,27 @@ class CustomPolicy(ABC):
         """
         assert isinstance(
             observation_space,
-            gym.spaces.Dict,
-        ), "Observation space must be a gym.spaces.Dict."
+            Dict,
+        ), "Observation space must be a Dict."
 
         assert (
-            "observations" in observation_space.spaces.keys()
-        ), "Observation space must contain 'observations' as a key."
+            "observations" in observation_space.spaces
+        ), "Observation space must contain 'observations'."
         assert (
-            "action_mask" in observation_space.spaces.keys()
-        ), "Observation space must contain 'action_mask' as a key."
+            "action_mask" in observation_space.spaces
+        ), "Observation space must contain 'action_mask'."
         assert isinstance(
-            observation_space.spaces["observations"], gym.spaces.Dict
-        ), "observation_space['observations'] must be a gym.spaces.Dict."
+            observation_space.spaces["observations"], Dict
+        ), "observation_space['observations'] must be a Dict."
         assert isinstance(
             observation_space.spaces["action_mask"],
-            (gym.spaces.Box, gym.spaces.MultiBinary),
-        ), """observation_space['action_mask'] must be one of (gym.spaces.Box,
-        gym.spaces.MultiBinary)."""
+            MultiBinary,
+        ), """observation_space['action_mask'] must be MultiBinary."""
 
         assert isinstance(
             action_space,
-            gym.spaces.MultiDiscrete,
-        ), "Action space must be a gym.spaces.MultiDiscrete."
+            MultiDiscrete,
+        ), "Action space must be MultiDiscrete."
 
         self.observation_space = observation_space
         self.action_space = action_space
