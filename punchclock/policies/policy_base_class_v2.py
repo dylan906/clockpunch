@@ -2,13 +2,17 @@
 # %% Imports
 from __future__ import annotations
 
+# Standard Library Imports
+from abc import ABC, abstractmethod
+from typing import final
+
 # Third Party Imports
 import gymnasium as gym
 from numpy import ndarray
 
 
 # %% Class
-class CustomPolicy:
+class CustomPolicy(ABC):
     """Base class for deterministic policies."""
 
     def __init__(
@@ -51,6 +55,7 @@ class CustomPolicy:
         self.observation_space = observation_space
         self.action_space = action_space
 
+    @abstractmethod
     def computeAction(self, obs: dict) -> ndarray[int]:
         """Overwrite this method. This is the public-facing way to calculate actions.
 
@@ -65,6 +70,7 @@ class CustomPolicy:
 
         return action
 
+    @final
     def _computeSingleAction(self, obs: dict) -> ndarray[int]:
         """Don't overwrite this method.
 
