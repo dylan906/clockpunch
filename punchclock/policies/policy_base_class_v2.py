@@ -45,7 +45,6 @@ class CustomPolicy(ABC):
             observation_space.spaces["action_mask"],
             MultiBinary,
         ), """observation_space['action_mask'] must be MultiBinary."""
-
         assert isinstance(
             action_space,
             MultiDiscrete,
@@ -53,6 +52,13 @@ class CustomPolicy(ABC):
         assert all(
             action_space.nvec == action_space.nvec[0]
         ), """All values in action_space.nvec must be same."""
+
+        num_sensors = len(action_space.nvec)
+        num_actions = action_space.nvec[0]
+        assert observation_space.spaces["action_mask"].shape == (
+            num_actions,
+            num_sensors,
+        ), "Shape of action mask must be (num_actions, num_sensors)."
 
         self.observation_space = observation_space
         self.action_space = action_space
