@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 # Standard Library Imports
-from typing import Tuple
 from warnings import warn
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import MultiBinary
-from numpy import diagonal, multiply, ndarray, zeros
+from numpy import diagonal, ndarray, zeros
 
 # Punch Clock Imports
 from punchclock.common.utilities import MaskConverter
@@ -22,7 +20,7 @@ from punchclock.policies.policy_base_class_v2 import CustomPolicy
 class GreedyCovariance(CustomPolicy):
     """Tasks maximum trace of covariance matrices with e-greedy action selection.
 
-    Use `mode` argument on initialization to set whether reward/value functions
+    Use mode argument on initialization to set whether reward/value functions
         take trace of position, velocity, or combined covariance matrices.
 
     Notation:
@@ -49,19 +47,19 @@ class GreedyCovariance(CustomPolicy):
         """Initialize GreedyCovariance policy.
 
         Args:
-            observation_space (`gym.spaces.Dict`): Observation space.
-            action_space (`gym.spaces.MultiDiscrete`): Action space.
-            epsilon (`float`, optional): Probability of choosing random action.
+            observation_space (gym.spaces.Dict): Observation space.
+            action_space (gym.spaces.MultiDiscrete): Action space.
+            epsilon (float, optional): Probability of choosing random action.
                 Valued 0-1. Defaults to 0 (no random actions will be taken).
-            mode (`str`, optional): Choose one of ("position" | "velocity" | "both").
+            mode (str, optional): Choose one of ("position" | "velocity" | "both").
                 Determines the reward/value function used. The reward/value function
-                is the sum of traces of covariance matrices. The value of `mode`
+                is the sum of traces of covariance matrices. The value of mode
                 chooses which component of the covariance matrix to use. Defaults
                 to "position".
                     If mode == "position", reward = trace(cov[:3]),
                     If mode == "velocity", reward = trace(cov[3:]),
                     If mode == "both", reward = trace(cov).
-            subsidy (`float`, optional): Reward for inaction. Defaults to 0.
+            subsidy (float, optional): Reward for inaction. Defaults to 0.
         """
         # inherit from base class
         super().__init__(
@@ -107,11 +105,11 @@ class GreedyCovariance(CustomPolicy):
         """E-greedy action selection.
 
         Args:
-            obs (`dict`): Must contain "est_cov", "vis_map_est", and "action_mask"
+            obs (dict): Must contain "est_cov", "vis_map_est", and "action_mask"
                 in keys.
 
         Returns:
-            `ndarray[int]`: (M, ) Valued 0-N denoting actions. N = inaction.
+            ndarray[int]: (M, ) Valued 0-N denoting actions. N = inaction.
         """
         # epsGreedyMask handles action masking
 
@@ -138,11 +136,11 @@ class GreedyCovariance(CustomPolicy):
         """Calculate estimated action-value (Q).
 
         Args:
-            cov_diags (`ndarray[float]`): (6, N), Diagonals of covariance matrices
+            cov_diags (ndarray[float]): (6, N), Diagonals of covariance matrices
                 of N targets.
 
         Returns:
-            Q (`ndarray[float]`): (N+1, M), Estimated reward, including subsidies.
+            Q (ndarray[float]): (N+1, M), Estimated reward, including subsidies.
         """
         # Check which mode policy is, then strip covariance matrices appropriately.
         if self.mode == "position":
