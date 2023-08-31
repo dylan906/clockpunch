@@ -30,7 +30,7 @@ class GreedyCovariance(CustomPolicy):
     Observation Space: A Dict with the following structure:
         Dict({
             "observations": Dict({
-                "est_cov": Box(low=-inf, high=inf, shape=(N, 6, 6)),
+                cov_key: Box(low=-inf, high=inf, shape=(N, 6, 6)),
             }),
             "action_mask": MultiBinary((N+1, M)),
         })
@@ -40,6 +40,7 @@ class GreedyCovariance(CustomPolicy):
         self,
         observation_space: gym.spaces.Dict,
         action_space: gym.spaces.MultiDiscrete,
+        cov_key: str = "est_cov",
         epsilon: float = 0,
         mode: str = "position",
         subsidy: float = 0,
@@ -49,6 +50,8 @@ class GreedyCovariance(CustomPolicy):
         Args:
             observation_space (gym.spaces.Dict): Observation space.
             action_space (gym.spaces.MultiDiscrete): Action space.
+            cov_key (str, optional): Key corresponding to covariance matrices in
+                observation space. Defaults to 'est_cov'.
             epsilon (float, optional): Probability of choosing random action.
                 Valued 0-1. Defaults to 0 (no random actions will be taken).
             mode (str, optional): Choose one of ("position" | "velocity" | "both").
@@ -66,21 +69,17 @@ class GreedyCovariance(CustomPolicy):
             observation_space=observation_space, action_space=action_space
         )
         assert (
-            "est_cov" in observation_space.spaces["observations"].spaces
-        ), """observation_space.spaces['observations'] must contain 'est_cov'."""
+            cov_key in observation_space.spaces["observations"].spaces
+        ), f"""observation_space.spaces['observations'] must contain {cov_key}."""
         assert (
-            len(
-                observation_space.spaces["observations"].spaces["est_cov"].shape
-            )
+            len(observation_space.spaces["observations"].spaces[cov_key].shape)
             == 3
-        ), "'est_cov' must be 3d."
+        ), f"{cov_key} must be 3d."
         assert (
-            observation_space.spaces["observations"].spaces["est_cov"].shape[1]
-            == observation_space.spaces["observations"]
-            .spaces["est_cov"]
-            .shape[2]
+            observation_space.spaces["observations"].spaces[cov_key].shape[1]
+            == observation_space.spaces["observations"].spaces[cov_key].shape[2]
             == 6
-        ), "'est_cov' must have shape [N, 6, 6]."
+        ), f"{cov_key} must have shape [N, 6, 6]."
 
         self.num_sensors = len(self.action_space.nvec)
         # convert to int manually because nvec has a non-standard int type
@@ -93,6 +92,7 @@ class GreedyCovariance(CustomPolicy):
                 beat out the unsubsidized actions."""
             )
 
+        self.cov_key = cov_key
         self.epsilon = epsilon
         self.mode = mode
         self.subsidy = subsidy
@@ -105,7 +105,7 @@ class GreedyCovariance(CustomPolicy):
         """E-greedy action selection.
 
         Args:
-            obs (dict): Must contain "est_cov", "vis_map_est", and "action_mask"
+            obs (dict): Must contain ['observations'][cov_key] and ['action_mask']
                 in keys.
 
         Returns:
@@ -113,7 +113,7 @@ class GreedyCovariance(CustomPolicy):
         """
         # epsGreedyMask handles action masking
 
-        cov = obs["observations"]["est_cov"]
+        cov = obs["observations"][self.cov_key]
         action_mask = obs["action_mask"]
 
         cov_diags = diagonal(cov, axis1=1, axis2=2)

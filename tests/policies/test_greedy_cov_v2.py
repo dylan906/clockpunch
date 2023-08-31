@@ -22,12 +22,7 @@ mask_dim = (num_targets + 1, num_sensors)
 obs_space = Dict(
     {
         "observations": Dict(
-            {
-                "est_cov": Box(
-                    -Inf, Inf, shape=[num_targets, 6, 6], dtype=float
-                ),
-                "vis_mask": MultiBinary((num_targets, num_sensors)),
-            }
+            {"est_cov": Box(-Inf, Inf, shape=[num_targets, 6, 6], dtype=float)}
         ),
         "action_mask": MultiBinary(mask_dim),
     }
@@ -52,7 +47,6 @@ covariance = obs_space.sample()["observations"]["est_cov"]
 cov_diags = diagonal(covariance, 1, 2)
 Q = policy.calcQ(cov_diags)
 print(f"Q = \n{Q}")
-
 
 # %% Choose action
 print("\nTest computeAction...")
@@ -80,9 +74,8 @@ policy = GreedyCovariance(
 mask_converter = MaskConverter(num_targets=num_targets, num_sensors=num_sensors)
 for _ in range(10):
     obs = policy.observation_space.sample()
-    obs["action_mask"] = mask_converter.convert2dVisMaskTo2dActionMask(
-        obs["observations"]["vis_mask"]
-    )
+    # make sure inaction is always allowed
+    obs["action_mask"][-1, :] = 1
     action = policy.computeAction(obs)
     is_val = isActionValid(
         mask=obs["action_mask"],
