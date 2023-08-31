@@ -497,11 +497,11 @@ class SSAScheduler(gym.Env):
         """Tasks agents according to their rows in actions_array.
 
         Args:
-            actions_array (ndarray[int]): (N, M) binary array where N=number of targets and
-                M=number of sensors. Values are 0 or 1, where 1 indicates a sensor/target
-                pair action.
-            vis_map_est (ndarray[int]): (N, M) binary array showing sensor-target pairs that
-                are estimated to be visible to each other.
+            actions_array (ndarray[int]): (N, M) binary array where N=number of
+                targets and M=number of sensors. Values are 0 or 1, where 1 indicates
+                a sensor/target pair action.
+            vis_map_est (ndarray[int]): (N, M) binary array showing sensor-target
+                pairs that are estimated to be visible to each other.
 
         Target will be tasked the same if there are multiple 1s in a row or a single
             1 in a row. Meaning, the non-physical states of the agent (ie: target_filter
