@@ -167,7 +167,13 @@ print(
 # %% Test step() and _taskAgents()
 print("\nTest .step() and ._taskAgents()...")
 
-action_test = env.action_space.sample()
+# Check that tasking a non-visible target does not give new measurement.
+# vis_map_est = array([[1, 1, 1],
+#                      [0, 0, 0],
+#                      [1, 1, 1],
+#                      [1, 1, 1]])
+
+action_test = array([1, 0, 4])
 [obs, reward, done, truncated, info] = env.step(action_test)
 print("step output:")
 print(f"    obs keys = {obs.keys()}")
@@ -189,8 +195,9 @@ env.updateInfoPreTasking(action)
 # State estimates should change, but sim time should not
 print(f"  time now (pre-update) = {env._getInfo()['time_now']}")
 print(f"  cov[0][0] (pre-update) = {env._getInfo()['est_cov'][0][0]}")
+vis_map = env._getInfo()["vis_map_est"]
 env._propagateAgents(env.info["time_now"])
-env._taskAgents(action_array[:-1, :])
+env._taskAgents(action_array[:-1, :], vis_map)
 env.updateInfoPostTasking()
 print(f"  time now (pre-update) = {env._getInfo()['time_now']}")
 print(f"  cov[0][0] (post-update) = {env._getInfo()['est_cov'][0][0]}")

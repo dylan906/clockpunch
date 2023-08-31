@@ -11,7 +11,7 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import array, asarray, float32, int64, ndarray, ones, zeros
+from numpy import array, asarray, float32, int64, multiply, ndarray, ones, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
@@ -492,6 +492,7 @@ class SSAScheduler(gym.Env):
     def _taskAgents(
         self,
         actions_array: ndarray[int],
+        vis_map_est: ndarray[int],
     ) -> None:
         """Tasks agents according to their rows in actions_array.
 
@@ -499,6 +500,8 @@ class SSAScheduler(gym.Env):
             actions_array (ndarray[int]): (N, M) array where N=number of targets and
                 M=number of sensors. Values are 0 or 1, where 1 indicates a sensor/target
                 pair action.
+            vis_map_est (ndarray[int]): (N, M) array showing sensor-target pairs that
+                are estimated to be visible to each other.
 
         Target will be tasked the same if there are multiple 1s in a row or a single
             1 in a row. Meaning, the non-physical states of the agent (ie: target_filter
@@ -508,11 +511,14 @@ class SSAScheduler(gym.Env):
         # pull out targets from list_of_agents
         list_of_targets = [x for x in self.agents if type(x) is Target]
 
+        # Mask actions by estimated visibility
+        masked_actions = multiply(actions_array, vis_map_est)
+
         # Loop through actions rows and task target if there is a 1 in its row.
         # Note: Logic doesn't change if there are multiple 1s in a row (multiple
         # sensors looking at one target).
         # Nonphysical states will update as if a single 1 were in the row.
-        for i, row in enumerate(actions_array):
+        for i, row in enumerate(masked_actions):
             # print(row)
             if 1 in row:
                 # print(f"tasking target {list_of_targets[i].agent_id}")
@@ -590,7 +596,9 @@ class SSAScheduler(gym.Env):
         )
 
         # Don't pass in bottom row of action array (inaction row)
-        self._taskAgents(action_array[:-1, :])
+        self._taskAgents(
+            action_array[:-1, :], deepcopy(self.info["vis_map_est"])
+        )
 
         # earn reward; deepcopy so that values don't change from reset on final iteration
         reward = deepcopy(self._earnReward(action))
