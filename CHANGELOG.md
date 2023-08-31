@@ -27,6 +27,7 @@ I'm trying to get better about that.
 - `MinMaxScaleDictObs` wrapper now doesn't convert arrays of 1s to 0s (#33).
 - Fixed bug where `MultiBinaryConfig.fromSpace()` would error on 1d spaces (#34).
 - Fixed dtype bug in `MinMaxScaleDictObs` (#35).
+- Base env now does not update measurements if estimated non-visible target is tasked (#36).
 
 ### Removed
 
