@@ -228,6 +228,7 @@ env_randmask = RandomEnv(
             {
                 "a1": MultiBinary(4),
                 "a2": Box(0, 1, shape=(4,), dtype=int),
+                "a3": Box(-2, -1, shape=(4,), dtype=int),
             }
         )
     }

@@ -16,10 +16,12 @@ from gymnasium.spaces import (
     Dict,
     MultiBinary,
     MultiDiscrete,
+    Space,
     flatten_space,
 )
 from gymnasium.spaces.utils import flatten
 from numpy import (
+    Inf,
     all,
     append,
     array,
@@ -47,6 +49,9 @@ from punchclock.common.custody_tracker import CustodyTracker
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
+    convertBinaryBoxToMultiBinary,
+    getSpaceClosestCommonDtype,
+    getSpacesRange,
     remakeSpace,
 )
 
@@ -521,12 +526,13 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
 # %% MultiplyObsItems
 class MultiplyObsItems(gym.ObservationWrapper):
-    """Element-by-element multiply 2 entries from a Dict observation space.
+    """Element-by-element multiply entries from a Dict observation space.
 
-    Specify two keys in the unwrapped observation space. The values associated
-        with the keys will be multiplied. Both values must be array-likes.
+    Specify n>1 keys in the unwrapped observation space. The values associated
+        with the keys will be multiplied element-wise. All keys.values must be
+        arrays.
 
-    If specified, the multiplied array will be appended to end of (ordered) Dict
+    If specified, the resultant array will be appended to end of (ordered) Dict
         observation space. Otherwise the multiplied array replaced the value associated
         with keys[0].
 
@@ -550,13 +556,12 @@ class MultiplyObsItems(gym.ObservationWrapper):
         )
     """
 
-    # """Wrap environment with MultiplyObsItems ObservationWrapper."""
     def __init__(self, env: gym.Env, keys: list, new_key: str = None):
         """Wrap environment observation space.
 
         Args:
             env (gym.Env): Gym environment.
-            keys (list): 2-long list of keys. Keys must be in env.observation_space.
+            keys (list): List of keys. Keys must be in env.observation_space.
             new_key (str, optional): Key of new item in observation space where
                 return value will be placed. If None, the value of
                 observation_space.spaces[keys[0]] will be overridden. Defaults
@@ -565,37 +570,32 @@ class MultiplyObsItems(gym.ObservationWrapper):
         assert isinstance(
             env.observation_space, Dict
         ), "Environment observation space is not a Dict."
-        assert len(keys) == 2, "keys must have length == 2."
+        assert len(keys) > 1, "keys must have length > 1."
         for k in keys:
             assert (
                 k in env.observation_space.spaces
             ), f"'{k}' is not in env.observation_space."
 
         shapes = [env.observation_space.spaces[k].shape for k in keys]
-        assert (
-            shapes[0] == shapes[1]
-        ), f"""Shape of observation_space[{keys[0]}] and observation_space[{keys[1]}]
-        must be same."""
+        assert all(
+            [(a == shapes[0]) for a in shapes]
+        ), "Shape of observation_space[keys] must be same for all keys."
 
         if new_key is None:
             new_key = keys[0]
-            new_key_provided = False
-        else:
-            new_key_provided = True
 
         super().__init__(env)
         self.keys = keys
         self.new_key = new_key
 
-        # redefine observation space if new_key provided. new_key goes at end.
-        if new_key_provided:
-            new_space = env.observation_space.spaces[keys[0]]
-            self.observation_space = Dict(
-                {
-                    **env.observation_space.spaces,
-                    new_key: new_space,
-                }
-            )
+        relevant_spaces = [
+            deepcopy(self.observation_space.spaces[key]) for key in keys
+        ]
+        self.new_space = self.makeSuperSpace(relevant_spaces)
+
+        # Redefine new entry in obs space. Overwrites key if new_key is already
+        # in obs space. Otherwise, appends to Dict.
+        self.observation_space[new_key] = self.new_space
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Pass unwrapped action mask through another, pre-specified, mask.
@@ -608,14 +608,66 @@ class MultiplyObsItems(gym.ObservationWrapper):
                 at instantiation). If new_key is included, it is the last entry
                 in the returned OrderedDict.
         """
-        x_mask = obs[self.keys[0]]
-        y_mask = obs[self.keys[1]]
-        new_mask = multiply(x_mask, y_mask)
+        # Loop through relevant items and multiply by each other. Make sure to
+        # convert dtype to that specified on instantiation. Some dtypes don't
+        # elementwise multiply together, so convert dtype after Hadamard product.
+        out_arr = ones(obs[self.keys[0]].shape)
 
+        for k in self.keys:
+            out_arr = multiply(out_arr, obs[k])
+            out_arr = out_arr.astype(self.new_space.dtype)
+
+        # Copy input obs, then replace/append new array
         new_obs = OrderedDict(**deepcopy(obs))
-        # if new_key is not already in new_obs, add at end.
-        new_obs[self.new_key] = new_mask
+        new_obs[self.new_key] = out_arr
         return new_obs
+
+    def makeSuperSpace(self, spaces: list[Space]) -> Space:
+        """Make new space that is the superset of multiple spaces.
+
+        All input spaces must have same shape.
+
+        Args:
+            spaces (list[Space]): List of Gymnasium spaces.
+
+        Returns:
+            Space: A space that has the most general dtype of the input spaces.
+        """
+        common_dtypes = []
+        sranges = []
+        for s1, s2 in zip(spaces[:-1], spaces[1:]):
+            common_dtypes.append(getSpaceClosestCommonDtype(s1, s2))
+            sranges.append(list(getSpacesRange(s1, s2)))
+
+        # dtype hierarchy: float (broader) -> int (narrower)
+        if len(common_dtypes) == 1:
+            cd = common_dtypes[0]
+        elif float in common_dtypes:
+            cd = float
+        else:
+            cd = int
+
+        # Get lowest low and highest high
+        lows = [sr[0] for sr in sranges]
+        highs = [sr[1] for sr in sranges]
+        new_low = min(lows)
+        new_high = max(highs)
+
+        # Because wrapper multiplies arrays together, ranges can vary b/w (-Inf, Inf).
+        if new_low < 0:
+            new_low = -Inf
+
+        if new_high > 1:
+            new_high = Inf
+
+        new_space = Box(
+            low=new_low, high=new_high, shape=spaces[0].shape, dtype=cd
+        )
+
+        # convert to MultiBinary if necessary
+        new_space = convertBinaryBoxToMultiBinary(new_space)
+
+        return new_space
 
 
 # %% FlatDict
