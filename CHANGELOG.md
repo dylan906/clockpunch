@@ -11,7 +11,7 @@ I'm trying to get better about that.
 ### Added
 - Added wrapper to convert Box space to MultiBinary (#21).
 - Added wrapper to mask wasted actions (#25).
-- Added miultiple wrappers to eventually replace the custom reward function scheme with a less-custom, more flexible version based on wrappers (#26).
+- Added multiple wrappers to eventually replace the custom reward function scheme with a less-custom, more flexible version based on wrappers (#26).
 - Added `LogisticTransformReward` wrapper (#32).
 - New custom policy `MultiGreedy` that generically applies egreedy to arrays column-wise (#37).
 
@@ -20,6 +20,7 @@ I'm trying to get better about that.
 - `VisMap2ActionMask` and `ConvertCustody2ActionMask` now return 2d action masks (#18).
 - Wrapper map in `build_env.py` replaced with automatic system. No longer need to add new wrappers to a variable another function (#29).
 - Custom policies now use 2d action masks, consistent with wrappers (#37).
+- `MultiplyObsItems` works with >2 spaces (#39).
 
 ### Deprecated
 
@@ -30,6 +31,7 @@ I'm trying to get better about that.
 - Fixed bug where `MultiBinaryConfig.fromSpace()` would error on 1d spaces (#34).
 - Fixed dtype bug in `MinMaxScaleDictObs` (#35).
 - Base env now does not update measurements if estimated non-visible target is tasked (#36).
+- `MultiplyObsItems` works with non-float and mixed dtypes now (#39).
 
 ### Removed
 - Removed old (non-functional) UCB policy (#37).
