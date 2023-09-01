@@ -19,6 +19,7 @@ I'm trying to get better about that.
 - Changed base env observation space. Full covariance matrices now included (vice just diagonals) (#15).
 - `VisMap2ActionMask` and `ConvertCustody2ActionMask` now return 2d action masks (#18).
 - Wrapper map in `build_env.py` replaced with automatic system. No longer need to add new wrappers to a variable another function (#29).
+- Custom policies now use 2d action masks, consistent with wrappers (#37).
 
 ### Deprecated
 
