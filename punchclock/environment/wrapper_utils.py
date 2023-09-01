@@ -9,8 +9,8 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, MultiBinary, Space
-from numpy import ndarray, ravel
+from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete, Space
+from numpy import int8, int64, ndarray, ravel
 
 
 # %% Classes
@@ -186,3 +186,34 @@ def remakeSpace(
         new_space = MultiBinary(n=shape)
 
     return new_space
+
+
+def getSpaceClosestCommonDtype(
+    space1: Box | Discrete | MultiBinary | MultiDiscrete,
+    space2: Box | Discrete | MultiBinary | MultiDiscrete,
+) -> float | int | int8:
+    """Return the common dtype between two Gymnasium spaces.
+
+    Args:
+        space1 (Box | Discrete | MultiBinary | MultiDiscrete): A numerical Gymnasium
+            space.
+        space2 (Box | Discrete | MultiBinary | MultiDiscrete): A numerical Gymnasium
+            space.
+
+    Returns:
+        float | int | int8: The common dtype between spaces.
+    """
+    assert isinstance(space1, (Box, Discrete, MultiBinary, MultiDiscrete))
+    assert isinstance(space2, (Box, Discrete, MultiBinary, MultiDiscrete))
+
+    dtypes = [space1.dtype, space2.dtype]
+
+    if dtypes[0] == dtypes[1]:
+        # returns int8 if both spaces are MultiBinary
+        common_dtype = dtypes[0]
+    elif float in dtypes:
+        common_dtype = float
+    elif int64 in dtypes:
+        common_dtype = int
+
+    return common_dtype
