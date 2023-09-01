@@ -31,4 +31,10 @@ policy = MultiGreedy(
 print(f"policy = {policy}")
 
 # %% Test computeAction
-action = policy.computeAction(obs=policy.observation_space.sample())
+print("\nTest computeAction...")
+
+obs = policy.observation_space.sample()
+action = policy.computeAction(obs)
+
+print(f"obs = \n{obs}")
+print(f"action = \n{action}")
