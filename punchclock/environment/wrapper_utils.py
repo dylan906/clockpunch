@@ -11,7 +11,7 @@ from typing import Tuple
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete, Space
-from numpy import int8, int64, max, min, ndarray, ravel
+from numpy import all, int8, int64, max, min, ndarray, ravel
 
 
 # %% Classes
@@ -256,7 +256,7 @@ def getSpacesRange(
     return superrange
 
 
-def _getLowHigh(space: Space, lowhigh: str):
+def _getLowHigh(space: Space, lowhigh: str) -> float | int:
     """Get the min or max value from an arbitrary space.
 
     Smartly handles MultiBinary, MultiDiscrete, and Discrete spaces.
@@ -281,3 +281,27 @@ def _getLowHigh(space: Space, lowhigh: str):
             out = space.high
 
     return out
+
+
+def convertBinaryBoxToMultiBinary(box_space: Box) -> Box | MultiBinary:
+    """Convert a Box space with (low, high) == (0, 1) and dtype == int to MultiBinary.
+
+    Args:
+        box_space (Box): A Gymnasium space.
+
+    Returns:
+        Box | MultiBinary: Output space is same shape as input space. If input
+            space does not have (low, high) == (0, 1) and dtype == int, then output
+            is same as input.
+    """
+    assert isinstance(box_space, Box)
+
+    if (
+        (box_space.dtype == int)
+        and all(lo == 0 for lo in box_space.low)
+        and all(hi == 1 for hi in box_space.high)
+    ):
+        new_space = MultiBinary(box_space.shape)
+    else:
+        new_space = box_space
+    return new_space

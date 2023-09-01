@@ -17,6 +17,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
+    convertBinaryBoxToMultiBinary,
     getNumWrappers,
     getSpaceClosestCommonDtype,
     getSpacesRange,
@@ -131,5 +132,15 @@ spacerange = getSpacesRange(
     Discrete(3),
 )
 print(f"space range = {spacerange}")
+
+# %% Test convertBinaryBoxToMultiBinary
+print("\nTest convertBinaryBoxToMultiBinary...")
+space = Box(0, 1, shape=(2, 3), dtype=int)
+new_space = convertBinaryBoxToMultiBinary(space)
+print(f"new space = {new_space}")
+
+space = Box(0, 1, shape=(2, 3))
+new_space = convertBinaryBoxToMultiBinary(space)
+print(f"new space = {new_space}")
 # %% done
 print("done")
