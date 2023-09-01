@@ -6,11 +6,12 @@ from __future__ import annotations
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
+from typing import Tuple
 
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete, Space
-from numpy import int8, int64, ndarray, ravel
+from numpy import int8, int64, max, min, ndarray, ravel
 
 
 # %% Classes
@@ -203,8 +204,12 @@ def getSpaceClosestCommonDtype(
     Returns:
         float | int | int8: The common dtype between spaces.
     """
-    assert isinstance(space1, (Box, Discrete, MultiBinary, MultiDiscrete))
-    assert isinstance(space2, (Box, Discrete, MultiBinary, MultiDiscrete))
+    assert isinstance(
+        space1, (Box, Discrete, MultiBinary, MultiDiscrete)
+    ), f"{space1} must be one of (Box, Discrete, MultiBinary, MultiDiscrete)."
+    assert isinstance(
+        space2, (Box, Discrete, MultiBinary, MultiDiscrete)
+    ), f"{space2} must be one of (Box, Discrete, MultiBinary, MultiDiscrete)."
 
     dtypes = [space1.dtype, space2.dtype]
 
@@ -217,3 +222,62 @@ def getSpaceClosestCommonDtype(
         common_dtype = int
 
     return common_dtype
+
+
+def getSpacesRange(
+    space1: Box | Discrete | MultiBinary | MultiDiscrete,
+    space2: Box | Discrete | MultiBinary | MultiDiscrete,
+) -> Tuple:
+    """Get the min and max ranges between two Gymnasium spaces.
+
+    Args:
+        space1 (Box | Discrete | MultiBinary | MultiDiscrete): A numerical Gymnasium
+            space.
+        space2 (Box | Discrete | MultiBinary | MultiDiscrete): A numerical Gymnasium
+            space.
+
+    Returns:
+        Tuple: Minimum value, maximum value.
+    """
+    assert isinstance(
+        space1, (Box, Discrete, MultiBinary, MultiDiscrete)
+    ), f"{space1} must be one of (Box, Discrete, MultiBinary, MultiDiscrete)."
+    assert isinstance(
+        space2, (Box, Discrete, MultiBinary, MultiDiscrete)
+    ), f"{space2} must be one of (Box, Discrete, MultiBinary, MultiDiscrete)."
+
+    lows = [_getLowHigh(space, "low") for space in [space1, space2]]
+    highs = [_getLowHigh(space, "high") for space in [space1, space2]]
+
+    lows = [min(lo) for lo in lows]
+    highs = [max(hi) for hi in highs]
+    superrange = (min(lows), max(highs))
+
+    return superrange
+
+
+def _getLowHigh(space: Space, lowhigh: str):
+    """Get the min or max value from an arbitrary space.
+
+    Smartly handles MultiBinary, MultiDiscrete, and Discrete spaces.
+    """
+    if lowhigh == "low":
+        if isinstance(space, MultiBinary):
+            out = 0
+        elif isinstance(space, MultiDiscrete):
+            out = min(space.nvec)
+        elif isinstance(space, Discrete):
+            out = space.start
+        else:
+            out = space.low
+    elif lowhigh == "high":
+        if isinstance(space, MultiBinary):
+            out = 1
+        elif isinstance(space, MultiDiscrete):
+            out = max(space.nvec)
+        elif isinstance(space, Discrete):
+            out = space.n
+        else:
+            out = space.high
+
+    return out

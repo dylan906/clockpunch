@@ -7,8 +7,9 @@ from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium.spaces import Box, MultiBinary, MultiDiscrete
+from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete
 from gymnasium.wrappers.filter_observation import FilterObservation
+from numpy import Inf
 from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
 
@@ -18,6 +19,7 @@ from punchclock.environment.wrapper_utils import (
     checkDictSpaceContains,
     getNumWrappers,
     getSpaceClosestCommonDtype,
+    getSpacesRange,
     getWrapperList,
     remakeSpace,
 )
@@ -110,5 +112,24 @@ common_dtype = getSpaceClosestCommonDtype(
 )
 print(f"dtype = {common_dtype}")
 
+# %% Test getSpacesRange
+print("\nTest getSpacesRange...")
+spacerange = getSpacesRange(
+    Box(-3, 1, shape=(2, 2), dtype=int),
+    Box(0, Inf, shape=(1, 3), dtype=float),
+)
+print(f"space range = {spacerange}")
+
+spacerange = getSpacesRange(
+    MultiBinary((2, 2)),
+    MultiDiscrete((2, 3, 4)),
+)
+print(f"space range = {spacerange}")
+
+spacerange = getSpacesRange(
+    MultiBinary((2, 2)),
+    Discrete(3),
+)
+print(f"space range = {spacerange}")
 # %% done
 print("done")
