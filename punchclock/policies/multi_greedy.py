@@ -91,7 +91,10 @@ class MultiGreedy(CustomPolicy):
             key (str): Corresponds to a 2D array in observation_space["observations"].
             epsilon (float, optional): Probability of choosing random action.
                 Valued 0-1. Defaults to 0 (no random actions will be taken).
-            subsidy (float, optional): Reward for inaction. Defaults to 0.
+            subsidy (float, optional): Reward for inaction. Inaction corresponds
+                to the bottom row of key.value, which is automatically appended
+                if key.value has 1-less row than action_mask. Subsidy not used if
+                action_mask is same shape as key.value. Defaults to 0.
             use_mask (bool, optional): Whether or not to use action mask. If used,
                 "action_mask" must be a key in observation_space. Defaults to True.
         """
@@ -134,11 +137,32 @@ class MultiGreedy(CustomPolicy):
         self.use_mask = use_mask
 
     def computeAction(self, obs: dict) -> ndarray[int]:
+        """E-greedy action selection.
+
+        Args:
+            obs (dict): Must contain ["observations"][self.key], where key is specified
+                at instantiation. The value associated with self.key in the observation
+                must be a 2d array. If action mask is enabled, must contain
+                ["action_mask"] as a 2d array.
+
+        Returns:
+            ndarray[int]: _description_
+
+        Notation:
+            Shape of value array (in observation): (A or A-1, B)
+            Shape of action mask: (A, B)
+
+        Value array and action mask must have same number of columns. If number
+            of rows in value array is (A-1), a subsidy row is appended prior to
+            selecting action. All entries in subsidy row have value self.subsidy,
+            which is set at instantiation.
+        """
         Q = obs["observations"][self.key]
-        action_mask = obs["action_mask"]
 
         if self.use_mask is False:
             action_mask = None
+        else:
+            action_mask = obs["action_mask"]
 
         # If Q has 1-less row than action mask, append subsidy row to Q
         if self.append_subsidy is True:
