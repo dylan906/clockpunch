@@ -24,53 +24,53 @@ class MultiGreedy(CustomPolicy):
     Example (no subsidy or action mask):
         obs = {
             "a": array([
-                [1, 2],
-                [3, 0],
+                [1, 2, 1],
+                [3, 0, 0],
             ])
         }
 
-        action = array([1, 0])
+        action = array([1, 0, 0])
 
     Example (subsidy = 0.1, no action mask)
         obs = {
             "a": array([
-                [1, -1],
-                [3, 0],
+                [1, -1, 0],
+                [3,  0, 0],
             ])
         }
 
         subsidized_obs = {
             "a": array([
-                [1,  -1 ],
-                [3,   0 ],
-                [0.1, 0.1]
+                [1,  -1,   0  ],
+                [3,   0,   0  ],
+                [0.1, 0.1, 0.1]
             ])
         }
 
-        action = array([1, 2])
+        action = array([1, 2, 2])
 
     Example (subsidy = 0.1, with action mask)
         obs = {
             "a": array([
-                [1, -1],
-                [3, 4],
+                [1, -1, 1],
+                [3,  4, 2],
             ])
         }
 
         mask = array([
-            [1, 1],
-            [0, 0]
+            [1, 1, 0],
+            [0, 0, 0]
         ])
 
         subsidized_obs = {
             "a": array([
-                [1,  -1 ],
-                [0,   0 ],
-                [0.1, 0.1]
+                [1,  -1,   0  ],
+                [0,   0,   0  ],
+                [0.1, 0.1, 0.1]
             ])
         }
 
-        action = array([0, 2])
+        action = array([0, 2, 2])
 
     """
 
