@@ -13,6 +13,7 @@ from numpy import array, float32, int64, ndarray
 
 # Punch Clock Imports
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
+from punchclock.policies.multi_greedy import MultiGreedy
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 from punchclock.policies.random_policy import RandomPolicy
 
@@ -314,6 +315,7 @@ def buildCustomPolicy(policy_config: dict) -> CustomPolicy:
                     primitives. See buildSpace for details.
                 "action_space" (dict): All values and sub-values must be primitives.
                     See buildSpace for details.
+                **kwargs: kwargs for policy
             }
 
     Returns:
@@ -322,6 +324,7 @@ def buildCustomPolicy(policy_config: dict) -> CustomPolicy:
     policy_map = {
         "GreedyCovariance": GreedyCovariance,
         "RandomPolicy": RandomPolicy,
+        "MultiGreedy": MultiGreedy,
     }
 
     assert (
