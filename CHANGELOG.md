@@ -13,6 +13,7 @@ I'm trying to get better about that.
 - Added wrapper to mask wasted actions (#25).
 - Added miultiple wrappers to eventually replace the custom reward function scheme with a less-custom, more flexible version based on wrappers (#26).
 - Added `LogisticTransformReward` wrapper (#32).
+- New custom policy `MultiGreedy` that generically applies egreedy to arrays column-wise (#37).
 
 ### Changed
 - Changed base env observation space. Full covariance matrices now included (vice just diagonals) (#15).
