@@ -37,6 +37,7 @@ from numpy import (
     multiply,
     ndarray,
     ones,
+    ravel,
     split,
     squeeze,
     stack,
@@ -1131,6 +1132,10 @@ class SplitArrayObs(gym.ObservationWrapper):
         assert all(
             [isinstance(space, Box) for space in relevant_spaces]
         ), "All spaces specified in keys must be Box spaces in unwrapped environment."
+        new_keys_flat = list(ravel(new_keys))
+        assert all(
+            [nk not in env.observation_space.spaces for nk in new_keys_flat]
+        ), """Entries in new_keys cannot already be in observation space."""
 
         super().__init__(env)
         self.key_map = {k: v for (k, v) in zip(keys, new_keys)}
