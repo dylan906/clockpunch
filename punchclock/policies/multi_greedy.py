@@ -98,9 +98,7 @@ class MultiGreedy(CustomPolicy):
             use_mask (bool, optional): Whether or not to use action mask. If used,
                 "action_mask" must be a key in observation_space. Defaults to True.
         """
-        super().__init__(
-            observation_space=observation_space, action_space=action_space
-        )
+        super().__init__(observation_space=observation_space, action_space=action_space)
         assert (
             key in observation_space.spaces["observations"].spaces
         ), f"""observation_space.spaces['observations'] must contain {key}."""
@@ -166,7 +164,7 @@ class MultiGreedy(CustomPolicy):
 
         # If Q has 1-less row than action mask, append subsidy row to Q
         if self.append_subsidy is True:
-            Q = vstack((Q, self.subsidy * ones((1, self.num_sensors))))
+            Q = vstack((Q, self.subsidy * ones((1, Q.shape[1]))))
 
         action = epsGreedyMask(
             Q=Q,
