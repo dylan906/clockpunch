@@ -14,6 +14,7 @@ I'm trying to get better about that.
 - Added multiple wrappers to eventually replace the custom reward function scheme with a less-custom, more flexible version based on wrappers (#26).
 - Added `LogisticTransformReward` wrapper (#32).
 - New custom policy `MultiGreedy` that generically applies egreedy to arrays column-wise (#37).
+- Add wrapper to transform scaler observations in a Dict obs space (#45).
 
 ### Changed
 - Changed base env observation space. Full covariance matrices now included (vice just diagonals) (#15).
