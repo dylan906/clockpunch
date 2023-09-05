@@ -16,7 +16,7 @@ from gymnasium import wrappers as gym_wrappers
 
 # Punch Clock Imports
 from punchclock.common.utilities import array2List
-from punchclock.environment import obs_wrappers, reward_wrappers
+from punchclock.environment import misc_wrappers, obs_wrappers, reward_wrappers
 from punchclock.environment.env import SSAScheduler, SSASchedulerParams
 
 # %% Functions
@@ -143,7 +143,12 @@ def getWrapper(wrapper_name: str) -> Wrapper:
     """
     # Wrapper names must match the wrapper class name in the relevant module.
     # Try 3 modules to get wrappers.
-    wrapper_modules = [gym_wrappers, obs_wrappers, reward_wrappers]
+    wrapper_modules = [
+        gym_wrappers,
+        obs_wrappers,
+        reward_wrappers,
+        misc_wrappers,
+    ]
     for wm in wrapper_modules:
         try:
             wrapper = getattr(wm, wrapper_name, {})
