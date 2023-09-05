@@ -38,6 +38,7 @@ from punchclock.environment.obs_wrappers import (
     SplitArrayObs,
     SqueezeObsItems,
     SumArrayWrapper,
+    TransformDictObsWithNumpy,
     VisMap2ActionMask,
     WastedActionsMask,
 )
@@ -652,5 +653,33 @@ wrapped_obs = nam_env.observation(unwrapped_obs)
 print(f"unwrapped obs  = \n{unwrapped_obs}")
 print(f"wrapped obs = \n{wrapped_obs}")
 assert nam_env.observation_space.contains(wrapped_obs)
+
+# %% Test TransformDictObsWithNumpy
+print("\nTest TransformDictObsWithNumpy...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(low=10, high=100, shape=(3,)),
+                "b": MultiBinary((3, 2)),
+            }
+        ),
+    }
+)
+
+tdo_env = TransformDictObsWithNumpy(rand_env, "mean", "a")
+unwrapped_obs = rand_env.observation_space.sample()
+wrapped_obs = tdo_env.observation(unwrapped_obs)
+print(f"unwrapped obs  = \n{unwrapped_obs}")
+print(f"wrapped obs = \n{wrapped_obs}")
+assert tdo_env.observation_space.contains(wrapped_obs)
+
+tdo_env = TransformDictObsWithNumpy(rand_env, "mean", "b", axis=1)
+unwrapped_obs = rand_env.observation_space.sample()
+wrapped_obs = tdo_env.observation(unwrapped_obs)
+print(f"unwrapped obs  = \n{unwrapped_obs}")
+print(f"wrapped obs = \n{wrapped_obs}")
+assert tdo_env.observation_space.contains(wrapped_obs)
+
 # %% Done
 print("done")

@@ -11,6 +11,7 @@ from typing import Any, Tuple
 
 # Third Party Imports
 import gymnasium as gym
+import numpy as np
 from gymnasium.spaces import (
     Box,
     Dict,
@@ -1507,6 +1508,7 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
         return new_obs
 
 
+# %% DiagonalObsItems
 class DiagonalObsItems(SelectiveDictObsWrapper):
     """Get diagonals of multidimensional space(s).
 
@@ -1789,6 +1791,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         return full_action_mask_2d
 
 
+# %% ConvertObsBoxToMultiBinary
 class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
     """Convert a Box space (which is an entry in a Dict space) to MultiBinary.
 
@@ -1853,6 +1856,7 @@ class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
         return new_obs
 
 
+# %% SqueezeObsItems
 class SqueezeObsItems(SelectiveDictObsWrapper):
     """Squeeze a multidimensional space.
 
@@ -1948,6 +1952,7 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
         return lows, highs
 
 
+# %% WastedActionsMask
 class WastedActionsMask(gym.ObservationWrapper):
     """Mask null action if target(s) available to sensor.
 
@@ -2042,3 +2047,64 @@ class WastedActionsMask(gym.ObservationWrapper):
         new_obs[self.mask_key] = mask
 
         return new_obs
+
+
+# %% TransformDictObsWithNumpy
+class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
+    """Transform an entry in a Dict observation space by a numpy function.
+
+    Apply a numpy function to a single entry in an dict observation. Converts
+    the corresponding entry in the observation space to a Box with (-Inf, Inf)
+    bounds.
+
+    Works only with numpy functions that can be called like numpy.[func](args).
+
+    Overwrites key[value] in observation.
+
+    Examples:
+        # env.observation_space = Dict({"a": Box(0, 1, shape=(3, 2))})
+
+        TransformDictObsWithNumpy(env, "mean", "a")
+        TransformDictObsWithNumpy(env, "median", "a", axis=1)
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        numpy_func_str: str,
+        key: str,
+        **kwargs: Any,
+    ):
+        """Wrap environment with TransformDictObsWithNumpy.
+
+        Args:
+            env (gym.Env): Must have a Dict observation space.
+            numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
+                getattr(numpy, numpy_func_str)).
+            key (str): Key of observation space to apply function to.
+            **kwargs (Any, optional): Any kwargs to be used in numpy function.
+        """
+        func = getattr(np, numpy_func_str, None)
+        assert (
+            func is not None
+        ), f"""Specified function {numpy_func_str} not recognized as an attr of
+         numpy."""
+
+        partial_func = partial(func, **kwargs)
+
+        # Make new observation space by trasnforming sample observation, then getting
+        # shape and dtype. Assume bounds are (-Inf, Inf).
+        new_obs_space = deepcopy(env.observation_space)
+        unwrapped_obs = env.observation_space.sample()[key]
+        wrapped_obs = partial_func(unwrapped_obs)
+        new_shape = wrapped_obs.shape
+        new_dtype = wrapped_obs.dtype
+
+        new_obs_space[key] = Box(
+            -Inf,
+            Inf,
+            shape=new_shape,
+            dtype=new_dtype,
+        )
+
+        super().__init__(env, [partial_func], [key], new_obs_space)
