@@ -191,6 +191,7 @@ config = OrderedDict(
                         ],
                     },
                 },
+                {"wrapper": "IdentityWrapper"},
                 {"wrapper": "FlatDict"},
             ],
         },

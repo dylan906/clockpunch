@@ -28,6 +28,7 @@ from torch import Tensor, tensor
 # Punch Clock Imports
 from punchclock.common.agents import Agent
 from punchclock.environment.env import SSAScheduler
+from punchclock.environment.misc_wrappers import IdentityWrapper
 from punchclock.environment.wrapper_utils import getNumWrappers, getWrapperList
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 
@@ -94,6 +95,11 @@ class SimRunner:
         assert isinstance(
             policy, (RayPolicy, CustomPolicy)
         ), "Policy must be RayPolicy or CustomPolicy"
+        if isinstance(policy, CustomPolicy):
+            assert (
+                IdentityWrapper in self.wrappers
+            ), """When using a CustomPolicy, env must have IdentityWrapper in the
+            wrapper stack."""
         # %% Set class attributes
         self.env = env
         self.max_steps = max_steps
@@ -128,16 +134,20 @@ class SimRunner:
 
     def _getObs(
         self,
-        stop_at_mask: bool = False,
+        stop_at_identity_wrapper: bool = False,
+        identity_wrapper_id=None,
     ) -> OrderedDict:
-        """Get observation from wrapped or bare environment.
+        """Get observation from top-level/intermediate wrapped or bare environment.
 
         Handles getting observations through multiple layers of wrappers.
 
         Args:
-            stop_at_mask (`bool`, optional): Set to True to return observation
-                from action mask wrapper, regardless of any wrappers above it.
-                Defaults to False.
+            stop_at_identity_wrapper (`bool`, optional): Set to True to return
+                observation from IdentityWrapper, regardless of any wrappers above
+                it. Defaults to False.
+            identity_wrapper_id (optional): Identifier to use if
+                stop_at_identity_wrapper is True and there are multiple IdentityWrappers
+                on environment.
 
         """
         if isinstance(self.env, gym.Wrapper):
@@ -160,11 +170,16 @@ class SimRunner:
                         "obs": obs,
                     },
                 )
-                if stop_at_mask is True:
-                    # Break for loop if at action mask wrapper, skip any higher
+                if stop_at_identity_wrapper is True:
+                    # Break for loop if at IdentityWrapper, skip any higher
                     # levels of wrappers.
                     intermediate_env = eval(cmd_no_obs, {"self": self})
-                    if self._checkEnvWrapperForMask(intermediate_env) is True:
+                    if (
+                        self._isWrapperIdentity(
+                            intermediate_env, identity_wrapper_id
+                        )
+                        is True
+                    ):
                         break
 
             obs = OrderedDict(obs)
@@ -176,38 +191,27 @@ class SimRunner:
 
         return obs
 
-    def _checkEnvWrapperForMask(self, env: gym.Env) -> bool:
-        """Check if env has an observation space structured like below.
-
-        env.observation_space = Dict({
-            "action_mask": Any,
-            "observations": Dict()
-        })
+    def _isWrapperIdentity(self, env: gym.Env, wrapper_id: Any = None) -> bool:
+        """Check if env top level wrapper is IdentityWrapper with optional id.
 
         Args:
             env (gym.Env): A gym environment.
+            wrapper_id (Any, optional): Wrapper must also have matching id. Defaults
+                to None.
 
         Returns:
-            bool: Returns True if env.observation_space matches above structure.
+            bool: Returns True if env top level wrapper is IdentityWrapper.
         """
-        if (
-            isinstance(env.observation_space, gym.spaces.Dict)
-            and ("action_mask" in env.observation_space.spaces)
-            and ("observations" in env.observation_space.spaces)
-            and (
-                isinstance(
-                    env.observation_space.spaces["action_mask"],
-                    (gym.spaces.Box, gym.spaces.MultiBinary),
-                )
-            )
-            and (
-                isinstance(
-                    env.observation_space.spaces["observations"],
-                    gym.spaces.Dict,
-                )
-            )
+        if isinstance(env.observation_space, gym.spaces.Dict) and isinstance(
+            env, IdentityWrapper
         ):
-            checkwrap = True
+            if wrapper_id is None:
+                checkwrap = True
+            else:
+                if env.id == wrapper_id:
+                    checkwrap = True
+                else:
+                    checkwrap = False
         else:
             checkwrap = False
 
@@ -237,7 +241,7 @@ class SimRunner:
 
         # CustomPolicy requires obs = {"observations": Dict, "action_mask": Box}
         if isinstance(self.policy, CustomPolicy):
-            self.obs_hist[0] = self._getObs(stop_at_mask=True)
+            self.obs_hist[0] = self._getObs(stop_at_identity_wrapper=True)
         else:
             self.obs_hist[0] = self._getObs()
 
@@ -268,7 +272,7 @@ class SimRunner:
         if isinstance(self.policy, CustomPolicy):
             # Overwrite obs if using CustomPolicy. CustomPolicy requires obs =
             # {"observations": Dict, "action_mask": Box}
-            obs = self._getObs(stop_at_mask=True)
+            obs = self._getObs(stop_at_identity_wrapper=True)
 
         # Convert to OrderedDict if env outputs regular dict (happens with wrapped
         # environments).
