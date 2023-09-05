@@ -2087,7 +2087,7 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
             numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
                 getattr(numpy, numpy_func_str)).
             key (str): Key of observation space to apply function to.
-            **kwargs (Any, optional): Any kwargs to be used in numpy function.
+            kwargs (Any, optional): Any kwargs to be used in numpy function.
         """
         func = getattr(np, numpy_func_str, None)
         assert (
@@ -2102,6 +2102,7 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
         new_obs_space = deepcopy(env.observation_space)
         unwrapped_obs = env.observation_space.sample()[key]
         wrapped_obs = partial_func(unwrapped_obs)
+
         new_shape = wrapped_obs.shape
         new_dtype = wrapped_obs.dtype
 
