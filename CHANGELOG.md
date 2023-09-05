@@ -21,6 +21,7 @@ I'm trying to get better about that.
 - Wrapper map in `build_env.py` replaced with automatic system. No longer need to add new wrappers to a variable another function (#29).
 - Custom policies now use 2d action masks, consistent with wrappers (#37).
 - `MultiplyObsItems` works with >2 spaces (#39).
+- Updated to Python 3.10.0.
 
 ### Deprecated
 
