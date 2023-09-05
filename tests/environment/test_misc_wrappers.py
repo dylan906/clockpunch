@@ -13,5 +13,8 @@ rand_env = RandomEnv({"observation_space": Box(0, 1)})
 identity_env = IdentityWrapper(rand_env)
 print(f"identity env = {identity_env}")
 
+identity_env = IdentityWrapper(rand_env, id="foo")
+print(f"identity env = {identity_env}")
+print(f"env.id = {identity_env.id}")
 # %% Done
 print("done")
