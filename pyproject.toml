@@ -3,7 +3,7 @@ name = "clockpunch"
 dynamic = ["version"]
 description = "blurb"
 readme = "README.md"
-requires-python = "==3.9.0"
+requires-python = "==3.10.0"
 authors = [{ name = "Dylan Penn", email = "dylan.penn@vt.edu" }]
 
 dependencies = [
@@ -14,7 +14,7 @@ dependencies = [
     "ray[tune]==2.5.0",
     "ray[rllib]==2.5.0",
     "ray[serve]==2.5.0",
-    "torch>=1.12.0",
+    "torch==1.13.1",
     "intervaltree>=3.1",
     "cuda-python==11.7.1",
     "scipy>=1.9",
