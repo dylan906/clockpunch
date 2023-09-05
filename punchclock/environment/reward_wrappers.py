@@ -90,7 +90,8 @@ class RewardBase(ABC, Wrapper):
 class AssignObsToReward(RewardBase):
     """Get an item in the observation space and assign reward to the value.
 
-    Does not modify observation.
+    The value gotten from the observation must have shape (1,) or (). Does not modify
+    observation.
     """
 
     def __init__(self, env: Env, key: str):
@@ -106,9 +107,10 @@ class AssignObsToReward(RewardBase):
         assert (
             key in env.observation_space.spaces
         ), f"{key} must be in observation_space.spaces."
-        assert env.observation_space.spaces[key].shape == (
-            1,
-        ), f"observation_space['{key}'] must be a (1,)-sized space."
+        assert env.observation_space.spaces[key].shape in [
+            (1,),
+            (),
+        ], f"observation_space['{key}'] must be a (1,)- or ()-sized space."
         assert env.observation_space.spaces[key].dtype in (
             float,
             int,
@@ -129,7 +131,11 @@ class AssignObsToReward(RewardBase):
         action: Any,
     ):
         """Calculate reward."""
-        reward = obs[self.key][0]
+        if obs[self.key].shape == (1,):
+            reward = obs[self.key][0]
+        elif obs[self.key].shape == ():
+            reward = obs[self.key]
+
         return reward
 
 

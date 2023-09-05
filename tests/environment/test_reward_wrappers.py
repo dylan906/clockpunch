@@ -18,12 +18,22 @@ from punchclock.environment.reward_wrappers import (
 print("\nTest AssignObsToReward...")
 rand_env = RandomEnv(
     {
-        "observation_space": Dict({"a": Box(low=-1, high=1)}),
+        "observation_space": Dict(
+            {
+                "a": Box(low=-1, high=1),
+                "b": Box(low=-1, high=1, shape=()),
+            }
+        ),
         "action_space": MultiDiscrete([1]),
     }
 )
 
 ass_env = AssignObsToReward(rand_env, "a")
+(obs, reward, term, trunc, info) = ass_env.step(ass_env.action_space.sample())
+print(f"obs = {obs}")
+print(f"reward = {reward}")
+
+ass_env = AssignObsToReward(rand_env, "b")
 (obs, reward, term, trunc, info) = ass_env.step(ass_env.action_space.sample())
 print(f"obs = {obs}")
 print(f"reward = {reward}")
