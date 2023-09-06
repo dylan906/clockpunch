@@ -28,6 +28,8 @@ class RewardBase(ABC, Wrapper):
     step() should NOT be overridden. This this is the core of the RewardBase ABC;
     the class defines only a reward scheme, it does not modify other inputs/outputs
     of step.
+
+    When subclasses of RewardBase are stacked, rewards from all layers are summed.
     """
 
     def __init__(self, env: Env):
@@ -48,14 +50,20 @@ class RewardBase(ABC, Wrapper):
         """Step environment forward. Do not modify."""
         (
             observations,
-            rewards,
+            unwrapped_rewards,
             terminations,
             truncations,
             infos,
         ) = self.env.step(action)
 
-        rewards = self.calcReward(
-            observations, rewards, terminations, truncations, infos, action
+        # add unwrapped reward to new reward
+        rewards = unwrapped_rewards + self.calcReward(
+            observations,
+            unwrapped_rewards,
+            terminations,
+            truncations,
+            infos,
+            action,
         )
 
         return (observations, rewards, terminations, truncations, infos)
