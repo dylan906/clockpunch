@@ -1,13 +1,12 @@
 """SSAScheduler observation wrappers module."""
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
+from abc import ABC
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
-from typing import Any, Tuple
+from typing import Any, Tuple, final
 
 # Third Party Imports
 import gymnasium as gym
@@ -1000,7 +999,7 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
 
 
 # %% SelectiveDictObsWrapper
-class SelectiveDictObsWrapper(gym.ObservationWrapper):
+class SelectiveDictObsWrapper(gym.ObservationWrapper, ABC):
     """Base class for wrappers that apply a function to a selection of Dict entries."""
 
     def __init__(
@@ -1033,11 +1032,13 @@ class SelectiveDictObsWrapper(gym.ObservationWrapper):
 
         return
 
+    @final
     def observation(self, obs: OrderedDict) -> dict:
         """Get wrapped observation from a Dict observation space."""
         new_obs = self.processor.applyFunc(obs)
         return new_obs
 
+    @final
     def checkObsSpace(self) -> bool:
         """Check input observation space for consistency.
 
