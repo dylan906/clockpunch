@@ -161,11 +161,11 @@ class AssignObsToReward(RewardBase):
 
 
 # %% Binary Reward
-class VismaskViolationReward(RewardBase):
+class VismaskReward(RewardBase):
     """Grants a constant reward per sensor assigned to valid (or invalid) action.
 
     Use to reward tasking sensors to valid targets or penalize for tasking to invalid
-    ones.
+    ones. Ignores null actions (no reward given).
 
     Nomenclature:
         M: Number of sensors.
@@ -173,9 +173,9 @@ class VismaskViolationReward(RewardBase):
 
     Example:
         # for 3 sensors, 2 targets, reward valid actions
-        wrapped_env = VismaskViolationReward(env, "mask")
+        wrapped_env = VismaskReward(env, "mask")
         vis_mask = array([[1, 1, 1],
-                         [0, 0, 1]])
+                          [0, 0, 1]])
         action = array([0, 1, 2])
         # reward = 1 + 0 + 0 = 1
 
@@ -185,7 +185,7 @@ class VismaskViolationReward(RewardBase):
 
     Example:
         # for 3 sensors, 2 targets, penalize invalid actions
-        wrapped_env = VismaskViolationReward(env, "mask", reward=-1,
+        wrapped_env = VismaskReward(env, "mask", reward=-1,
             reward_valid_actions=False)
         vis_mask = array([[1, 1, 1],
                          [0, 0, 1]])
