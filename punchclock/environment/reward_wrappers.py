@@ -161,36 +161,42 @@ class AssignObsToReward(RewardBase):
 
 
 # %% Binary Reward
-class VismaskReward(RewardBase):
+class MaskReward(RewardBase):
     """Grants a constant reward per sensor assigned to valid (or invalid) action.
 
     Use to reward tasking sensors to valid targets or penalize for tasking to invalid
-    ones. Ignores null actions (no reward given).
+    ones.
 
     Nomenclature:
         M: Number of sensors.
         N: Number of targets.
 
     Example:
-        # for 3 sensors, 2 targets, reward valid actions
-        wrapped_env = VismaskReward(env, "mask")
-        vis_mask = array([[1, 1, 1],
-                          [0, 0, 1]])
+        # for 3 sensors, 2 targets, null actions included, reward valid actions
+        wrapped_env = MaskReward(env, "action_mask", ignore_null_actions=False)
+        # action_mask = array([[1, 1, 1],
+                               [0, 0, 1]
+                               [1, 1, 1]])  # last row is null action
         action = array([0, 1, 2])
-        # reward = 1 + 0 + 0 = 1
+        # reward = 1 + 0 + 1 = 2
 
-        Sensor 0 earns 1 reward because it tasked a visible target.
-        Sensor 1 earns 0 reward because it tasked a non-visible target.
-        Sensor 2 earns 0 reward because it tasked null-action.
+        Sensor 0 earns 1 reward because it tasked a valid (1) action.
+        Sensor 1 earns 0 reward because it tasked an invalid (0) action.
+        Sensor 2 earns 1 reward because it tasked a valid (1) action.
 
     Example:
-        # for 3 sensors, 2 targets, penalize invalid actions
-        wrapped_env = VismaskReward(env, "mask", reward=-1,
-            reward_valid_actions=False)
-        vis_mask = array([[1, 1, 1],
-                         [0, 0, 1]])
+        # for 3 sensors, 2 targets, null actions ignored, penalize invalid actions
+        wrapped_env = MaskReward(env, "action_mask", reward=-1,
+            reward_valid_actions=False, ignore_null_actions=True)
+        # action_mask = array([[1, 1, 1],
+                               [0, 0, 1],
+                               [1, 1, 1]])
         action = array([0, 1, 2])
         # reward = 0 + -1 + 0 = -1
+
+        Sensor 0 earns 0 reward because it tasked a valid (1) action.
+        Sensor 1 earns -1 reward because it tasked an invalid (0) action.
+        Sensor 2 earns 0 reward because null-actions (2) are ignored.
     """
 
     def __init__(
@@ -199,19 +205,23 @@ class VismaskReward(RewardBase):
         action_mask_key: str,
         reward: float = 1,
         reward_valid_actions: bool = True,
+        ignore_null_actions: bool = True,
     ):
         """Wrap environment.
 
         Args:
             env (Env): See RewardBase for requirements.
             action_mask_key (str): Key corresponding to action mask in observation
-                space. Value associated with action_mask_key must be (N, M) binary
-                array where a 1 indicates the sensor-target the pairing is a valid
-                action).
+                space. Value associated with action_mask_key must be (N+1, M) binary
+                array where a 1 indicates the sensor-action the pairing is a valid
+                action). The bottom row denotes null action.
             reward (float, optional): Reward generated per (in)valid sensor-target
                 assignment. Defaults to 1.
             reward_valid_actions (bool, optional): If True, valid actions are rewarded.
                 If False, invalid actions are reward. Defaults to True.
+            ignore_null_actions (bool, optional): If True, the bottom row of the
+                action mask is ignored; action values of N are ignored. Defaults
+                to True.
         """
         super().__init__(env)
         assert (
@@ -221,13 +231,23 @@ class VismaskReward(RewardBase):
             env.observation_space.spaces[action_mask_key], MultiBinary
         ), f"env.observation_space['{action_mask_key}'] must be MultiBinary."
 
+        self.num_sensors = len(env.action_space)
+        self.num_targets = env.action_space.nvec[0] - 1
+
+        assert env.observation_space.spaces[action_mask_key].shape == (
+            self.num_targets + 1,
+            self.num_sensors,
+        ), f"""env.observation_space['{action_mask_key}'] must have shape (N+1, M),
+        which in this case is ({self.num_targets+1}, {self.num_sensors})."""
+
         self.action_mask_key = action_mask_key
         self.reward_per_valid = reward
         self.reward_valid_actions = reward_valid_actions
+        self.ignore_null_actions = ignore_null_actions
         self.action_converter = partial(
             actionSpace2Array,
-            num_sensors=len(env.action_space),
-            num_targets=env.action_space.nvec[0] - 1,
+            num_sensors=self.num_sensors,
+            num_targets=self.num_targets,
         )
 
     def calcReward(
@@ -252,18 +272,22 @@ class VismaskReward(RewardBase):
             float: Total reward for step.
         """
         action_2d = self.action_converter(action)
-        action_2d_nonulls = action_2d[:-1, :]
-        vis_mask = obs[self.action_mask_key]
+        action_mask = obs[self.action_mask_key]
+
+        if self.ignore_null_actions is True:
+            # crop arrays if null actions are ignored
+            action_2d = action_2d[:-1, :]
+            action_mask = action_mask[:-1, :]
 
         if self.reward_valid_actions is True:
             # Reward valid actions
             reward_mat = multiply(
-                self.reward_per_valid * vis_mask, action_2d_nonulls
+                self.reward_per_valid * action_mask, action_2d
             )
         else:
             # Reward invalid actions
             reward_mat = multiply(
-                self.reward_per_valid * (1 - vis_mask), action_2d_nonulls
+                self.reward_per_valid * (1 - action_mask), action_2d
             )
 
         reward = sum(reward_mat)

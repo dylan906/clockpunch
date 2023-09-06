@@ -9,9 +9,9 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from punchclock.environment.reward_wrappers import (
     AssignObsToReward,
     LogisticTransformReward,
+    MaskReward,
     NullActionReward,
     ThresholdReward,
-    VismaskReward,
     ZeroReward,
 )
 
@@ -47,16 +47,16 @@ ass_env = AssignObsToReward(rand_env, "b")
 (obs, reward, term, trunc, info) = ass_env.step(ass_env.action_space.sample())
 print(f"obs = {obs}")
 print(f"reward = {reward}")
-# %% Test VismaskReward
-print("\nTest VismaskReward...")
+# %% Test MaskReward
+print("\nTest MaskReward...")
 rand_env = RandomEnv(
     {
-        "observation_space": Dict({"a": MultiBinary((2, 4))}),
+        "observation_space": Dict({"a": MultiBinary((3, 4))}),
         "action_space": MultiDiscrete([3, 3, 3, 3]),
         "reward_space": Box(0, 0),
     }
 )
-binary_env = VismaskReward(rand_env, "a", reward=0.1)
+binary_env = MaskReward(rand_env, "a", reward=0.1)
 action = array([0, 0, 0, 2])
 
 (obs, reward, term, trunc, info) = binary_env.step(action)
@@ -65,9 +65,15 @@ print(f"action = {action}")
 print(f"reward={reward}")
 
 # Test with rewarding (penalizing) invalid actions
-binary_env = VismaskReward(
-    rand_env, "a", reward=-0.1, reward_valid_actions=False
-)
+binary_env = MaskReward(rand_env, "a", reward=-0.1, reward_valid_actions=False)
+
+(obs, reward, term, trunc, info) = binary_env.step(action)
+print(f"\nobs['a'] = \n{obs['a']}")
+print(f"action = {action}")
+print(f"reward={reward}")
+
+# Test with accounting for null actions
+binary_env = MaskReward(rand_env, "a", ignore_null_actions=False)
 
 (obs, reward, term, trunc, info) = binary_env.step(action)
 print(f"\nobs['a'] = \n{obs['a']}")
