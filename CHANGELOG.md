@@ -11,6 +11,7 @@ I'm trying to get better about that.
 ### Added
 
 ### Changed
+- Made null actions optionally ignorable in `MaskReward` wrapper (#48).
 
 ### Deprecated
 
