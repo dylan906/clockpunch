@@ -6,6 +6,19 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that. 
 
+## [unreleased] - 20YY-MM-DD
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Fixed
+
+### Removed
+- Removed old `ActionMask` wrapper in favor of more modular wrappers.
+
 ## [0.7.0] - 2023-09-06
 
 ### Added
