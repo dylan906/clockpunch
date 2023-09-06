@@ -94,6 +94,19 @@ class RewardBase(ABC, Wrapper):
         return reward
 
 
+# %% ZeroReward
+class ZeroReward(TransformReward):
+    """Makes environment return 0 reward for all states."""
+
+    def __init__(self, env: Env):
+        """Wrap env with ZeroReward."""
+        super().__init__(env, self.return0)
+
+    def return0(self, reward: float):
+        """Returns 0."""
+        return 0
+
+
 # %% Assign observation space variable to reward
 class AssignObsToReward(RewardBase):
     """Get an item in the observation space and assign reward to the value.
