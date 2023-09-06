@@ -8,18 +8,13 @@ from collections import OrderedDict
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
-from numpy import array, array_equal, diag, inf
+from numpy import array, array_equal, inf
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
 # Punch Clock Imports
 from punchclock.common.custody_tracker import DebugCustody
-from punchclock.common.math import getCircOrbitVel
-from punchclock.common.transforms import ecef2eci, lla2ecef
-from punchclock.environment.env import SSAScheduler
-from punchclock.environment.env_parameters import SSASchedulerParams
 from punchclock.environment.obs_wrappers import (
-    ActionMask,
     Convert2dTo3dObsItems,
     ConvertCustody2ActionMask,
     ConvertObsBoxToMultiBinary,
@@ -40,73 +35,6 @@ from punchclock.environment.obs_wrappers import (
     VisMap2ActionMask,
     WastedActionsMask,
 )
-
-# %% Build environment
-# satellite initial conditions-- uniform distribution
-ref_vel = getCircOrbitVel(8000)
-sat_ICs_kernel = array(
-    [
-        [8000, 8000],
-        [0, 0],
-        [0, 0],
-        [0, 0],
-        [ref_vel, ref_vel],
-        [0, 0],
-    ],
-)
-# sensor initial conditions-- 2 equatorial terrestrial sensors spaces 90deg
-sens_a = ecef2eci(lla2ecef([0, 0, 0]), 0)
-sens_b = ecef2eci(lla2ecef([3.14 / 2, 0, 0]), 0)
-sensor_ICs = array([sens_a, sens_b])
-
-# agent parameters
-agent_params = {
-    "num_sensors": 2,
-    "num_targets": 4,
-    "sensor_starting_num": 1000,
-    "target_starting_num": 5000,
-    "sensor_dynamics": "terrestrial",
-    "target_dynamics": "satellite",
-    "sensor_dist": None,
-    "target_dist": "uniform",
-    "sensor_dist_frame": None,
-    "target_dist_frame": "ECI",
-    "sensor_dist_params": None,
-    "target_dist_params": sat_ICs_kernel,
-    "fixed_sensors": sensor_ICs,
-    "fixed_targets": None,
-    "init_num_tasked": None,
-    "init_last_time_tasked": None,
-}
-# target_filter parameters
-diag_matrix = diag([1, 1, 1, 0.01, 0.01, 0.01])
-filter_params = {
-    "Q": 0.001 * diag_matrix,
-    "R": 0.01 * diag_matrix,
-    "p_init": 1 * diag_matrix,
-}
-
-reward_params = {
-    "reward_func": "Threshold",
-    "obs_or_info": "obs",
-    "metric": "obs_staleness",
-    "preprocessors": ["max"],
-    "metric_value": 5000,
-}
-
-# environment parameters
-env_params = {
-    "time_step": 100,
-    "horizon": 10,
-    "agent_params": agent_params,
-    "filter_params": filter_params,
-    "reward_params": reward_params,
-}
-
-env_builder = SSASchedulerParams(**env_params)
-env = SSAScheduler(env_builder)
-env.reset()
-act_sample = env.action_space.sample()
 
 # %% Test FloatObs
 print("\nTest FloatObs...")
@@ -153,35 +81,6 @@ assert env_postnest.observation_space.contains(obs_nested)
 
 env_postnest.reset()
 
-# %% Test ActionMask wrapper
-print("\nTest ActionMask...")
-env.reset()
-env_masked = ActionMask(env)
-
-print(f"observation_space = {env_masked.observation_space}")
-obs = env_masked.observation_space.sample()
-print(f"obs.keys() = {obs.keys()}")
-print(f"obs['action_mask'].shape = {obs['action_mask'].shape}")
-print(f"type(obs['observations']) = {type(obs['observations'])}")
-print(f"'observations' length = {len(obs['observations'])}")
-# Check to make sure obs is contained in observation_space
-print(f"obs in observation_space: {env_masked.observation_space.contains(obs)}")
-act = env_masked.action_space.sample()
-print(f"act in action_space: {env_masked.action_space.contains(act)}")
-
-[obs, _, _, _, _] = env_masked.step(act)
-
-# check env conforms to GYM API
-check_env(env_masked)
-
-# test with action mask turned off
-env_masked_off = ActionMask(env=env, action_mask_on=False)
-[obs, _, _, _, _] = env_masked_off.step(act_sample)
-print("Now with action mask off...")
-print(f"obs['action_mask'] = {obs['action_mask']}")
-print(
-    f"obs in observation_space: {env_masked_off.observation_space.contains(obs)}"
-)
 # %% Test CopyObsItem
 print("\nTest CopyObsItem...")
 env_premask = RandomEnv(
@@ -266,7 +165,7 @@ env_flat = FlatDict(env=env_deep_dict)
 print(f"pre-flattend obs space: {env_deep_dict.observation_space}")
 print(f"flattend obs space: {env_flat.observation_space}")
 
-[obs, _, _, _, _] = env_flat.step(act_sample)
+[obs, _, _, _, _] = env_flat.step(env_flat.action_space.sample())
 print(f"post-step obs = {obs}")
 
 obs = env_deep_dict.observation_space.sample()
@@ -286,7 +185,21 @@ print(f"obs = {env_cartpole_dict.observation_space.sample()}")
 # %% Test Rescale obs
 print("\nTest LinScaleDictObs...")
 print("Test baseline case")
-rescale_env = LinScaleDictObs(env=env, rescale_config={"est_cov": 1e-4})
+
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(low=0, high=1, shape=(3, 2)),
+                "b": Box(low=0, high=1, shape=(3,)),
+                "c": MultiBinary(3),
+                "d": Box(low=0, high=inf, dtype=int),
+            }
+        )
+    }
+)
+
+rescale_env = LinScaleDictObs(rand_env, rescale_config={"a": 1e-4})
 print(f"rescale_env = {rescale_env}")
 
 unscaled_obs = rescale_env.observation_space.sample()
@@ -296,7 +209,7 @@ print(f"post-scaled obs = {scaled_obs}")
 
 # Test with empty config
 print("Test with default (empty) config")
-rescale_env = LinScaleDictObs(env=env)
+rescale_env = LinScaleDictObs(rand_env)
 print(f"rescale_env = {rescale_env}")
 
 unscaled_obs = rescale_env.observation_space.sample()
