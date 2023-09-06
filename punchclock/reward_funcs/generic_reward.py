@@ -59,8 +59,6 @@ class GenericReward(RewardFunc):
         super().__init__(penalties=penalties, subsidies=subsidies)
         assert isinstance(preprocessors, list), "preprocessors must be a list"
 
-        assert isinstance(preprocessors, list), "preprocessors must be a list"
-
         preprocessors = self.backwardCompatibleArg(preprocessors, kwargs)
 
         if obs_or_info == "obs":
