@@ -1,17 +1,23 @@
 """Wrapper utilities."""
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
+from abc import ABC
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
-from typing import Tuple
+from typing import Tuple, final
 
 # Third Party Imports
 import gymnasium as gym
 from gymnasium import Env
-from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete, Space
+from gymnasium.spaces import (
+    Box,
+    Dict,
+    Discrete,
+    MultiBinary,
+    MultiDiscrete,
+    Space,
+)
 from numpy import all, int8, int64, max, min, ndarray, ravel
 
 # Punch Clock Imports
@@ -79,6 +85,65 @@ class SelectiveDictProcessor:
         return out_dict
 
 
+# %% SelectiveDictObsWrapper
+class SelectiveDictObsWrapper(gym.ObservationWrapper, ABC):
+    """Base class for wrappers that apply a function to a selection of Dict entries."""
+
+    def __init__(
+        self,
+        env: gym.Env,
+        funcs: list[Callable],
+        keys: list[str],
+        new_obs_space: gym.spaces.Space,
+    ):
+        """Initialize base class and check observation space for correctness.
+
+        Args:
+            env (gym.Env): Must have Dict observation space.
+            funcs (list[Callable]): List of functions to be paired with list of
+                keys. Paired functions will be applied to keys.
+            keys (list[str]): List of keys to be operated on by funcs.
+            new_obs_space (gym.spaces.Space): Observation space of wrapped env.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), """Observation space must be a gym.spaces.Dict."""
+
+        super().__init__(env)
+        self.observation_space = new_obs_space
+
+        self.processor = SelectiveDictProcessor(funcs, keys)
+
+        assert self.checkObsSpace(), """Observation not contained in new observation
+        space. Check your observation space and/or observation."""
+
+        return
+
+    @final
+    def observation(self, obs: OrderedDict) -> dict:
+        """Get wrapped observation from a Dict observation space."""
+        new_obs = self.processor.applyFunc(obs)
+        return new_obs
+
+    @final
+    def checkObsSpace(self) -> bool:
+        """Check input observation space for consistency.
+
+        Use this method on instantiation of SelectiveDictObsWrapper to make sure
+            that the correct-shaped observation space was input to be compatible
+            with wrapped observations.
+
+        Returns:
+            bool: True if wrapped observation is contained in wrapped observation
+                space.
+        """
+        obs = self.env.observation_space.sample()
+        wrapped_obs = self.observation(obs)
+        check_result = self.observation_space.contains(wrapped_obs)
+        return check_result
+
+
+# %% checkDictSpaceContains
 def checkDictSpaceContains(
     space: gym.spaces.Dict, in_dict: dict | OrderedDict
 ) -> dict:

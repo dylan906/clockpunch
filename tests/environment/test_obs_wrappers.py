@@ -393,25 +393,6 @@ print(
 )
 assert env_split.observation_space.contains(obs_wrapped)
 
-# %% Test SelectiveDictObsWrapper
-print("\nTest SelectiveDictObsWrapper...")
-
-
-def testFunc(x):
-    """Test function."""
-    return sum(x).reshape((1,))
-
-
-new_obs_space = deepcopy(env.observation_space)
-new_obs_space["est_cov"] = gym.spaces.Box(-inf, inf)
-sdow = SelectiveDictObsWrapper(
-    env=env,
-    funcs=[testFunc],
-    keys=["est_cov"],
-    new_obs_space=new_obs_space,
-)
-print(f"unwrapped obs space = {env.observation_space['est_cov']}")
-print(f"wrapped obs space = {sdow.observation_space['est_cov']}")
 
 # %% Test CustodyWrapper
 print("\nTest CustodyWrapper...")

@@ -8,13 +8,14 @@ from copy import deepcopy
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 from gymnasium.wrappers.filter_observation import FilterObservation
-from numpy import Inf
+from numpy import Inf, sum
 from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import IdentityWrapper
 from punchclock.environment.wrapper_utils import (
+    SelectiveDictObsWrapper,
     SelectiveDictProcessor,
     checkDictSpaceContains,
     convertBinaryBoxToMultiBinary,
@@ -28,6 +29,7 @@ from punchclock.environment.wrapper_utils import (
 
 # %% Tests
 # %% Test SelectiveDictProcessor
+print("\nTest SelectiveDictProcessor...")
 in_dict = {
     "a": [1, 2, 3],
     "b": [4, 5, 6],
@@ -37,6 +39,36 @@ sdp = SelectiveDictProcessor([sum], ["a", "b"])
 out_dict = sdp.applyFunc(in_dict)
 print(f"in_dict = {in_dict}")
 print(f"out_dict = {out_dict}")
+
+# %% Test SelectiveDictObsWrapper
+print("\nTest SelectiveDictObsWrapper...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(0, 1, shape=[2, 3]),
+                "b": MultiDiscrete([1, 1, 1]),
+            }
+        ),
+    }
+)
+
+
+def testFunc(x):
+    """Test function."""
+    return sum(x).reshape((1,))
+
+
+new_obs_space = deepcopy(rand_env.observation_space)
+new_obs_space["a"] = Box(-Inf, Inf)
+sdow = SelectiveDictObsWrapper(
+    env=rand_env,
+    funcs=[testFunc],
+    keys=["a"],
+    new_obs_space=new_obs_space,
+)
+print(f"unwrapped obs space = {rand_env.observation_space['a']}")
+print(f"wrapped obs space = {sdow.observation_space['a']}")
 
 # %% Test getNumWrappers
 print("\nTest getNumWrappers()...")
