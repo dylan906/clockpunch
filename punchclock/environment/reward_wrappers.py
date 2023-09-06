@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from functools import partial
-from typing import Any, Union, final
+from typing import Any, final
 
 # Third Party Imports
 from gymnasium import Env, RewardWrapper, Wrapper
@@ -72,12 +72,12 @@ class RewardBase(ABC, Wrapper):
     def calcReward(
         self,
         obs: OrderedDict,
-        reward: Union[float, int],
+        reward: float | int,
         termination: bool,
         truncation: bool,
         info: dict,
         action: ndarray[int],
-    ) -> Union[float, int]:
+    ) -> float | int:
         """Subclasses of RewardBase must define their own calcReward.
 
         Args:
@@ -384,7 +384,7 @@ class ThresholdReward(RewardWrapper):
     def __init__(
         self,
         env: Env,
-        unwrapped_reward_threshold: Union[float, int],
+        unwrapped_reward_threshold: float | int,
         reward: float = 1,
         inequality: str = "<=",
     ):
@@ -392,7 +392,7 @@ class ThresholdReward(RewardWrapper):
 
         Args:
             env (Env): A Gymnasium environment.
-            unwrapped_reward_threshold (Union[float, int]): Threshold to evaluate
+            unwrapped_reward_threshold (float | int): Threshold to evaluate
                 unwrapped reward against.
             reward (float, optional): Reward generated per step that inequality
                 evaluates to True. Defaults to 1.
