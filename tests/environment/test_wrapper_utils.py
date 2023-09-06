@@ -6,18 +6,19 @@ from __future__ import annotations
 from copy import deepcopy
 
 # Third Party Imports
-import gymnasium as gym
-from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete
+from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 from gymnasium.wrappers.filter_observation import FilterObservation
 from numpy import Inf
 from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
+from punchclock.environment.misc_wrappers import IdentityWrapper
 from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
     convertBinaryBoxToMultiBinary,
+    getIdentityWrapperEnv,
     getNumWrappers,
     getSpaceClosestCommonDtype,
     getSpacesRange,
@@ -41,18 +42,18 @@ print(f"out_dict = {out_dict}")
 print("\nTest getNumWrappers()...")
 env = RandomEnv(
     {
-        "observation_space": gym.spaces.Dict(
+        "observation_space": Dict(
             {
-                "a": gym.spaces.Dict(
+                "a": Dict(
                     {
-                        "aa": gym.spaces.Box(0, 1, shape=[2, 3]),
-                        "ab": gym.spaces.MultiDiscrete([1, 1, 1]),
+                        "aa": Box(0, 1, shape=[2, 3]),
+                        "ab": MultiDiscrete([1, 1, 1]),
                     }
                 ),
-                "b": gym.spaces.MultiDiscrete([2, 3, 2]),
+                "b": MultiDiscrete([2, 3, 2]),
             }
         ),
-        "action_space": gym.spaces.MultiDiscrete([3, 4, 3]),
+        "action_space": MultiDiscrete([3, 4, 3]),
     }
 )
 env_wrapped1 = FilterObservation(env, ["a", "b"])
@@ -142,5 +143,30 @@ print(f"new space = {new_space}")
 space = Box(0, 1, shape=(2, 3))
 new_space = convertBinaryBoxToMultiBinary(space)
 print(f"new space = {new_space}")
+
+# %% Test getIdentityWrapperEnv
+print("\nTest getIdentityWrapperEnv...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(0, 1, shape=[2, 3]),
+            }
+        )
+    }
+)
+wrapped_env = FilterObservation(
+    IdentityWrapper(FilterObservation(rand_env, ["a"])),
+    ["a"],
+)
+
+ienv = getIdentityWrapperEnv(wrapped_env)
+print(ienv)
+
+try:
+    getIdentityWrapperEnv(rand_env)
+except Exception as e:
+    print(e)
+
 # %% done
 print("done")

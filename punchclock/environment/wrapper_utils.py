@@ -10,8 +10,12 @@ from typing import Tuple
 
 # Third Party Imports
 import gymnasium as gym
+from gymnasium import Env
 from gymnasium.spaces import Box, Discrete, MultiBinary, MultiDiscrete, Space
 from numpy import all, int8, int64, max, min, ndarray, ravel
+
+# Punch Clock Imports
+from punchclock.environment.misc_wrappers import IdentityWrapper
 
 
 # %% Classes
@@ -305,3 +309,27 @@ def convertBinaryBoxToMultiBinary(box_space: Box) -> Box | MultiBinary:
     else:
         new_space = box_space
     return new_space
+
+
+def getIdentityWrapperEnv(env: Env) -> Env:
+    """Get the IdentityWrapper level of an env, if one exists.
+
+    Args:
+        env (Env): A Gymnasium environment.
+
+    Raises:
+        Exception: If there is no IdentityWrapper in the stack of wrappers, raises
+            an Exception.
+
+    Returns:
+        Env: Returns the environment with IdentityWrapper at the top level. All
+            wrappers above IdentityWrapper are discarded.
+    """
+    env_temp = deepcopy(env)
+    while not isinstance(env_temp, IdentityWrapper):
+        if env_temp == env_temp.unwrapped:
+            raise Exception(f"No IdentityWrapper in {env}")
+
+        env_temp = getattr(env_temp, "env", {})
+
+    return env_temp
