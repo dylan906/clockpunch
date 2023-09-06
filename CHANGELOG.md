@@ -23,6 +23,7 @@ I'm trying to get better about that.
 - Custom policies now use 2d action masks, consistent with wrappers (#37).
 - `MultiplyObsItems` works with >2 spaces (#39).
 - Updated to Python 3.10.0.
+- `SimRunner` now relies on `IdentityWrapper` to determine when to split off custom policy observation space from Ray policy observation space (replaced static checking for observation space entries in a dict) (#46).
 
 ### Deprecated
 
