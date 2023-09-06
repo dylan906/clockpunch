@@ -4,12 +4,11 @@ from __future__ import annotations
 
 # Standard Library Imports
 from collections import OrderedDict
-from copy import deepcopy
 
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
-from numpy import array, array_equal, diag, inf, sum
+from numpy import array, array_equal, diag, inf
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
 
@@ -34,7 +33,6 @@ from punchclock.environment.obs_wrappers import (
     MinMaxScaleDictObs,
     MultiplyObsItems,
     NestObsItems,
-    SelectiveDictObsWrapper,
     SplitArrayObs,
     SqueezeObsItems,
     SumArrayWrapper,

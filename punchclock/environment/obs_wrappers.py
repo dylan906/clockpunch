@@ -1,12 +1,10 @@
 """SSAScheduler observation wrappers module."""
 # %% Imports
 # Standard Library Imports
-from abc import ABC
 from collections import OrderedDict
-from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
-from typing import Any, Tuple, final
+from typing import Any, Tuple
 
 # Third Party Imports
 import gymnasium as gym
@@ -48,6 +46,7 @@ from sklearn.preprocessing import MinMaxScaler
 # Punch Clock Imports
 from punchclock.common.custody_tracker import CustodyTracker
 from punchclock.environment.wrapper_utils import (
+    SelectiveDictObsWrapper,
     SelectiveDictProcessor,
     checkDictSpaceContains,
     convertBinaryBoxToMultiBinary,
