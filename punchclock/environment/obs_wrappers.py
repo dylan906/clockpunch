@@ -1139,6 +1139,8 @@ class SplitArrayObs(gym.ObservationWrapper):
 
         super().__init__(env)
         self.key_map = {k: v for (k, v) in zip(keys, new_keys)}
+        self.indices_or_sections = indices_or_sections
+        self.axes = axes
 
         # Store partials of split() to apply to selective dict entries using
         # SelectiveDictProcessor (sdp).
