@@ -163,6 +163,10 @@ class SimRunner:
                 cmd = (self.num_env_wrappers - i) * strcmd
                 cmd_no_obs = "self." + cmd[:-1]
                 cmd = "self." + cmd + "observation(obs)"
+
+                # For debugging:
+                # current_env = eval(cmd_no_obs, {"self": self})
+                # print(f"i = {i} \nenv = {current_env})")
                 obs = eval(
                     cmd,
                     {
