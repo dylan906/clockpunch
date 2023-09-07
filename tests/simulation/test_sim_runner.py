@@ -19,8 +19,17 @@ from ray.rllib.algorithms import ppo
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
-from punchclock.environment.obs_wrappers import ActionMask, FlatDict
-from punchclock.environment.wrapper_utils import getWrapperList
+from punchclock.environment.obs_wrappers import (
+    CopyObsItem,
+    FlatDict,
+    NestObsItems,
+    VisMap2ActionMask,
+)
+from punchclock.environment.reward_wrappers import ZeroReward
+from punchclock.environment.wrapper_utils import (
+    getIdentityWrapperEnv,
+    getWrapperList,
+)
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
 from punchclock.policies.random_policy import RandomPolicy
 from punchclock.ray.build_env import buildEnv
@@ -319,59 +328,57 @@ plotSimResults(results=results2, env=env2, time=time)
 print("CustomPolicy sim results:")
 printSimResults(sim_results=results2)
 
-# %% Test different wrapper configs
+# %% Test different wrapper configs with custom and Ray policies
 print("\nTest different wrapper configs")
-# Test 4 configs:
-#   1. ActionMask as top and only wrapper
-#   2. ActionMask as bottom wrapper
-#   3. ActionMask as neither top nor bottom wrapper
-#   4. Bare environment
+# Test configs:
+#   1. With IdentityWrapper only -- should fail on building policy
+#   2. With a IdentityWrapper(reward wrapper) -- should fail on building policy
+#   3. With IdentityWrapper, "observations" and "action_mask" in obs space, and
+#       a reward wrapper -- should pass
 
-# Create list of environments. Will manually wrap envs instead of using relying
-# on constructor, so remove ActionMask wrapper from config.
-config2 = deepcopy(config)
-config2["constructor_params"] = {}
-envs = [
-    ActionMask(buildEnv(config2)),
-    FlatDict(ActionMask(buildEnv(config2))),
-    FlatDict(ActionMask(FilterObservation(buildEnv(config2)))),
-    buildEnv(config2),
+config_bare = deepcopy(config)
+config_bare["constructor_params"]["wrappers"] = [{"wrapper": "IdentityWrapper"}]
+config_rew = deepcopy(config)
+config_rew["constructor_params"]["wrappers"] = [
+    {"wrapper": "IdentityWrapper"},
+    {"wrapper": "ZeroReward"},
 ]
-# To automate building policies, need to get the index of the layer that ActionMask
-# is in the stack of wrappers. First, create a list of wrappers (for each env).
-# Then find index of ActionMask in list of wrappers.
-lists_of_wrappers = [getWrapperList(e) for e in envs]
-obs_space_indices = []
-for wrappers in lists_of_wrappers:
-    if ActionMask in wrappers:
-        obs_space_indices.append(wrappers.index(ActionMask))
-    else:
-        obs_space_indices.append(0)
+config_3 = deepcopy(config)
+config_3["constructor_params"]["wrappers"].insert(0, {"wrapper": "ZeroReward"})
+
+envs = [buildEnv(config_bare), buildEnv(config_rew), buildEnv(config_3)]
 
 # Loop through environments and observation space indices. Use action mask location
 # (act_mask_loc) to programmatically get the observation space from the environment,
 # then build the corresponding policy. With the policy built, use this and the
 # env to build a sim_runner and then run a sim. Use try/except to test assertions
 # in sim_runner creation.
-for env, act_mask_loc in zip(envs, obs_space_indices):
+for env in envs:
     print(f"\nobs space = {env.observation_space}")
-    # The number of "env." is variable, so use eval() to get obs space.
-    strcmd = "env." + (act_mask_loc * "env.") + "observation_space"
-    obs_space = eval(strcmd, {"env": env})
+    env_identity = getIdentityWrapperEnv(env)
     try:
-        policy = GreedyCovariance(
-            observation_space=obs_space,
-            action_space=env.action_space,
+        policy = RandomPolicy(
+            observation_space=env_identity.observation_space,
+            action_space=env_identity.action_space,
         )
-        sim_runner = SimRunner(
-            env=env,
-            policy=policy,
-            max_steps=horizon,
-        )
-        results = sim_runner.runSim()
+        try:
+            sim_runner = SimRunner(
+                env=env,
+                policy=policy,
+                max_steps=horizon,
+            )
+            try:
+                results = sim_runner.runSim()
+            except Exception as err:
+                print("Failed at runSim()")
+                print(err)
+        except Exception as err:
+            print("Failed at building SimRunner")
+            print(err)
     except Exception as err:
-        print("error caught")
+        print("Failed at building policy")
         print(err)
+
 
 # %% Test random initial conditions
 print("\nTest with random initial conditions and many targets...")
