@@ -15,14 +15,6 @@ from punchclock.environment.reward_wrappers import (
     ZeroReward,
 )
 
-# %% Test ZeroReward
-print("\nTest ZeroReward...")
-rand_env = RandomEnv()
-wrapped_env = ZeroReward(rand_env)
-
-(_, reward, _, _, _) = wrapped_env.step(wrapped_env.action_space.sample())
-print(f"reward = {reward}")
-
 # %% Test AssignObsToReward
 print("\nTest AssignObsToReward...")
 rand_env = RandomEnv(
@@ -120,6 +112,13 @@ thresh_env = ThresholdReward(rand_env, 1)
 )
 print(f"reward (MultiBinary space) = {reward}")
 
+# %% Test ZeroReward
+print("\nTest ZeroReward...")
+rand_env = RandomEnv()
+wrapped_env = ZeroReward(rand_env)
+
+(_, reward, _, _, _) = wrapped_env.step(wrapped_env.action_space.sample())
+print(f"reward = {reward}")
 # %% Test LogisticTransformReward
 print("\nTest LogisticTransformReward...")
 
