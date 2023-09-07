@@ -335,7 +335,7 @@ print("\nTest different wrapper configs")
 #   2. With a IdentityWrapper(reward wrapper) -- should fail on building policy
 #   3. With IdentityWrapper, "observations" and "action_mask" in obs space, and
 #       a reward wrapper -- should pass
-
+# NOTE: Bookmark HERE 9/7 -- fix case 3
 config_bare = deepcopy(config)
 config_bare["constructor_params"]["wrappers"] = [{"wrapper": "IdentityWrapper"}]
 config_rew = deepcopy(config)
