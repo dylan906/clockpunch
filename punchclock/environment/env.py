@@ -188,6 +188,8 @@ class SSAScheduler(gym.Env):
             observation (OrderedDict): See _getObs.
             info (OrderedDict): See _getInfo.
         """
+        # reset seed required for Env API
+        super().reset(seed=seed)
         # reset tasking metrics tracker
         self.tracker.reset()
         # Reset reward function

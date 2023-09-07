@@ -9,9 +9,10 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 import matplotlib.pyplot as plt
+from gymnasium.utils.env_checker import check_env as gym_check_env
 from numpy import array, diag, linspace, zeros
 from numpy.linalg import norm
-from ray.rllib.utils import check_env
+from ray.rllib.utils import check_env as ray_check_env
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
@@ -412,9 +413,10 @@ axs[1].set_title("num_windows_left, long step")
 axs[1].plot([i["num_windows_left"].squeeze() for i in obs_hist_long])
 plt.tight_layout()
 
-# %% Check environment passes Ray checker
-print("\nRay environment checker...")
-check_env(env)
+# %% Check environment passes Ray and Gym checkers
+print("\nEnvironment checks...")
+gym_check_env(env)
+ray_check_env(env)
 # %% Test registration and gym.make()
 print("\nTest gym environment creation stuff...")
 # NOTE: See __init__.py in "punchclock" for registration code.
