@@ -398,3 +398,18 @@ def getIdentityWrapperEnv(env: Env) -> Env:
         env_temp = getattr(env_temp, "env", {})
 
     return env_temp
+
+
+def getXLevelWrapper(env: Env, x: int) -> Env:
+    num_wrappers = getNumWrappers(env)
+    assert (
+        x <= num_wrappers
+    ), f"x = {x} is greater than the number of wrappers in {env}."
+
+    i = 0
+    env_x = deepcopy(env)
+    while i < x:
+        env_x = getattr(env_x, "env", None)
+        i += 1
+
+    return env_x

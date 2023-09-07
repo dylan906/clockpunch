@@ -24,6 +24,7 @@ from punchclock.environment.wrapper_utils import (
     getSpaceClosestCommonDtype,
     getSpacesRange,
     getWrapperList,
+    getXLevelWrapper,
     remakeSpace,
 )
 
@@ -200,5 +201,11 @@ try:
 except Exception as e:
     print(e)
 
+# %% Test getXLevelWrapper
+print("\nTest getXLevelWrapper...")
+wrapped_env = IdentityWrapper(IdentityWrapper(RandomEnv()))
+xlevel = getXLevelWrapper(wrapped_env, 3)
+print(f"wrapped env = {wrapped_env}")
+print(f"xlevel wrapper = {xlevel}")
 # %% done
 print("done")
