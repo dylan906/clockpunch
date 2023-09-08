@@ -11,6 +11,7 @@ from typing import Any, Tuple, Union
 
 # Third Party Imports
 import gymnasium as gym
+from gymnasium import ObservationWrapper
 from gymnasium.spaces.utils import flatten
 from numpy import (
     array,
@@ -164,7 +165,7 @@ class SimRunner:
                     deepcopy(self.env), self.num_env_wrappers - i
                 )
                 # print(env)
-                if hasattr(env, "observation"):
+                if isinstance(env, ObservationWrapper):
                     # for wrappers that have modify observation, do it;
                     # otherwise obs_in = obs_out
                     obs = env.observation(obs)
