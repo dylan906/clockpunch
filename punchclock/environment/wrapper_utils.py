@@ -401,6 +401,21 @@ def getIdentityWrapperEnv(env: Env) -> Env:
 
 
 def getXLevelWrapper(env: Env, x: int) -> Env:
+    """Get the x-level of wrapper from a Gym environment.
+
+    x must be <= N, where N is the number of wrappers on an env.
+
+    The top wrapper of env is the 0th wrapper; so getXLevelWrapper(env, 0) = env.
+
+    Args:
+        env (Env): A Gym environment.
+        x (int): Must be less than or equal to the number of wrappers on env.
+
+    Returns:
+        Env: The env with the (N-x) layers from the top of the stack removed.
+    """
+    assert isinstance(x, int), "x must be an int."
+    assert x >= 0, "x must be >= 0."
     num_wrappers = getNumWrappers(env)
     assert (
         x <= num_wrappers

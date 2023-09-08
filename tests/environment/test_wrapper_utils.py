@@ -204,7 +204,7 @@ except Exception as e:
 # %% Test getXLevelWrapper
 print("\nTest getXLevelWrapper...")
 wrapped_env = IdentityWrapper(IdentityWrapper(RandomEnv()))
-xlevel = getXLevelWrapper(wrapped_env, 3)
+xlevel = getXLevelWrapper(wrapped_env, 2)
 print(f"wrapped env = {wrapped_env}")
 print(f"xlevel wrapper = {xlevel}")
 # %% done
