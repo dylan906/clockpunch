@@ -13,6 +13,7 @@ I'm trying to get better about that.
 ### Changed
 - Made null actions optionally ignorable in `MaskReward` wrapper (#48).
 - Some tests for `SimRunner` now make more sense given the increased emphasis on wrappers (#50).
+- Changed behavior of `RewardBase` to sum unwrapped reward with new (wrapped) reward (#48).
 
 ### Deprecated
 
