@@ -12,10 +12,12 @@ I'm trying to get better about that.
 
 ### Changed
 - Made null actions optionally ignorable in `MaskReward` wrapper (#48).
+- Some tests for `SimRunner` now make more sense given the increased emphasis on wrappers (#50).
 
 ### Deprecated
 
 ### Fixed
+- `SimRunner._getObs()` is cleaner and now works with wrappers that don't have an `observation()` method (#49, #50).
 
 ### Removed
 - Removed old `ActionMask` wrapper in favor of more modular wrappers.
