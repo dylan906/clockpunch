@@ -4,6 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from collections import OrderedDict
+from copy import deepcopy
 from dataclasses import dataclass
 from numbers import Number
 from typing import Any, Tuple, Union
@@ -29,7 +30,11 @@ from torch import Tensor, tensor
 from punchclock.common.agents import Agent
 from punchclock.environment.env import SSAScheduler
 from punchclock.environment.misc_wrappers import IdentityWrapper
-from punchclock.environment.wrapper_utils import getNumWrappers, getWrapperList
+from punchclock.environment.wrapper_utils import (
+    getNumWrappers,
+    getWrapperList,
+    getXLevelWrapper,
+)
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 
 
@@ -147,41 +152,28 @@ class SimRunner:
                 it. Defaults to False.
             identity_wrapper_id (optional): Identifier to use if
                 stop_at_identity_wrapper is True and there are multiple IdentityWrappers
-                on environment.
+                on environment. Defaults to None.
 
         """
         if isinstance(self.env, gym.Wrapper):
             # Get unwrapped observation, then pass through layer(s) of wrappers
-            # to transform to top-level env observation space. Don't know ahead
-            # of time the command to pass observation through multiple wrappers,
-            # so programmatically construct the command then use "eval" to execute
-            # command literally. This method is a bit of a kludge and computationally
-            # expensive.
+            # from bottom-up to transform to top-level env observation space.
             obs = self.env.unwrapped._getObs()
-            strcmd = "env."
-            for i in range(self.num_env_wrappers):
-                cmd = (self.num_env_wrappers - i) * strcmd
-                cmd_no_obs = "self." + cmd[:-1]
-                cmd = "self." + cmd + "observation(obs)"
-
-                # For debugging:
-                # current_env = eval(cmd_no_obs, {"self": self})
-                # print(f"i = {i} \nenv = {current_env})")
-                obs = eval(
-                    cmd,
-                    {
-                        "self": self,
-                        "obs": obs,
-                    },
+            for i in range(1, self.num_env_wrappers + 1):
+                env = getXLevelWrapper(
+                    deepcopy(self.env), self.num_env_wrappers - i
                 )
+                # print(env)
+                if hasattr(env, "observation"):
+                    # for wrappers that have modify observation, do it;
+                    # otherwise obs_in = obs_out
+                    obs = env.observation(obs)
+
                 if stop_at_identity_wrapper is True:
                     # Break for loop if at IdentityWrapper, skip any higher
                     # levels of wrappers.
-                    intermediate_env = eval(cmd_no_obs, {"self": self})
                     if (
-                        self._isWrapperIdentity(
-                            intermediate_env, identity_wrapper_id
-                        )
+                        self._isWrapperIdentity(env, identity_wrapper_id)
                         is True
                     ):
                         break
@@ -189,6 +181,7 @@ class SimRunner:
             obs = OrderedDict(obs)
 
         else:
+            # If bare environment, just use _getObs() once and output
             obs = self.env._getObs()
 
         assert isinstance(obs, OrderedDict)

@@ -11,7 +11,6 @@ from os import path
 
 # Third Party Imports
 import matplotlib.pyplot as plt
-from gymnasium.wrappers import FilterObservation
 from numpy import array, cumsum, linspace, pi, zeros
 from numpy.random import default_rng
 from pandas import read_csv, read_pickle
@@ -19,17 +18,7 @@ from ray.rllib.algorithms import ppo
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
-from punchclock.environment.obs_wrappers import (
-    CopyObsItem,
-    FlatDict,
-    NestObsItems,
-    VisMap2ActionMask,
-)
-from punchclock.environment.reward_wrappers import ZeroReward
-from punchclock.environment.wrapper_utils import (
-    getIdentityWrapperEnv,
-    getWrapperList,
-)
+from punchclock.environment.wrapper_utils import getIdentityWrapperEnv
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
 from punchclock.policies.random_policy import RandomPolicy
 from punchclock.ray.build_env import buildEnv
@@ -335,7 +324,7 @@ print("\nTest different wrapper configs")
 #   2. With a IdentityWrapper(reward wrapper) -- should fail on building policy
 #   3. With IdentityWrapper, "observations" and "action_mask" in obs space, and
 #       a reward wrapper -- should pass
-# NOTE: Bookmark HERE 9/7 -- fix case 3
+
 config_bare = deepcopy(config)
 config_bare["constructor_params"]["wrappers"] = [{"wrapper": "IdentityWrapper"}]
 config_rew = deepcopy(config)
@@ -343,10 +332,11 @@ config_rew["constructor_params"]["wrappers"] = [
     {"wrapper": "IdentityWrapper"},
     {"wrapper": "ZeroReward"},
 ]
-config_3 = deepcopy(config)
-config_3["constructor_params"]["wrappers"].insert(0, {"wrapper": "ZeroReward"})
+# config already has IdentityWrapper in it
+config_id = deepcopy(config)
+config_id["constructor_params"]["wrappers"].insert(0, {"wrapper": "ZeroReward"})
 
-envs = [buildEnv(config_bare), buildEnv(config_rew), buildEnv(config_3)]
+envs = [buildEnv(config_bare), buildEnv(config_rew), buildEnv(config_id)]
 
 # Loop through environments and observation space indices. Use action mask location
 # (act_mask_loc) to programmatically get the observation space from the environment,
