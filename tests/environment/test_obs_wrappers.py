@@ -546,6 +546,21 @@ print(f"unwrapped obs  = \n{unwrapped_obs}")
 print(f"wrapped obs = \n{wrapped_obs}")
 assert nam_env.observation_space.contains(wrapped_obs)
 
+# Test with wrong-sized vis-mask
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"vis_map": MultiBinary((4, 2))}),
+        "action_space": MultiDiscrete([4, 4]),
+    }
+)
+
+try:
+    nam_env = WastedActionsMask(
+        rand_env, vis_map_key="vis_map", mask_key="null_mask"
+    )
+except Exception as err:
+    print(err)
+
 # %% Test TransformDictObsWithNumpy
 print("\nTest TransformDictObsWithNumpy...")
 rand_env = RandomEnv(

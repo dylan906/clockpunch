@@ -1852,17 +1852,24 @@ class WastedActionsMask(gym.ObservationWrapper):
         assert isinstance(
             env.observation_space.spaces[vis_map_key], MultiBinary
         ), f"env.observation_space[{vis_map_key}] must be a MultiBinary."
+        num_targets = env.observation_space.spaces[vis_map_key].shape[0]
+        num_sensors = env.observation_space.spaces[vis_map_key].shape[1]
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
         assert (
-            len(env.action_space.nvec)
-            == env.observation_space.spaces[vis_map_key].shape[1]
+            len(env.action_space.nvec) == num_sensors
         ), f"""Length of action space must match number of columns in
         observation_space[{vis_map_key}]."""
         assert all(
-            env.action_space.nvec == env.action_space.nvec[0]
-        ), "Action space must have same number in all entries."
+            env.action_space.nvec == num_targets + 1
+        ), f"""
+        All entries in action_space.nvec must be `num_targets + 1`,
+        where num_targets is the number of rows in observation_space[{vis_map_key}].
+        observation_space[{vis_map_key}].shape == {env.observation_space.spaces[vis_map_key].shape};
+        action_space.nvec == {env.action_space.nvec}. Either change the size of
+        observation_space[{vis_map_key}] or the values of action_space.nvec.
+        """
 
         if mask_key is None:
             assert (
