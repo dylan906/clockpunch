@@ -1819,7 +1819,7 @@ class WastedActionsMask(gym.ObservationWrapper):
 
     Observation space must be a Dict.
 
-    Observation space must contain sensor-target visibility map in the form of
+    Observation space must contain sensor-target availability map in the form of
     a (N, M) binary array.
 
     Wrapped observation space is same as unwrapped observation space, with an additional
@@ -1827,7 +1827,7 @@ class WastedActionsMask(gym.ObservationWrapper):
     action mask is a (N+1, M) binary array. The bottom row corresponds to null
     actions.
 
-    For every column in the visibility map, if there is a 1 anywhere, the appended
+    For every column in the availability map, if there is a 1 anywhere, the appended
     mask value is 0. Otherwise, the value is 1.
     """
 
@@ -1884,8 +1884,8 @@ class WastedActionsMask(gym.ObservationWrapper):
 
         self.vis_map_key = vis_map_key
         self.mask_key = mask_key
-        self.num_sensors = len(env.action_space)
-        self.num_targets = env.action_space.nvec[0] - 1
+        self.num_sensors = num_sensors
+        self.num_targets = num_targets
         self.observation_space[mask_key] = MultiBinary(
             (self.num_targets + 1, self.num_sensors)
         )
