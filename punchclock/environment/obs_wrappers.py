@@ -1686,6 +1686,7 @@ class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
         assert env.observation_space.spaces[key].dtype in (
             int,
             int_,
+            int8,
         ), f"env.observation_space.spaces[{key}].dtype must be int."
         assert all(
             env.observation_space.spaces[key].low == 0
