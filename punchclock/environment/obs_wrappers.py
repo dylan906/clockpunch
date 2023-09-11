@@ -1821,15 +1821,17 @@ class WastedActionsMask(gym.ObservationWrapper):
     Observation space must be a Dict.
 
     Observation space must contain sensor-target availability map in the form of
-    a (N, M) binary array.
+    a (N, M) or (N+1, M) binary array. The +1 row corresponds to the null action.
 
     Wrapped observation space is same as unwrapped observation space, with an additional
     item: a 2d action mask. The key for the new item is set on instantiation. The
     action mask is a (N+1, M) binary array. The bottom row corresponds to null
     actions.
 
-    For every column in the availability map, if there is a 1 anywhere, the appended
-    mask value is 0. Otherwise, the value is 1.
+    For every column in the availability map, if there is a 1 anywhere in the first
+    [0:N] entries, the mask value is 0. Otherwise, the value is 1. The (N+1) row
+    of the input array, if it exists, is ignored in calculating the wasted action
+    mask.
     """
 
     def __init__(
@@ -1840,7 +1842,7 @@ class WastedActionsMask(gym.ObservationWrapper):
         Args:
             env (gym.Env): Must have a Dict observation space.
             vis_map_key (ndarray): Corresponds to item in observation space.
-                Corresponding value must be a (N, M) binary array.
+                Corresponding value must be a (N, M) or (N+1, M) binary array.
             mask_key (str, optional): The key of the new action mask entry in the
                 wrapped observation space. Defaults to 'mask'.
         """
@@ -1853,7 +1855,6 @@ class WastedActionsMask(gym.ObservationWrapper):
         assert isinstance(
             env.observation_space.spaces[vis_map_key], MultiBinary
         ), f"env.observation_space[{vis_map_key}] must be a MultiBinary."
-        num_targets = env.observation_space.spaces[vis_map_key].shape[0]
         num_sensors = env.observation_space.spaces[vis_map_key].shape[1]
         assert isinstance(
             env.action_space, MultiDiscrete
@@ -1863,25 +1864,36 @@ class WastedActionsMask(gym.ObservationWrapper):
         ), f"""Length of action space must match number of columns in
         observation_space[{vis_map_key}]."""
         assert all(
-            env.action_space.nvec == num_targets + 1
-        ), f"""
-        All entries in action_space.nvec must be `num_targets + 1`,
-        where num_targets is the number of rows in observation_space[{vis_map_key}].
-        observation_space[{vis_map_key}].shape == {env.observation_space.spaces[vis_map_key].shape};
-        action_space.nvec == {env.action_space.nvec}. Either change the size of
-        observation_space[{vis_map_key}] or the values of action_space.nvec.
+            env.action_space.nvec == env.action_space.nvec[0]
+        ), "All values in action_space.nvec must be identical."
+        # num_targets = env.observation_space.spaces[vis_map_key].shape[0]
+        num_targets = env.action_space.nvec[0] - 1
+        assert env.observation_space.spaces[vis_map_key].shape[0] in [
+            num_targets,
+            num_targets + 1,
+        ], f"""Observation and action spaces disagree on number of targets. The
+        observation space should have N or N+1 rows where `N+1` is the value of
+        all entries in the action space.
+        Action space value = {env.action_space[0]},
+        Observation space shape = {env.observation_space.spaces[vis_map_key].shape[0]}.
         """
 
         if mask_key is None:
             assert (
                 "mask" not in env.observation_space.spaces
-            ), """A new mask key
-            was not provided, but the default name, 'mask' shadows an existing
-            observation space key. Either provide an argument to mask_key or change
-            the observation space to not have 'mask' in the keys."""
+            ), """A new mask key was not provided, but the default name, 'mask'
+            shadows an existing observation space key. Either provide an argument
+            to mask_key or change the observation space to not have 'mask' in the
+            keys."""
             mask_key = "mask"
 
         super().__init__(env)
+
+        if env.observation_space.spaces[vis_map_key].shape[0] == num_targets:
+            # So we know whether or not to remove the bottom row in checking visibility
+            self.nullaction_included = False
+        else:
+            self.nullaction_included = True
 
         self.vis_map_key = vis_map_key
         self.mask_key = mask_key
@@ -1895,11 +1907,17 @@ class WastedActionsMask(gym.ObservationWrapper):
         """Mask null-action from sensors that have visible targets.
 
         Returns:
-            OrderedDict: Appends an extra item from the input obs. KEy of extra
+            OrderedDict: Appends an extra item from the input obs. Key of extra
                 item is determined at instantiation.
         """
         mask = ones((self.num_targets + 1, self.num_sensors), dtype=int)
-        for i, col in enumerate(obs[self.vis_map_key].T):
+
+        vis_map = obs[self.vis_map_key]
+        if self.nullaction_included is True:
+            # crop if null action row is included
+            vis_map = vis_map[:-1, :]
+
+        for i, col in enumerate(vis_map.T):
             new_col = deepcopy(col)
             if any(col == 1):
                 new_col = append(new_col, 0)
