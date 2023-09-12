@@ -300,6 +300,8 @@ def getRandomIC(
 ) -> ndarray[float]:
     """Generate a random initial condition.
 
+    Circular satellite orbits or static terrestrial ICs are generated.
+
     Args:
         satellite_terrestrial (str, optional): ["satellite" | "terrestrial"].
             Defaults to "satellite".
