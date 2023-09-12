@@ -264,7 +264,7 @@ def addPostProcessedCols(
     df["action_mask_violations"] = df.apply(
         lambda x: countMaskViolations(
             x=x["action_array"],
-            mask=mc.convertActionMaskFrom1dTo2d(x["action_mask"]),
+            mask=x["action_mask"],
         ),
         axis=1,
     )
