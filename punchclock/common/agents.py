@@ -1,6 +1,5 @@
 """Agents class module."""
-
-# %% Import
+# %% Imports
 
 # Standard Library Imports
 from typing import Any
@@ -25,16 +24,17 @@ class Agent:
         dynamics_model: DynamicsModel,
         init_eci_state: ndarray,
         agent_id: Any = None,
-        time: float = 0,
+        time: float | int = 0,
     ):
         """Initialize Agent superclass.
 
         Args:
-            dynamics_model (DynamicsModel): _description_
-            init_eci_state (ndarray): [6 x 1] ECI state array (km)
-            agent_id (any, optional): Unique identifier. Defaults to None.
+            dynamics_model (DynamicsModel): Determines how the agent propagates
+                states. See DynamicsModel for details.
+            init_eci_state (ndarray): (6,) ECI state array (km, km/sec)
                 [I, J, K, dI, dJ, dK]
-            time (float, optional): Agent time at start of simulation.
+            agent_id (any, optional): Unique identifier. Defaults to None.
+            time (float | int, optional): Agent time at start of simulation.
                 Defaults to 0.
         """
         assert isinstance(
@@ -98,7 +98,7 @@ class Target(Agent):
         init_eci_state: ndarray,
         target_filter: Filter,
         agent_id: Any = None,
-        time: float = 0,
+        time: float | int = 0,
         init_num_tasked: int = 0,
         init_last_time_tasked: float = 0,
         num_windows_left: int = 0,
@@ -106,12 +106,14 @@ class Target(Agent):
         """Initialize target subclass of Agent superclass.
 
         Args:
-            dynamics_model (DynamicsModel): _description_
-            init_eci_state (ndarray): [6 x 1] ECI state array (km, km/s) [I, J,
-                K, dI, dJ, dK]
+            dynamics_model (DynamicsModel): Determines how the agent propagates
+                states. See DynamicsModel for details.
+            init_eci_state (ndarray): (6,) ECI state array (km, km/sec)
+                [I, J, K, dI, dJ, dK]
             target_filter (Filter): Filter used for state estimation.
             agent_id (Any, optional): Unique identifier. Defaults to None.
-            time (float, optional): Agent time at start of simulation.
+            time (float | int, optional): Agent time at start of simulation.
+                Defaults to 0.
             init_num_tasked (int, optional): Initial number of times target has
                 been tasked. Defaults to 0.
             init_last_time_tasked (float, optional): Initial time stamp of last
@@ -196,26 +198,25 @@ class Target(Agent):
 
 
 class Sensor(Agent):
-    """A subclass of Agent.
-
-    Args:
-        Agent (_type_): _description_
-    """
+    """A subclass of Agent."""
 
     def __init__(
         self,
         dynamics_model: DynamicsModel,
         init_eci_state: ndarray,
         agent_id: Any = None,
-        time: float = 0,
+        time: float | int = 0,
     ):
         """Initialize sensor subclass of Agent superclass.
 
         Args:
-            dynamics_model (DynamicsModel):_description_
+            dynamics_model (DynamicsModel):Determines how the agent propagates
+                states. See DynamicsModel for details.
+            init_eci_state (ndarray): (6,) ECI state array (km, km/sec)
+                [I, J, K, dI, dJ, dK]
             agent_id (Any, optional): Defaults to None.
-            init_eci_state (ndarray): _description_
-            time (float): Agent time at start of simulation.
+            time (float | int, optional): Agent time at start of simulation.
+                Defaults to 0.
         """
         super().__init__(
             dynamics_model=dynamics_model,
