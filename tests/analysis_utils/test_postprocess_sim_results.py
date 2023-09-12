@@ -1,5 +1,5 @@
 """Tests for postprocess_sim_results.py."""
-# NOTE: This test requires tests/simulation/data/test_df.csv
+# NOTE: This test requires a data file "/simresults_df.pkl"
 # %% Imports
 # Standard Library Imports
 import os
