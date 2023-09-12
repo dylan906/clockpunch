@@ -10,6 +10,7 @@ I'm trying to get better about that.
 
 ### Added
 - Sim results now include action mask violations (#53).
+- Added function to generate random agents (used for debugging/tests) (#55). 
 
 ### Changed
 - Made null actions optionally ignorable in `MaskReward` wrapper (#48).
