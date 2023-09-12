@@ -38,22 +38,22 @@ def calcAccessWindows(
             Defaults to True.
 
     Returns:
-        list[int]: Number of access windows per target at simulation
-            initialization. The order of the list corresponds to order of targets
-            in list_of_targets.
+        list[int]: Number of access windows per target from current time to horizon.
+            The order of the list corresponds to order in list_of_targets.
 
     Notes:
         - Access windows are defined as discrete events (no duration) set to
-            occur at the beginning of intervals specified by
-            SSASchedulerParams.time_step. If a sensor-target pair are visible
-            to each other at t = i * time_step (the beginning of the interval),
+            occur at the beginning of a time interval (whose duration is specified
+            by time_step). If a sensor-target pair are visible to each other at
+            t = i * time_step (the beginning of the interval),
             then this is counted as an access window. The time duration before
             or after the instant in time the sensor-target pair can see each
-            other has no bearing on window count. Examples:
+            other has no bearing on window count.
+            Examples:
             - An access period of time_step duration is counted as one window.
-            - An access period of eps << time_step spanning t = i * time_step
+            - An access period of eps << time_step encompassing t = i * time_step
                 is counted as one window.
-            - An access period of eps << time_step that occurs between
+            - An access period of eps << time_step that occurs in the interval
                 i * time_step < t < (i+1) * time_step is not counted.
             - An access period of time_step + eps starting at t = time_step
                 is counted as two windows.
