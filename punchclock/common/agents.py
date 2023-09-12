@@ -1,7 +1,6 @@
 """Agents class module."""
 
 # %% Import
-from __future__ import annotations
 
 # Standard Library Imports
 from typing import Any
@@ -24,18 +23,18 @@ class Agent:
     def __init__(
         self,
         dynamics_model: DynamicsModel,
-        agent_id: Any,
         init_eci_state: ndarray,
+        agent_id: Any = None,
         time: float = 0,
     ):
         """Initialize Agent superclass.
 
         Args:
-            dynamics_model (`DynamicsModel`): _description_
-            agent_id (`any`): Unique identifier.
-            init_eci_state (`ndarray`): [6 x 1] ECI state array (km)
+            dynamics_model (DynamicsModel): _description_
+            init_eci_state (ndarray): [6 x 1] ECI state array (km)
+            agent_id (any, optional): Unique identifier. Defaults to None.
                 [I, J, K, dI, dJ, dK]
-            time (`float`, optional): Agent time at start of simulation.
+            time (float, optional): Agent time at start of simulation.
                 Defaults to 0.
         """
         assert isinstance(
@@ -51,7 +50,7 @@ class Agent:
         """Update dynamic state (ECI position/velocity and time) of agent.
 
         Args:
-            time_next (`float`): Next time step of simulation (s).
+            time_next (float): Next time step of simulation (s).
         """
         self.eci_state = self.dynamics.propagate(
             self.eci_state,
@@ -65,7 +64,7 @@ class Agent:
         """Convert Agent to json-able dict.
 
         Returns:
-            `dict`: A dict.
+            dict: A dict.
         """
         json_dict = {}
         for attr, attr_val in self.__dict__.items():
@@ -96,9 +95,9 @@ class Target(Agent):
     def __init__(
         self,
         dynamics_model: DynamicsModel,
-        agent_id: Any,
         init_eci_state: ndarray,
         target_filter: Filter,
+        agent_id: Any = None,
         time: float = 0,
         init_num_tasked: int = 0,
         init_last_time_tasked: float = 0,
@@ -107,21 +106,21 @@ class Target(Agent):
         """Initialize target subclass of Agent superclass.
 
         Args:
-            dynamics_model (`DynamicsModel`): _description_
-            agent_id (_type_): Unique identifier.
-            init_eci_state (`ndarray`): [6 x 1] ECI state array (km, km/s) [I, J,
+            dynamics_model (DynamicsModel): _description_
+            init_eci_state (ndarray): [6 x 1] ECI state array (km, km/s) [I, J,
                 K, dI, dJ, dK]
-            target_filter (`Filter`): Filter used for state estimation.
-            time (`float`, optional): Agent time at start of simulation.
-            init_num_tasked (`int`, optional): Initial number of times target has
+            target_filter (Filter): Filter used for state estimation.
+            agent_id (Any, optional): Unique identifier. Defaults to None.
+            time (float, optional): Agent time at start of simulation.
+            init_num_tasked (int, optional): Initial number of times target has
                 been tasked. Defaults to 0.
-            init_last_time_tasked (`float`, optional): Initial time stamp of last
+            init_last_time_tasked (float, optional): Initial time stamp of last
                 time target was tasked. Defaults to 0.
-            num_windows_left (`int`, optional): Number of viewing windows of target
+            num_windows_left (int, optional): Number of viewing windows of target
                 left in simulation. Defaults to 0.
 
         Derived attribute:
-            meas_cov (`ndarray`): Measurement covariance matrix. Not to be confused
+            meas_cov (ndarray): Measurement covariance matrix. Not to be confused
                 with observation covariance, which is an attribute of the target_filter.
                 Measurement covariance is constant.
         """
@@ -138,12 +137,12 @@ class Target(Agent):
         """Updates non-physical states.
 
         Arguments:
-            task (`bool`): Set to `True` if target is tasked, otherwise  set to `False`
+            task (bool): Set to True if target is tasked, otherwise  set to False
 
         Notes:
-            - If `self.num_windows_left` was not set (default=None), then it is not
+            - If self.num_windows_left was not set (default=None), then it is not
                 updated with this function call.
-            - If `self.num_windows_left` is 0, then it will remain as 0.
+            - If self.num_windows_left is 0, then it will remain as 0.
         """
         # If target is tasked,
         #   - increment num_tasked
@@ -159,8 +158,8 @@ class Target(Agent):
             final_time=self.time, measurement=measurement
         )
 
-        # `Target.last_time_tasked` can have initial value < 0, whereas
-        #   `Filter.last_measurement_time` always initializes as `None`. After the first
+        # Target.last_time_tasked can have initial value < 0, whereas
+        #   Filter.last_measurement_time always initializes as None. After the first
         #   measurement is taken, both values stay equal.
         if self.target_filter.last_measurement_time is not None:
             self.last_time_tasked = npfloat32(
@@ -177,7 +176,7 @@ class Target(Agent):
         """Measure dynamic state of target.
 
         Returns:
-            `ndarray`: (6,) state array. Units are km, km/s.
+            ndarray: (6,) state array. Units are km, km/s.
         """
         # multivariate_norm needs to have singleton dimension arguments
         true_state = self.eci_state.squeeze()
@@ -201,16 +200,16 @@ class Sensor(Agent):
     def __init__(
         self,
         dynamics_model: DynamicsModel,
-        agent_id: Any,
         init_eci_state: ndarray,
+        agent_id: Any = None,
         time: float = 0,
     ):
         """Initialize sensor subclass of Agent superclass.
 
         Args:
-            dynamics_model (`DynamicsModel`):_description_
-            agent_id (_type_): _description_
-            init_eci_state (`ndarray`): _description_
-            time (`float`): Agent time at start of simulation.
+            dynamics_model (DynamicsModel):_description_
+            agent_id (Any, optional): Defaults to None.
+            init_eci_state (ndarray): _description_
+            time (float): Agent time at start of simulation.
         """
         super().__init__(dynamics_model, agent_id, init_eci_state, time)
