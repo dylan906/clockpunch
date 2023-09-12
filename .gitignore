@@ -4,6 +4,8 @@
 *:Zone.Identifier
 *.out
 
+tests/analysis_utils/*.pkl
+
 tests/simulation/data/*.csv
 tests/simulation/data/*.pkl
 tests/simulation/data/mc_results/*.csv
