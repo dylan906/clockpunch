@@ -1992,3 +1992,9 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
         )
 
         super().__init__(env, [partial_func], [key], new_obs_space)
+
+
+# %% NumWindows wrapper
+class NumWindows(gym.ObservationWrapper):
+    def __init__(self, env: gym.Env, key: str):
+        super().__init__(env)
