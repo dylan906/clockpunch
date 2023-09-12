@@ -68,7 +68,7 @@ class MonteCarloRunner:
                 identical initial conditions between trials. If True, num_episodes
                 must be 1, and all steps from all trials will be saved. Defaults
                 to False.
-            save_format (`str`, optional): []"pkl" | "csv"] Only change from default
+            save_format (`str`, optional): ["pkl" | "csv"] Only change from default
                 for debugging. Saving as csv is not guaranteed to retain all sim
                 data. Defaults to "pkl".
         """
@@ -323,7 +323,9 @@ class MonteCarloRunner:
             t0 = datetime.now()
 
         # %% Build policy
-        policy = buildCustomOrRayPolicy(config_or_path=policy_config_or_checkpoint)
+        policy = buildCustomOrRayPolicy(
+            config_or_path=policy_config_or_checkpoint
+        )
 
         # Initialize trial_result as a dict with one entry, where the key is the
         # trial name. The entry is a list (length = num_episodes) of the final
@@ -377,7 +379,9 @@ class MonteCarloRunner:
         """Assemble arguments for multiprocessing.Pool() into a list."""
         # Args to pool.starmap must be pickleable, meaning simple structures
         # (e.g. dicts). Args to starmap must be in a list in the expected order.
-        env_configs = [deepcopy(self.env_config) for a in range(self.num_trials)]
+        env_configs = [
+            deepcopy(self.env_config) for a in range(self.num_trials)
+        ]
         print_list = [copy(print_status) for a in range(self.num_trials)]
         pool_args = [
             (a)
@@ -526,7 +530,9 @@ class MonteCarloRunner:
         merged_df = concat(trial_df_list)
         return merged_df
 
-    def _splitPoolArgs(self, pool_args: list[dict]) -> Tuple[list[dict], list[dict]]:
+    def _splitPoolArgs(
+        self, pool_args: list[dict]
+    ) -> Tuple[list[dict], list[dict]]:
         """Split list of trial configs by custom or Ray policies.
 
         Args:
