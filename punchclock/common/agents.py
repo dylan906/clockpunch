@@ -124,7 +124,12 @@ class Target(Agent):
                 with observation covariance, which is an attribute of the target_filter.
                 Measurement covariance is constant.
         """
-        super().__init__(dynamics_model, agent_id, init_eci_state, time)
+        super().__init__(
+            dynamics_model=dynamics_model,
+            init_eci_state=init_eci_state,
+            agent_id=agent_id,
+            time=time,
+        )
         self.target_filter = target_filter
         self.num_tasked = init_num_tasked
         self.last_time_tasked = npfloat32(init_last_time_tasked)
@@ -212,4 +217,9 @@ class Sensor(Agent):
             init_eci_state (ndarray): _description_
             time (float): Agent time at start of simulation.
         """
-        super().__init__(dynamics_model, agent_id, init_eci_state, time)
+        super().__init__(
+            dynamics_model=dynamics_model,
+            init_eci_state=init_eci_state,
+            agent_id=agent_id,
+            time=time,
+        )

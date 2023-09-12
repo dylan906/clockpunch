@@ -1,6 +1,5 @@
 """Test for agents module."""
 # %% Imports
-from __future__ import annotations
 
 # Standard Library Imports
 import json
@@ -51,17 +50,30 @@ my_filter = UnscentedKalmanFilter(
 # %% Basic Tests
 print("Instantiation tests...")
 
-a = Agent(sat_dynamics, "A", array([1, 2, 3, 4, 5, 6]))
+a = Agent(
+    dynamics_model=sat_dynamics,
+    init_eci_state=array([1, 2, 3, 4, 5, 6]),
+    agent_id="A",
+)
 print(f"Satellite agent: vars(agent) = \n{vars(a)}\n")
 
-c = Sensor(ground_dynamics, "A", array([1, 2, 3, 4, 5, 6]), 5)
+c = Sensor(
+    dynamics_model=ground_dynamics,
+    init_eci_state=array([1, 2, 3, 4, 5, 6]),
+    agent_id="A",
+    time=5,
+)
 print(f"Ground agent: vars(ground sensor) = \n{vars(c)}\n")
 
 c.propagate(10)
 print(f"vars(ground sensor) after updating dynamics= \n{vars(c)}\n")
 
 mu = getConstants()["mu"]
-d = Agent(sat_dynamics, "derSat", array([7000, 0, 0, 0, sqrt(mu / 7000), 0]))
+d = Agent(
+    dynamics_model=sat_dynamics,
+    init_eci_state=array([7000, 0, 0, 0, sqrt(mu / 7000), 0]),
+    agent_id="derSat",
+)
 print(f"New satellite agent: vars(sat agent) = \n{vars(d)}\n")
 
 d.propagate(10)
@@ -72,9 +84,9 @@ print(
 # %% Test get measurement
 print("Test getMeasurement...")
 e = Target(
-    sat_dynamics,
-    agent_id=2,
+    dynamics_model=sat_dynamics,
     init_eci_state=array([1, 2, 3, 4, 5, 6]),
+    agent_id=2,
     target_filter=deepcopy(my_filter),
 )
 print("Test with noise")
@@ -92,9 +104,9 @@ no_noise_filter = UnscentedKalmanFilter(
     r_matrix=zeros([6, 6]),
 )
 e1 = Target(
-    sat_dynamics,
-    agent_id=2,
+    dynamics_model=sat_dynamics,
     init_eci_state=array([1, 2, 3, 4, 5, 6]),
+    agent_id=2,
     target_filter=no_noise_filter,
 )
 print("Test without noise")
@@ -109,12 +121,12 @@ print("\nTest Propagation over multiple iterations...")
 x0_ecef = array([[7000, 0, 0, 0, 0, 0]]).transpose()
 x0_eci = ecef2eci(x0_ecef, 0)
 ag_ground = Sensor(
-    StaticTerrestrial(),
+    dynamics_model=StaticTerrestrial(),
     agent_id="A",
     init_eci_state=x0_eci,
 )
 ag_space = Sensor(
-    SatDynamicsModel(),
+    dynamics_model=SatDynamicsModel(),
     agent_id="B",
     init_eci_state=array([[8000, 1000, 0, 8, 0, 0]]).transpose(),
 )
@@ -141,9 +153,9 @@ print("\nFilter tests...")
 # Functionality test
 print("  functionality test")
 b = Target(
-    sat_dynamics,
-    agent_id=2,
+    dynamics_model=sat_dynamics,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
+    agent_id=2,
     target_filter=deepcopy(my_filter),
     time=0,
 )
@@ -201,9 +213,9 @@ print(f"target.target_filter.est_x = \n{b.target_filter.est_x}")
 print("\nTest num_window_left decrement...")
 
 c = Target(
-    sat_dynamics,
-    agent_id=2,
+    dynamics_model=sat_dynamics,
     init_eci_state=array([7000, 0, 0, 0, 4, 0]),
+    agent_id=2,
     target_filter=deepcopy(my_filter),
     num_windows_left=2,
 )
