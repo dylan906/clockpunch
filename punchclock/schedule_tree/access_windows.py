@@ -24,18 +24,16 @@ def calcAccessWindows(
     """Calculate access windows for all targets.
 
     Args:
-        list_of_sensors (list[Sensor]): List of sensors at initial dynamic
-            states.
-        list_of_targets (list[Target]): List of targets at initial dynamic
-            states.
+        list_of_sensors (list[Sensor]): List of sensors at initial dynamic states.
+        list_of_targets (list[Target]): List of targets at initial dynamic states.
         horizon (int, optional): Number of time steps to calculate forward to.
             Defaults to 1.
         time_step (int | float, optional): Duration of time step (sec). Defaults
             to 100.
-        merge_windows (bool, optional): Whether of not to count an interval
-            where a target can be seen by multiple sensors as 1 or multiple
-            windows. True means that such situations will be counted as 1 window.
-            Defaults to True.
+        merge_windows (bool, optional): Whether of not to count an interval where
+            a target can be seen by multiple sensors as 1 or multiple windows.
+            True means that such situations will be counted as 1 window. Defaults
+            to True.
 
     Returns:
         list[int]: Number of access windows per target from current time to horizon.
@@ -49,19 +47,21 @@ def calcAccessWindows(
             then this is counted as an access window. The time duration before
             or after the instant in time the sensor-target pair can see each
             other has no bearing on window count.
-            Examples:
-            - An access period of time_step duration is counted as one window.
-            - An access period of eps << time_step encompassing t = i * time_step
-                is counted as one window.
-            - An access period of eps << time_step that occurs in the interval
-                i * time_step < t < (i+1) * time_step is not counted.
-            - An access period of time_step + eps starting at t = time_step
-                is counted as two windows.
-            - An access period of time_step + eps starting at
-                t = time_step + eps is counted as one window.
         - merge_windows should be set to True (the default) when you do not
             want to account for multiple sensors tasked to a single target at
             the same time (the typical case).
+
+    Access window examples:
+        - An access period of time_step duration is counted as one window.
+        - An access period of eps << time_step encompassing t = i * time_step
+            is counted as one window.
+        - An access period of eps << time_step that occurs in the interval
+            i * time_step < t < (i+1) * time_step is not counted.
+        - An access period of time_step + eps starting at t = time_step
+            is counted as two windows.
+        - An access period of time_step + eps starting at
+            t = time_step + eps is counted as one window.
+
     """
     # get list of target ids
     target_ids = [targ.agent_id for targ in list_of_targets]
