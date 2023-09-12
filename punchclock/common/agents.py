@@ -2,16 +2,23 @@
 # %% Imports
 
 # Standard Library Imports
+from copy import copy
 from typing import Any
 
 # Third Party Imports
+from numpy import eye
 from numpy import float32 as npfloat32
 from numpy import int64 as npint64
 from numpy import ndarray
-from numpy.random import multivariate_normal
+from numpy.random import default_rng, multivariate_normal
 
 # Punch Clock Imports
-from punchclock.dynamics.dynamics_classes import DynamicsModel
+from punchclock.dynamics.dynamics_classes import (
+    DynamicsModel,
+    SatDynamicsModel,
+    StaticTerrestrial,
+)
+from punchclock.estimation.ez_ukf import ezUKF
 from punchclock.estimation.filter_base_class import Filter
 
 
@@ -86,11 +93,7 @@ class Agent:
 
 # %% Target Class
 class Target(Agent):
-    """A subclass of Agent.
-
-    Args:
-        Agent (_type_): _description_
-    """
+    """A subclass of Agent."""
 
     def __init__(
         self,
@@ -224,3 +227,81 @@ class Sensor(Agent):
             agent_id=agent_id,
             time=time,
         )
+
+
+# %% Random Agent
+def buildRandomAgent(
+    target_sensor: str = "target",
+    dynamics_model: str = "satellite",
+    init_eci_state: ndarray[float] = None,
+    id: str = None,  # noqa
+    time: float | int = 0,
+):
+    """Make a random Agent.
+
+    This function builds a quick-use agent to use in testing, when you don't care
+    about the realism or accuracy of the agent's state, you just need the same
+    interfaces.
+
+    Args:
+        target_sensor (str, optional): ["target" | "sensor"]. Defaults to
+            "target".
+        dynamics_model (str, optional): ["satellite" | "terrestrial]. Defaults
+            to "satellite".
+        init_eci_state (ndarray[float], optional): ECI state vector. Defaults
+            to random.
+        id (str, optional): Agent id. Defaults to None.
+        time (float | int, optional): Time at initial state. Defaults to 0.
+    """
+    rng = default_rng()
+    dynamics_model_tag = copy(dynamics_model)
+
+    if dynamics_model == "satellite":
+        dynamics_model = SatDynamicsModel
+    elif dynamics_model == "terrestrial":
+        dynamics_model = StaticTerrestrial
+
+    if init_eci_state is None:
+        init_eci_state = getRandomIC(dynamics_model_tag)
+
+    if target_sensor == "sensor":
+        agent = Sensor(
+            dynamics_model=dynamics_model,
+            init_eci_state=init_eci_state,
+            agent_id=id,
+            time=time,
+        )
+    elif target_sensor == "target":
+        ukf = ezUKF(
+            {
+                "x_init": init_eci_state,
+                "p_init": rng.normal() * eye(6),
+                "dynamics_type": dynamics_model_tag,
+                "Q": rng.normal() * eye(6),
+                "R": rng.normal() * eye(6),
+            }
+        )
+        agent = Target(
+            dynamics_model=dynamics_model,
+            init_eci_state=init_eci_state,
+            target_filter=ukf,
+            agent_id=id,
+            time=time,
+        )
+
+    return agent
+
+
+def getRandomIC(space_ground: str = "satellite") -> ndarray[float]:
+    """Generate a random initial condition.
+
+    Args:
+        space_ground (str, optional): ["satellite" | "ground"]. Defaults to "satellite".
+
+    Returns:
+        ndarray[float]: ECI state vector.
+    """
+    rng = default_rng()
+    x = rng.uniform(low=0, high=1, size=(6,))
+
+    return x

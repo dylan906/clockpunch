@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from numpy import array, asarray, eye, linspace, sqrt, zeros
 
 # Punch Clock Imports
-from punchclock.common.agents import Agent, Sensor, Target
+from punchclock.common.agents import Agent, Sensor, Target, buildRandomAgent
 from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci
 from punchclock.dynamics.dynamics_classes import (
@@ -236,6 +236,11 @@ json_dict = c.toDict()
 
 # check to make sure json can be dumped
 json_object = json.dumps(json_dict)
+
+# %% Test RandomAgent
+print("\nTest RandomAgent...")
+ragent = buildRandomAgent()
+print(f"random agent = {ragent}")
 # %%
 plt.show()
 print("done")
