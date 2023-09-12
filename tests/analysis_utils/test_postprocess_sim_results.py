@@ -13,6 +13,7 @@ from punchclock.analysis_utils.postprocess_sim_results import (
     addPostProcessedCols,
     calc3dTr,
     calcMissedOpportunities,
+    countMaskViolations,
     countNullActions,
     countOpportunities,
     loadSimResults,
@@ -110,6 +111,14 @@ missed_opps = calcMissedOpportunities(
 print(f"action = {action}")
 print(f"missed opportunities = {missed_opps}")
 
+# %% countMaskViolations
+print("\nTest countMaskViolations...")
+x = randint(0, 2, size=(2, 2))
+mask = randint(0, 2, size=(2, 2))
+vio = countMaskViolations(x, mask)
+print(f"x = \n{x}")
+print(f"mask = \n{mask}")
+print(f"violations = {vio}")
 
 # %% addPostProcessedCols
 print("\nTest addPostProcessedCols...")
@@ -127,6 +136,7 @@ print(
             "cum_wasted_action",
             "num_opportunities",
             "cum_opportunities",
+            "action_mask_violations",
         ]
     ]
 )

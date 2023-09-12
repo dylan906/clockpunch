@@ -5,22 +5,27 @@ from __future__ import annotations
 # Third Party Imports
 from gymnasium.spaces import flatten
 from numpy import (
+    all,
     array,
     asarray,
     count_nonzero,
     max,
     mean,
+    multiply,
     ndarray,
     ones,
     sum,
     trace,
-    unique,
     vstack,
 )
 from pandas import DataFrame, read_csv
 
 # Punch Clock Imports
-from punchclock.common.utilities import MaskConverter, fromStringArray
+from punchclock.common.utilities import (
+    MaskConverter,
+    actionSpace2Array,
+    fromStringArray,
+)
 
 
 # %% Functions
@@ -150,6 +155,30 @@ def actionWasted(action: ndarray[int], mask: ndarray[int]) -> bool:
     return status
 
 
+def countMaskViolations(x: ndarray[int], mask: ndarray[int]) -> int:
+    """Count number of instances of x violating mask.
+
+    Entires of mask == 1 are allowed, entries of mask == 0  are disallowed. Any
+    instance of a 1 in x where the same indexed value in mask == 0 counts as a
+    violation.
+
+    Args:
+        x (ndarray[int]): Binary array, same size as mask.
+        mask (ndarray[int]): Binary array, same size as x.
+
+    Returns:
+        int: Number of instances in which x(i, j) == 1 and mask(i, j) == 0.
+    """
+    assert x.shape == mask.shape
+    assert all([b in [0, 1] for b in x.flat])
+    assert all([b in [0, 1] for b in mask.flat])
+
+    inv_mask = -1 * (mask - 1)
+    violations_mat = multiply(x, inv_mask)
+
+    return sum(violations_mat)
+
+
 def addPostProcessedCols(
     df: DataFrame,
     info: dict,
@@ -162,12 +191,15 @@ def addPostProcessedCols(
             SimResults. Expected keys: "seed".
 
     Columns:
-        cov_tr (`ndarray`): (N, ) Trace of covariance matrices for all targets at
-            that step.
+        action_array (ndarray[int]): (N+1, M) Binary representation of df['action'].
+        action_mask_violations (int): Number of action mask violations at that
+            step.
+        cov_tr (`ndarray`): (N, ) Trace of covariance matrices for all targets
+            at that step.
         cov_mean (`float`): Mean of cov_tr.
         cov_max (`float`): Max of cov_tr.
-        pos_cov_tr (`ndarray`): (N, ) Trace of positional covariance matrices for
-            all targets at that step.
+        pos_cov_tr (`ndarray`): (N, ) Trace of positional covariance matrices
+            for all targets at that step.
         pos_cov_mean (`float`): Mean of pos_cov_tr.
         pos_cov_max (`float`): Max of pos_cov_tr.
         vel_cov_tr (`ndarray`): (N, ) Trace of velocity covariance matrices for
@@ -219,6 +251,23 @@ def addPostProcessedCols(
         axis=1,
     )
     df["cum_opportunities"] = df["num_opportunities"].cumsum()
+
+    df["action_array"] = df.apply(
+        lambda x: actionSpace2Array(
+            actions=x["action"],
+            num_sensors=df["num_sensors"][0],
+            num_targets=df["num_targets"][0],
+        ),
+        axis=1,
+    )
+
+    df["action_mask_violations"] = df.apply(
+        lambda x: countMaskViolations(
+            x=x["action_array"],
+            mask=mc.convertActionMaskFrom1dTo2d(x["action_mask"]),
+        ),
+        axis=1,
+    )
 
     df["seed"] = info.get("seed", None)
 
