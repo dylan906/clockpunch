@@ -241,6 +241,13 @@ json_object = json.dumps(json_dict)
 print("\nTest RandomAgent...")
 ragent = buildRandomAgent()
 print(f"random agent = {ragent}")
+ragent.propagate(ragent.time + 10)
+print(f"propagated state = {ragent.eci_state}")
+
+ragent = buildRandomAgent(dynamics_model="terrestrial")
+print(f"random agent = {ragent}")
+ragent.propagate(ragent.time + 10)
+print(f"propagated state = {ragent.eci_state}")
 # %%
 plt.show()
 print("done")

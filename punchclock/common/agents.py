@@ -6,13 +6,16 @@ from copy import copy
 from typing import Any
 
 # Third Party Imports
-from numpy import eye
+from numpy import concatenate, eye
 from numpy import float32 as npfloat32
 from numpy import int64 as npint64
-from numpy import ndarray
+from numpy import ndarray, pi
 from numpy.random import default_rng, multivariate_normal
 
 # Punch Clock Imports
+from punchclock.common.constants import getConstants
+from punchclock.common.math import getCircOrbitVel
+from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
     SatDynamicsModel,
@@ -60,9 +63,9 @@ class Agent:
             time_next (float): Next time step of simulation (s).
         """
         self.eci_state = self.dynamics.propagate(
-            self.eci_state,
-            self.time,
-            time_next,
+            start_state=self.eci_state,
+            start_time=self.time,
+            end_time=time_next,
         )
 
         self.time = time_next
@@ -246,7 +249,7 @@ def buildRandomAgent(
     Args:
         target_sensor (str, optional): ["target" | "sensor"]. Defaults to
             "target".
-        dynamics_model (str, optional): ["satellite" | "terrestrial]. Defaults
+        dynamics_model (str, optional): ["satellite" | "terrestrial"]. Defaults
             to "satellite".
         init_eci_state (ndarray[float], optional): ECI state vector. Defaults
             to random.
@@ -257,12 +260,12 @@ def buildRandomAgent(
     dynamics_model_tag = copy(dynamics_model)
 
     if dynamics_model == "satellite":
-        dynamics_model = SatDynamicsModel
+        dynamics_model = SatDynamicsModel()
     elif dynamics_model == "terrestrial":
-        dynamics_model = StaticTerrestrial
+        dynamics_model = StaticTerrestrial()
 
     if init_eci_state is None:
-        init_eci_state = getRandomIC(dynamics_model_tag)
+        init_eci_state = getRandomIC(dynamics_model_tag, time)
 
     if target_sensor == "sensor":
         agent = Sensor(
@@ -292,16 +295,28 @@ def buildRandomAgent(
     return agent
 
 
-def getRandomIC(space_ground: str = "satellite") -> ndarray[float]:
+def getRandomIC(
+    satellite_terrestrial: str = "satellite", time: float = 0
+) -> ndarray[float]:
     """Generate a random initial condition.
 
     Args:
-        space_ground (str, optional): ["satellite" | "ground"]. Defaults to "satellite".
+        satellite_terrestrial (str, optional): ["satellite" | "terrestrial"].
+            Defaults to "satellite".
+        time (float, optional): JD time (sec).
 
     Returns:
         ndarray[float]: ECI state vector.
     """
     rng = default_rng()
-    x = rng.uniform(low=0, high=1, size=(6,))
+    RE = getConstants()["earth_radius"]
+    if satellite_terrestrial == "satellite":
+        r = rng.uniform(RE + 400, RE + 36000, size=(3))
+        v = getCircOrbitVel(r)
+        x = concatenate([r, v])
+    elif satellite_terrestrial == "terrestrial":
+        # [lat, lon, alt]
+        lla = rng.uniform([-pi / 2, -pi, 0], [pi / 2, pi, 0])
+        x = ecef2eci(lla2ecef(lla), time)
 
     return x
