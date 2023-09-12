@@ -7,6 +7,7 @@ import os
 # Third Party Imports
 from numpy import array
 from numpy.random import randint
+from pandas import read_pickle
 
 # Punch Clock Imports
 from punchclock.analysis_utils.postprocess_sim_results import (
@@ -16,18 +17,15 @@ from punchclock.analysis_utils.postprocess_sim_results import (
     countMaskViolations,
     countNullActions,
     countOpportunities,
-    loadSimResults,
 )
 from punchclock.common.utilities import MaskConverter
 
 # %% Load test sim results
-print("\nTest loadSimResults...")
-cwd = os.getcwd()
-fname = os.path.join(cwd, "tests/simulation/data/test_df.csv")
+print("\nTest sim results...")
 
-df = loadSimResults(fname=fname)
-print(df.head(3))
-print(f"columns = {df.columns}")
+fpath = os.path.dirname(os.path.realpath(__file__))
+df_path = fpath + "/simresults_df.pkl"
+df = read_pickle(df_path)
 
 # %% Count Null Actions
 print("\nTest countNullActions...")
