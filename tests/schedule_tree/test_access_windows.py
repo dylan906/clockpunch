@@ -30,6 +30,7 @@ num_windows = calcAccessWindows(
     list_of_sensors=list_of_sensors,
     list_of_targets=list_of_targets,
     horizon=10,
+    dt_eval=200,
     merge_windows=False,
 )
 print(f"num_windows = {num_windows}")
