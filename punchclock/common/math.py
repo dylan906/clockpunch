@@ -5,8 +5,9 @@ from __future__ import annotations
 from math import floor, log10
 
 # Third Party Imports
-from numpy import amin, diag, exp, eye, ndarray, real, spacing, sqrt
+from numpy import amin, cross, diag, dot, exp, eye, ndarray, real, spacing, sqrt
 from numpy.linalg import LinAlgError, cholesky, multi_dot, norm
+from numpy.random import default_rng
 from scipy.linalg import eigvals, svd
 
 # Punch Clock Imports
@@ -26,7 +27,8 @@ def nearestPD(original_mat: ndarray) -> ndarray:
     Returns:
         ndarray: updated matrix, corrected to be positive definite.
     """
-    # symmetrize matrix, perform singular value decomposition, compute symmetric polar factor
+    # symmetrize matrix, perform singular value decomposition, compute symmetric
+    # polar factor
     sym_mat = (original_mat + original_mat.T) / 2
     _, singular, right_mat = svd(sym_mat)
     pol_factor = multi_dot((right_mat.T, diag(singular), right_mat))
@@ -153,8 +155,6 @@ def saturate(
 
 
 # %% Linear function
-
-
 def linear(x: float, m: float, b: float) -> float:
     """A simple linear function."""
     return m * x + b
@@ -164,3 +164,25 @@ def linear(x: float, m: float, b: float) -> float:
 def find_exp(number) -> int:
     base10 = log10(abs(number))
     return abs(floor(base10))
+
+
+# %% Get vector normal
+def normalVec(a: ndarray) -> ndarray:
+    """Get a random unit vector that is normal to input vector."""
+    assert a.ndim == 1
+
+    rng = default_rng()
+
+    a_hat = a / norm(a)
+
+    b = rng.uniform(size=(len(a_hat)))
+    b_hat = b / norm(b)
+    while dot(a_hat, b_hat) == 1:
+        # In case randomly-generated b is parallel to a, keep regenerating b until
+        # they are not.
+        b = rng.uniform(size=(len(a_hat)))
+        b_hat = b / norm(b)
+
+    c_hat = cross(a_hat, b_hat)
+
+    return c_hat

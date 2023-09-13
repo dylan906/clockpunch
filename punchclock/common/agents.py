@@ -10,11 +10,12 @@ from numpy import concatenate, eye
 from numpy import float32 as npfloat32
 from numpy import int64 as npint64
 from numpy import ndarray, pi
+from numpy.linalg import norm
 from numpy.random import default_rng, multivariate_normal
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
-from punchclock.common.math import getCircOrbitVel
+from punchclock.common.math import getCircOrbitVel, normalVec
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
@@ -313,8 +314,15 @@ def getRandomIC(
     rng = default_rng()
     RE = getConstants()["earth_radius"]
     if satellite_terrestrial == "satellite":
-        r = rng.uniform(RE + 400, RE + 36000, size=(3))
-        v = getCircOrbitVel(r)
+        lla = rng.uniform([-pi / 2, -pi, RE + 400], [pi / 2, pi, RE + 36000])
+        x_ecef = lla2ecef(lla)
+        r = x_ecef[:3]
+        # Get randomly-pointed velocity vector that is normal to r and magnitude
+        # for circular orbit.
+        v_mag = getCircOrbitVel(norm(r))
+        v_hat = normalVec(r)
+        v = v_mag * v_hat
+
         x = concatenate([r, v])
     elif satellite_terrestrial == "terrestrial":
         # [lat, lon, alt]

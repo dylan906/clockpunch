@@ -4,10 +4,10 @@ from __future__ import annotations
 
 # Third Party Imports
 from matplotlib import pyplot as plt
-from numpy import linspace
+from numpy import array, dot, linspace
 
 # Punch Clock Imports
-from punchclock.common.math import logistic, saturate
+from punchclock.common.math import logistic, normalVec, saturate
 
 # %% Test logistic function
 print("\nTest logistic function...")
@@ -49,6 +49,12 @@ for mint, maxt in zip(mins, maxs):
         max_threshold=maxt,
     )
     print(f"saturated_vals = {saturated_vals}")
+
+# %% Test normalVec
+print("\nTest normalVec...")
+r1 = array([1, 2, 3])
+r2 = normalVec(r1)
+print(f"dot(r1, r2) = {dot(r1, r2)}")
 # %% Done
 plt.show()
 print("done")
