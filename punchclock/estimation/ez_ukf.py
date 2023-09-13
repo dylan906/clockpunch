@@ -42,6 +42,8 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
             well-conditioned.
         - Filter is initialized with time=0.
     """
+    time = params.get("time", 0)
+
     if params["dynamics_type"] == "terrestrial":
         dynamics_model = StaticTerrestrial()
     elif params["dynamics_type"] == "satellite":
@@ -66,7 +68,7 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
         p_init = p_init * eye(6)
 
     ukf = UnscentedKalmanFilter(
-        time=0,
+        time=time,
         est_x=x_init,
         est_p=p_init,
         dynamics_model=dynamics_model,
