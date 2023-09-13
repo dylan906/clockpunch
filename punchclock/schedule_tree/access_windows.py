@@ -15,6 +15,8 @@ from punchclock.common.constants import getConstants
 
 
 class AccessWindowCalculator:
+    """Calculates access windows between Sensors and Targets."""
+
     def __init__(
         self,
         list_of_sensors: list[Sensor],
@@ -33,14 +35,13 @@ class AccessWindowCalculator:
                 forward from start time. Defaults to 1.
             dt (int | float, optional): Time step (sec) at which to propagate
                 dynamics at evaluate visibility. Defaults to 100.
+            truth_or_estimated (str, optional): ["truth" | "estimated"] Tells instance
+                to use true or estimated states of Targets when propagating motion
+                and evaluating visibility. Defaults to "truth".
             merge_windows (bool, optional): Whether of not to count an interval where
                 a target can be seen by multiple sensors as 1 or multiple windows.
                 True means that such situations will be counted as 1 window. Defaults
                 to True.
-
-        Returns:
-            list[int]: Number of access windows per target from current time to horizon.
-                The order of the list corresponds to order in list_of_targets.
 
         Notes:
             - Access windows are defined as discrete events (no duration) set to
@@ -64,8 +65,10 @@ class AccessWindowCalculator:
                 is counted as two windows.
             - An access period of dt_eval + eps starting at
                 t = dt_eval + eps is counted as one window.
-
         """
+        # NOTE: Always use self._getStates() within this class, vice manually fetching
+        # states from agents. This is because the desired state, truth or estimated,
+        # is fetched differently depending on the parameter.
         assert horizon >= 1
 
         start_times = [ag.time for ag in list_of_sensors]
@@ -117,11 +120,12 @@ class AccessWindowCalculator:
         """Calculate visibility history array.
 
         Returns:
-            ndarray[int]: (T, N, M) binary array.
+            ndarray[int]: (T, N, M) binary array. A 1 indicates that the n-m
+                target-sensor can see each other at time t.
         """
         self.reset()
         # Setup state history arrays
-        x0 = self.getStates()
+        x0 = self._getStates()
 
         vis_hist = zeros(
             (
@@ -131,7 +135,7 @@ class AccessWindowCalculator:
             ),
             dtype=int,
         )
-        vis_hist[0, :, :] = self.getVis(
+        vis_hist[0, :, :] = self._getVis(
             x_sensors=x0[:, : self.num_sensors],
             x_targets=x0[:, self.num_sensors :],
         )
@@ -141,8 +145,8 @@ class AccessWindowCalculator:
             for agent in self.list_of_sensors + self.list_of_targets:
                 agent.propagate(t)
 
-            xi = self.getStates()
-            vis_hist[i, :, :] = self.getVis(
+            xi = self._getStates()
+            vis_hist[i, :, :] = self._getVis(
                 x_sensors=xi[:, : self.num_sensors],
                 x_targets=xi[:, self.num_sensors :],
             )
@@ -160,39 +164,12 @@ class AccessWindowCalculator:
             num_windows = sum(sum(vis_hist, axis=2), axis=0)
         else:
             # merge multi-sensor windows and sum
-            vis_hist_merge = self.mergeWindows(vis_hist)  # returns (T, N)
+            vis_hist_merge = self._mergeWindows(vis_hist)  # returns (T, N)
             num_windows = sum(vis_hist_merge, axis=0)
 
         return num_windows
 
-    def mergeWindows(self, vis_hist: ndarray) -> ndarray:
-        """Merge sensor elements of a (T, N, M) visibility history array.
-
-        For every (N, M) frame in vis_hist, a N-long binary vector is created.
-        If there are any 1s in the i'th row of the t'th frame, the i'th value
-        of the binary vector is set to 1. Otherwise, the value is 0. The binary
-        vectors are output as a (T, N) array.
-
-        Args:
-            vis_hist (ndarray): (T, N, M)
-
-        Returns:
-            ndarray: (T, N)
-        """
-        vis_hist_merge = zeros(
-            (vis_hist.shape[0], vis_hist.shape[1]),
-            dtype=int,
-        )
-        for t in range(vis_hist.shape[0]):
-            va = vis_hist[t, :, :]
-            for n in range(va.shape[0]):
-                row = va[n, :]
-                if 1 in row:
-                    vis_hist_merge[t, n] = 1
-
-        return vis_hist_merge
-
-    def getStates(self) -> ndarray:
+    def _getStates(self) -> ndarray:
         """Get current state (truth or estimated) from all agents.
 
         If self.use_true_states == True, then truth states are fetched. Otherwise,
@@ -220,7 +197,7 @@ class AccessWindowCalculator:
 
         return x
 
-    def getVis(self, x_sensors: ndarray, x_targets: ndarray) -> ndarray:
+    def _getVis(self, x_sensors: ndarray, x_targets: ndarray) -> ndarray:
         """Get visibility status array (N, M).
 
         Args:
@@ -241,3 +218,30 @@ class AccessWindowCalculator:
                 vis_status[targ, sens] = isVis(r_sens, r_targ, self.RE)
 
         return vis_status
+
+    def _mergeWindows(self, vis_hist: ndarray) -> ndarray:
+        """Merge sensor elements of a (T, N, M) visibility history array.
+
+        For every (N, M) frame in vis_hist, a N-long binary vector is created.
+        If there are any 1s in the i'th row of the t'th frame, the i'th value
+        of the binary vector is set to 1. Otherwise, the value is 0. The binary
+        vectors are output as a (T, N) array.
+
+        Args:
+            vis_hist (ndarray): (T, N, M)
+
+        Returns:
+            ndarray: (T, N)
+        """
+        vis_hist_merge = zeros(
+            (vis_hist.shape[0], vis_hist.shape[1]),
+            dtype=int,
+        )
+        for t in range(vis_hist.shape[0]):
+            va = vis_hist[t, :, :]
+            for n in range(va.shape[0]):
+                row = va[n, :]
+                if 1 in row:
+                    vis_hist_merge[t, n] = 1
+
+        return vis_hist_merge
