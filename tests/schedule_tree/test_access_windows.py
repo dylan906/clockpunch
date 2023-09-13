@@ -1,19 +1,12 @@
 """Test access_windows.py."""
+# %% Imports
 # Third Party Imports
 from numpy import asarray
+from numpy.random import randint
 
 # Punch Clock Imports
-from punchclock.common.agents import Agent, buildRandomAgent
+from punchclock.common.agents import buildRandomAgent
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
-
-
-# %% Util func
-def resetAgents(list_of_agents: list[Agent]):
-    """Reset agents."""
-    for ag in list_of_agents:
-        ag.time = 0
-    return list_of_agents
-
 
 # %% Build dummy agents to get realistic states
 print("\nBuilding dummy agents...")
@@ -21,10 +14,10 @@ num_sensors = 2
 num_targets = 3
 
 list_of_sensors = [
-    buildRandomAgent(target_sensor="sensor") for i in range(num_sensors)
+    buildRandomAgent(agent_type="sensor") for i in range(num_sensors)
 ]
 list_of_targets = [
-    buildRandomAgent(target_sensor="target") for i in range(num_targets)
+    buildRandomAgent(agent_type="target") for i in range(num_targets)
 ]
 
 x_sensors = asarray([a.eci_state for a in list_of_sensors]).squeeze().T
@@ -44,55 +37,70 @@ print("\nTest AccessWindowCalculator instantiation...")
 print("  Test with default args")
 # Number of possible windows is number of steps in sim (env.horizon)
 awc = AccessWindowCalculator(
-    list_of_sensors=list_of_sensors,
-    list_of_targets=list_of_targets,
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    dynamics_sensors="terrestrial",
+    dynamics_targets="satellite",
 )
+
+# %% Test _getStates
+print("\nTest _getStates...")
+x = awc._getStates()
+print(f"x = {x}")
+
+# %% Test _getVis
+print("\nTest _getVis...")
+vis = awc._getVis(x_sensors=x_sensors, x_targets=x_targets)
+print(f"vis status = \n{vis}")
+
+# %% Test calcVisHist
+print("\nTest calcVisHist...")
+vis_hist = awc.calcVisHist()
+print(f"vis hist = \n{vis_hist}")
+
+# %% Test _mergeWindows
+print("\nTest _mergeWindows...")
+dummy_vis_hist = randint(
+    0, 2, size=(len(awc.time_vec), num_targets, num_sensors)
+)
+# Test a full row and a full col of 0s
+dummy_vis_hist[0, 0, :] = 0
+dummy_vis_hist[1, :, 0] = 0
+merged = awc._mergeWindows(vis_hist=dummy_vis_hist)
+print(f"raw vis hist = \n{dummy_vis_hist}")
+print(f"merged vis hist = \n{merged}")
+
+# %% Test calcNumWindows
+print("\nTest calcNumWindows...")
 vis_hist = awc.calcVisHist()
 num_windows = awc.calcNumWindows()
 print(f"vis hist = \n{vis_hist}")
 print(f"num_windows = {num_windows}")
 
-# Include sensor-overlap in window count.
-print("  Test with merge_windows=False and non-default args")
-# Starting num_windows can be >horizon. In this example, one satellite (#4) is at GEO, so
-# can be accessed by both sensors through all time steps.
-list_of_sensors = resetAgents(list_of_sensors)
-list_of_targets = resetAgents(list_of_targets)
-
+# %% Test with non-default args and merge_windows=False
+print("\nTest with merge_windows=False and non-default args")
 awc = AccessWindowCalculator(
-    list_of_sensors=list_of_sensors,
-    list_of_targets=list_of_targets,
-    horizon=100,
-    dt=200,
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    dynamics_sensors="terrestrial",
+    dynamics_targets="satellite",
+    t_start=321,
+    horizon=50,
+    dt=13,
     merge_windows=False,
-    truth_or_estimated="estimated",
 )
+
 vis_hist = awc.calcVisHist()
 num_windows = awc.calcNumWindows()
 print(f"num_windows = {num_windows}")
 
-print("  Test with merge_windows=True and non-default args")
+# %% Test with non-default args, merge_windows=True
+print("\nTest with merge_windows=True and non-default args")
+
 awc.merge_windows = True
 vis_hist = awc.calcVisHist()
 num_windows = awc.calcNumWindows()
 print(f"num_windows = {num_windows}")
 
-# Test with non-zero agent start times
-list_of_sensors = [
-    buildRandomAgent(target_sensor="sensor", time=100)
-    for i in range(num_sensors)
-]
-list_of_targets = [
-    buildRandomAgent(target_sensor="target", time=100)
-    for i in range(num_targets)
-]
-awc = AccessWindowCalculator(
-    list_of_sensors=list_of_sensors,
-    list_of_targets=list_of_targets,
-)
-vis_hist = awc.calcVisHist()
-num_windows = awc.calcNumWindows()
-print(f"vis hist = \n{vis_hist}")
-print(f"num_windows = {num_windows}")
 # %% Done
 print("done")
