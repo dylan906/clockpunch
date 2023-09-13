@@ -19,7 +19,12 @@ from punchclock.dynamics.dynamics_classes import (
 
 
 class AccessWindowCalculator:
-    """Calculates access windows between Sensors and Targets."""
+    """Calculates access windows between Sensors and Targets.
+
+    AccessWindowCalculator creates surrogate agents corresponding to the input
+    states and dynamic models. It then propagates the surrogate agents' state
+    history to predict visibility status.
+    """
 
     def __init__(
         self,
@@ -27,12 +32,9 @@ class AccessWindowCalculator:
         x_targets: ndarray,
         dynamics_sensors: str | list[str],
         dynamics_targets: str | list[str],
-        t_start: float = 0,
-        # list_of_sensors: list[Sensor],
-        # list_of_targets: list[Target],
+        t_start: float = 0.0,
         horizon: int = 1,
-        dt: int | float = 100,
-        # truth_or_estimated: str = "truth",
+        dt: float = 100.0,
         merge_windows: bool = True,
     ):
         """Calculate access windows for all targets.
@@ -40,18 +42,17 @@ class AccessWindowCalculator:
         Args:
             x_sensors (ndarray): (6, M) ECI state vectors.
             x_targets (ndarray): (6, N) ECI state vectors.
-            dynamics_sensors (str | list[str]): Dynamic model tag for sensors.
-            dynamics_targets (str | list[str]): Dynamic model tag for targets.
-            t_start (float, optional): JD initialization time.
-            # list_of_sensors (list[Sensor]): List of sensors at initial dynamic states.
-            # list_of_targets (list[Target]): List of targets at initial dynamic states.
+            dynamics_sensors (str | list[str]): ["terrestrial" | "satellite"] Dynamic
+                model tag for sensors. If str input, all sensors are assigned same
+                dynamic model.
+            dynamics_targets (str | list[str]): ["terrestrial" | "satellite"] Dynamic
+                model tag for targets. If str input, all targets are assigned same
+                dynamic model.
+            t_start (float, optional): JD initialization time. Defaults to 0.
             horizon (int, optional): Number of time steps to evaluate access windows
                 forward from start time. Defaults to 1.
-            dt (int | float, optional): Time step (sec) at which to propagate
+            dt (float, optional): Time step (sec) at which to propagate
                 dynamics at evaluate visibility. Defaults to 100.
-            # truth_or_estimated (str, optional): ["truth" | "estimated"] Tells instance
-            #     to use true or estimated states of Targets when propagating motion
-            #     and evaluating visibility. Defaults to "truth".
             merge_windows (bool, optional): Whether of not to count an interval where
                 a target can be seen by multiple sensors as 1 or multiple windows.
                 True means that such situations will be counted as 1 window. Defaults
