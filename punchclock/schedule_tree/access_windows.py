@@ -86,9 +86,10 @@ def calcAccessWindows(
             len(repeat_ids) == 0
         ), f"Duplicate ids in list_of_targets not allowed. Duplicate ids: {repeat_ids}."
 
-    # propagate motion in ScheduleTree at 100sec steps, unless horizon time is
-    # shorter, in which case pick some fraction of horizon.
-    dt_propagate = min(100, (horizon * dt_eval) / 5)
+    # Ff dt_propagate is close in magnitude to the horizon, overwrite with a smaller
+    # value. This gaurantees at least a reasonable (albiet small) number of sim
+    # steps.
+    dt_propagate = min(dt_propagate, (horizon * dt_eval) / 5)
     time_propagate = arange(
         start=0,
         stop=horizon * dt_eval,
@@ -99,8 +100,8 @@ def calcAccessWindows(
     avail = ScheduleTree(list_of_sensors + list_of_targets, time_propagate)
     avail_tree = avail.sched_tree
 
-    # slice availability tree by simulation time (not time_propagate)
-    # time_sim will be same as time_propagate if dt_eval>100
+    # slice availability tree by dt_eval (not dt_propagate)
+    # time_sim will be same as dt_propagate == dt_eval (assuming large horizon)
     time_sim = arange(
         start=0,
         stop=horizon * dt_eval,
