@@ -155,6 +155,16 @@ class NumWindows(InfoWrapper):
 
         return t0
 
+    def _getDynamics(self, agents: list[Agent]):
+        tag_map = {}
+
+        dynamics = [ag.dynamics for ag in agents]
+        dynamics_tags = [tag_map[d] for d in dynamics]
+        # TODO: Make it so AccessWindowCalculator can accept either Dynamics classes
+        # or strs (tags)
+
+        return dynamics_tags
+
     def updateInfo(
         self,
         observations: Any,
@@ -163,5 +173,6 @@ class NumWindows(InfoWrapper):
         truncations: Any,
         infos: dict,
     ):
-        new_info = infos.update({})
+        num_windows = self.window_calculator.calcNumWindows()
+        new_info = infos.update({"num_windows": num_windows})
         return new_info
