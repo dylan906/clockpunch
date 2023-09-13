@@ -23,8 +23,7 @@ class AccessWindowCalculator:
         list_of_sensors: list[Sensor],
         list_of_targets: list[Target],
         horizon: int = 1,
-        dt_eval: int | float = 100,
-        dt_propagate: int | float = 100,
+        dt: int | float = 100,
         truth_or_estimated: str = "truth",
         merge_windows: bool = True,
     ):
@@ -35,10 +34,8 @@ class AccessWindowCalculator:
             list_of_targets (list[Target]): List of targets at initial dynamic states.
             horizon (int, optional): Number of time steps to evaluate access windows
                 forward from start time. Defaults to 1.
-            dt_eval (int | float, optional): Time step (sec) at which to evaluate
-                access windows. Defaults to 100.
-            dt_propagate (int | float, optional): Time step (sec) at which to propagate
-                dynamics. Must be <= dt_eval. Defaults to 100.
+            dt (int | float, optional): Time step (sec) at which to propagate
+                dynamics at evaluate visibility. Defaults to 100.
             merge_windows (bool, optional): Whether of not to count an interval where
                 a target can be seen by multiple sensors as 1 or multiple windows.
                 True means that such situations will be counted as 1 window. Defaults
@@ -73,10 +70,7 @@ class AccessWindowCalculator:
 
         """
         assert horizon >= 1
-        assert (
-            dt_propagate <= dt_eval
-        ), f"""dt_propagate is not <= dt_eval
-        (dt_propagate = {dt_propagate}, dt_eval = {dt_eval})"""
+
         start_times = [ag.time for ag in list_of_sensors]
         start_times.extend([ag.time for ag in list_of_targets])
         assert all(
@@ -99,23 +93,14 @@ class AccessWindowCalculator:
         self.num_targets = len(self.list_of_targets)
         self.num_agents = self.num_targets + self.num_sensors
 
-        # If dt_propagate is close in magnitude to the horizon, overwrite with a smaller
+        # If dt is close in magnitude to the horizon, overwrite with a smaller
         # value. This guarantees at least a reasonable (albeit small) number of sim
         # steps.
-        self.dt_propagate = min(dt_propagate, (horizon * dt_eval) / 5)
+        self.dt = min(dt, (horizon * dt) / 5)
         self.time_propagate = arange(
             start=self.start_time,
-            stop=self.start_time + (horizon + 1) * dt_eval,
-            step=dt_propagate,
-        )
-
-        # time_eval will be same as time_propagate if dt_propagate == dt_eval (assuming
-        # large horizon)
-        self.dt_eval = dt_eval
-        self.time_eval = arange(
-            start=self.start_time,
-            stop=self.start_time + (horizon + 1) * dt_eval,
-            step=dt_eval,
+            stop=self.start_time + (horizon + 1) * dt,
+            step=dt,
         )
 
         return
@@ -165,7 +150,7 @@ class AccessWindowCalculator:
         if self.merge_windows is False:
             num_windows = sum(sum(vis_hist, axis=2), axis=0)
         else:
-            # delete multi-sensor windows and sum
+            # merge multi-sensor windows and sum
             vis_hist_merge = self.mergeWindows(vis_hist)  # returns (T, N)
             num_windows = sum(vis_hist_merge, axis=0)
 
@@ -185,7 +170,10 @@ class AccessWindowCalculator:
         Returns:
             ndarray: (T, N)
         """
-        vis_hist_merge = zeros((vis_hist.shape[0], vis_hist.shape[1]))
+        vis_hist_merge = zeros(
+            (vis_hist.shape[0], vis_hist.shape[1]),
+            dtype=int,
+        )
         for t in range(vis_hist.shape[0]):
             va = vis_hist[t, :, :]
             for n in range(va.shape[0]):
@@ -252,7 +240,7 @@ class AccessWindowCalculator:
     #     )
     #     avail_tree = avail.sched_tree
 
-    #     # slice availability tree by dt_eval (not dt_propagate)
+    #     # slice availability tree by dt_eval (not dt)
     #     sliced_tree = deepcopy(avail_tree)
     #     for int_slice in self.time_eval:
     #         sliced_tree.slice(int_slice)

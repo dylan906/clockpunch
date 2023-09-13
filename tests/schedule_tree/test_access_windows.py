@@ -14,7 +14,7 @@ def resetAgents(list_of_agents: list[Agent]):
 # %% Test AccessWindowCalculator
 print("\nTest AccessWindowCalculator...")
 num_sensors = 2
-num_targets = 2
+num_targets = 3
 
 list_of_sensors = [
     buildRandomAgent(target_sensor="sensor") for i in range(num_sensors)
@@ -30,9 +30,10 @@ list_of_targets = resetAgents(list_of_targets)
 awc = AccessWindowCalculator(
     list_of_sensors=list_of_sensors,
     list_of_targets=list_of_targets,
-    horizon=1,
+    truth_or_estimated="estimated",
 )
-num_windows = awc.calcAccessWindows()
+vis_hist = awc.calcVisHist()
+num_windows = awc.calcNumWindows()
 print(f"num_windows = {num_windows}")
 
 # Include sensor-overlap in window count.
@@ -45,11 +46,10 @@ num_windows = AccessWindowCalculator(
     list_of_sensors=list_of_sensors,
     list_of_targets=list_of_targets,
     horizon=10,
-    dt_eval=200,
-    dt_propagate=200,
+    dt=200,
     merge_windows=False,
 )
-num_windows = awc.calcAccessWindows()
+num_windows = awc.calcNumWindows()
 print(f"num_windows = {num_windows}")
 
 # %% Done
