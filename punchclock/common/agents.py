@@ -237,7 +237,7 @@ class Sensor(Agent):
 
 # %% Random Agent
 def buildRandomAgent(
-    target_sensor: str = "target",
+    agent_type: str = "agent",
     dynamics_model: str = "satellite",
     init_eci_state: ndarray[float] = None,
     id: str = None,  # noqa
@@ -250,8 +250,8 @@ def buildRandomAgent(
     interfaces.
 
     Args:
-        target_sensor (str, optional): ["target" | "sensor"]. Defaults to
-            "target".
+        agent_type (str, optional): ["sensor" | "agent" | "target"]. Defaults
+            to "agent".
         dynamics_model (str, optional): ["satellite" | "terrestrial"]. Defaults
             to "satellite".
         init_eci_state (ndarray[float], optional): ECI state vector. Defaults
@@ -270,14 +270,21 @@ def buildRandomAgent(
     if init_eci_state is None:
         init_eci_state = getRandomIC(dynamics_model_tag, time)
 
-    if target_sensor == "sensor":
+    if agent_type == "agent":
+        agent = Agent(
+            dynamics_model=dynamics_model,
+            init_eci_state=init_eci_state,
+            agent_id=id,
+            time=time,
+        )
+    elif agent_type == "sensor":
         agent = Sensor(
             dynamics_model=dynamics_model,
             init_eci_state=init_eci_state,
             agent_id=id,
             time=time,
         )
-    elif target_sensor == "target":
+    elif agent_type == "target":
         ukf = ezUKF(
             {
                 "time": time,
