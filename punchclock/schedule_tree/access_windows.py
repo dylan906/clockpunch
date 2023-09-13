@@ -30,8 +30,8 @@ class AccessWindowCalculator:
         Args:
             list_of_sensors (list[Sensor]): List of sensors at initial dynamic states.
             list_of_targets (list[Target]): List of targets at initial dynamic states.
-            horizon (int, optional): Number of time steps to calculate forward to.
-                Defaults to 1.
+            horizon (int, optional): Number of time steps to evaluate access windows
+                forward from start time. Defaults to 1.
             dt_eval (int | float, optional): Time step (sec) at which to evaluate
                 access windows. Defaults to 100.
             dt_propagate (int | float, optional): Time step (sec) at which to propagate
