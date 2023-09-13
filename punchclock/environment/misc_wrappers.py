@@ -43,7 +43,6 @@ class NumWindows(Wrapper):
     def __init__(
         self,
         env: Env,
-        key: str,
         horizon: int = None,
         dt: float = None,
         merge_windows: bool = True,
@@ -52,7 +51,7 @@ class NumWindows(Wrapper):
         super().__init__(env)
         assert hasattr(env, "agents")
         assert isinstance(env.agents, list)
-        assert all([isinstance(ag, Agent) for ag in env.agents])
+        assert all([isinstance(ag, (Target, Sensor)) for ag in env.agents])
 
         self.use_estimates = use_estimates
 
@@ -89,8 +88,8 @@ class NumWindows(Wrapper):
         targets.
 
         Returns:
-            ndarray: (6, M + N) ECI states. Sensor states are in columns 0:M-1,
-                target states are in columns M:N-1.
+            x_sensors (ndarray): (6, M) ECI states.
+            x_targets (ndarray): (6, N) ECI states.
         """
         if self.use_estimates is False:
             x_sensors = [agent.eci_state for agent in sensors]
@@ -100,9 +99,9 @@ class NumWindows(Wrapper):
             x_sensors = [agent.eci_state for agent in sensors]
             x_targets = [agent.target_filter.est_x for agent in targets]
 
-        # return (6, M+N) array
-        for y in [x_sensors, x_targets]:
-            y = asarray(y).squeeze().transpose()
+        # return (6, M) and (6, N) arrays
+        x_sensors = asarray(x_sensors).squeeze().transpose()
+        x_targets = asarray(x_targets).squeeze().transpose()
 
         return x_sensors, x_targets
 

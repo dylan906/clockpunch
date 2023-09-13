@@ -5,6 +5,7 @@ from gymnasium.spaces import Box
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
+from punchclock.common.agents import buildRandomAgent
 from punchclock.environment.misc_wrappers import IdentityWrapper, NumWindows
 
 # %% Test IdentityWrapper
@@ -27,7 +28,16 @@ identity_env = IdentityWrapper(rand_env, id="foo")
 print(f"identity env = {identity_env}")
 print(f"env.id = {identity_env.id}")
 
+# %% Build env for NumWindows wrapper
+print("\nBuild env for NumWindows test...")
+rand_env = RandomEnv()
+agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
+agents.extend([buildRandomAgent(agent_type="target") for ag in range(3)])
+rand_env.agents = agents
+
 # %% Test NumWindows
 print("\nTest NumWindows...")
+nw_env = NumWindows(env=rand_env, horizon=10, dt=100, use_estimates=False)
+
 # %% Done
 print("done")
