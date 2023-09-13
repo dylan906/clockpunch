@@ -139,6 +139,8 @@ class Target(Agent):
             agent_id=agent_id,
             time=time,
         )
+        assert self.time == target_filter.time, "Target time != filter time."
+
         self.target_filter = target_filter
         self.num_tasked = init_num_tasked
         self.last_time_tasked = npfloat32(init_last_time_tasked)
@@ -278,6 +280,7 @@ def buildRandomAgent(
     elif target_sensor == "target":
         ukf = ezUKF(
             {
+                "time": time,
                 "x_init": init_eci_state,
                 "p_init": rng.normal() * eye(6),
                 "dynamics_type": dynamics_model_tag,
