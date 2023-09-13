@@ -1,11 +1,12 @@
 """Test access_windows.py."""
 # Punch Clock Imports
-from punchclock.common.agents import Agent, Sensor, Target, buildRandomAgent
+from punchclock.common.agents import Agent, buildRandomAgent
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
 # %% Util func
 def resetAgents(list_of_agents: list[Agent]):
+    """Reset agents."""
     for ag in list_of_agents:
         ag.time = 0
     return list_of_agents

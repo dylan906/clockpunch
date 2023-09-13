@@ -1,18 +1,15 @@
 """Calculate access windows."""
 # %% Imports
 # Standard Library Imports
-from collections import Counter
 from copy import deepcopy
 
 # Third Party Imports
-from intervaltree import Interval, IntervalTree
-from numpy import arange, asarray, ndarray, squeeze, sum, zeros
+from numpy import arange, asarray, ndarray, sum, zeros
 from satvis.visibility_func import isVis
 
 # Punch Clock Imports
-from punchclock.common.agents import Agent, Sensor, Target
+from punchclock.common.agents import Sensor, Target
 from punchclock.common.constants import getConstants
-from punchclock.schedule_tree.schedule_tree import ScheduleTree
 
 # %% calcAccessWindows
 
@@ -106,6 +103,13 @@ class AccessWindowCalculator:
         return
 
     def reset(self):
+        """Reset agents.
+
+        Because propagating the agents to calculate visibility windows changes their
+        states, need to be able to reset agents to original state.
+
+        Agents are only modified within scope of AccessWindowCalculator (no leakage).
+        """
         self.list_of_sensors = deepcopy(self.backup_list_of_sensors)
         self.list_of_targets = deepcopy(self.backup_list_of_targets)
 
@@ -146,6 +150,11 @@ class AccessWindowCalculator:
         return vis_hist
 
     def calcNumWindows(self) -> ndarray[int]:
+        """Get number of visibility windows per target from current time to horizon.
+
+        Returns:
+            ndarray[int]: (N,) Number of windows per target.
+        """
         vis_hist = self.calcVisHist()
         if self.merge_windows is False:
             num_windows = sum(sum(vis_hist, axis=2), axis=0)
