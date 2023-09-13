@@ -5,7 +5,7 @@ from gymnasium.spaces import Box
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
-from punchclock.environment.misc_wrappers import IdentityWrapper
+from punchclock.environment.misc_wrappers import IdentityWrapper, NumWindows
 
 # %% Test IdentityWrapper
 print("\nTest IdentityWrapper...")
@@ -26,5 +26,8 @@ obs, reward, term, trunc, info = identity_env.step(
 identity_env = IdentityWrapper(rand_env, id="foo")
 print(f"identity env = {identity_env}")
 print(f"env.id = {identity_env.id}")
+
+# %% Test NumWindows
+print("\nTest NumWindows...")
 # %% Done
 print("done")

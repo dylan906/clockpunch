@@ -30,3 +30,12 @@ class IdentityWrapper(Wrapper):
     def observation(self, obs):
         """Pass-through observation."""
         return obs
+
+
+# %% NumWindows wrapper
+class NumWindows(Wrapper):
+    def __init__(self, env: Env, key: str):
+        super().__init__(env)
+        assert hasattr(env, "agents")
+        assert isinstance(env.agents, list)
+        assert all([isinstance(ag, Agent) for ag in env.agents])

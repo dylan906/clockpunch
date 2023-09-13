@@ -55,7 +55,6 @@ from punchclock.environment.wrapper_utils import (
     getSpacesRange,
     remakeSpace,
 )
-from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
 # %% FloatObs
@@ -1992,9 +1991,3 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
         )
 
         super().__init__(env, [partial_func], [key], new_obs_space)
-
-
-# %% NumWindows wrapper
-class NumWindows(gym.ObservationWrapper):
-    def __init__(self, env: Env, key: str):
-        super().__init__(env)
