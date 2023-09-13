@@ -1,8 +1,9 @@
 """Misc wrappers."""
 # %% Imports
 # Standard Library Imports
+from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any
+from typing import Any, final
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
@@ -38,8 +39,47 @@ class IdentityWrapper(Wrapper):
         return obs
 
 
+# %% Info Wrapper
+class InfoWrapper(ABC, Wrapper):
+    def __init__(self, env: Env):
+        super().__init__(env)
+
+    @final
+    def step(self, action):
+        """Step environment forward. Do not modify."""
+        (
+            observations,
+            rewards,
+            terminations,
+            truncations,
+            infos,
+        ) = self.env.step(action)
+
+        new_info = self.updateInfo(
+            observations,
+            rewards,
+            terminations,
+            truncations,
+            infos,
+        )
+        infos.update(new_info)
+
+        return (observations, rewards, terminations, truncations, new_info)
+
+    @abstractmethod
+    def updateInfo(
+        self,
+        observations,
+        rewards,
+        terminations,
+        truncations,
+        infos,
+    ):
+        return infos
+
+
 # %% NumWindows wrapper
-class NumWindows(Wrapper):
+class NumWindows(InfoWrapper):
     def __init__(
         self,
         env: Env,
@@ -114,3 +154,14 @@ class NumWindows(Wrapper):
         t0 = start_times[0]
 
         return t0
+
+    def updateInfo(
+        self,
+        observations: Any,
+        rewards: Any,
+        terminations: Any,
+        truncations: Any,
+        infos: dict,
+    ):
+        new_info = infos.update({})
+        return new_info
