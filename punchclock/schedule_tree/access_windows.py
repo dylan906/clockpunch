@@ -8,8 +8,12 @@ from numpy import arange, asarray, ndarray, sum, zeros
 from satvis.visibility_func import isVis
 
 # Punch Clock Imports
-from punchclock.common.agents import Sensor, Target
+from punchclock.common.agents import Agent, Sensor, Target, buildRandomAgent
 from punchclock.common.constants import getConstants
+from punchclock.dynamics.dynamics_classes import (
+    SatDynamicsModel,
+    StaticTerrestrial,
+)
 
 # %% calcAccessWindows
 
@@ -19,25 +23,35 @@ class AccessWindowCalculator:
 
     def __init__(
         self,
-        list_of_sensors: list[Sensor],
-        list_of_targets: list[Target],
+        x_sensors: ndarray,
+        x_targets: ndarray,
+        dynamics_sensors: str | list[str],
+        dynamics_targets: str | list[str],
+        t_start: float = 0,
+        # list_of_sensors: list[Sensor],
+        # list_of_targets: list[Target],
         horizon: int = 1,
         dt: int | float = 100,
-        truth_or_estimated: str = "truth",
+        # truth_or_estimated: str = "truth",
         merge_windows: bool = True,
     ):
         """Calculate access windows for all targets.
 
         Args:
-            list_of_sensors (list[Sensor]): List of sensors at initial dynamic states.
-            list_of_targets (list[Target]): List of targets at initial dynamic states.
+            x_sensors (ndarray): (6, M) ECI state vectors.
+            x_targets (ndarray): (6, N) ECI state vectors.
+            dynamics_sensors (str | list[str]): Dynamic model tag for sensors.
+            dynamics_targets (str | list[str]): Dynamic model tag for targets.
+            t_start (float, optional): JD initialization time.
+            # list_of_sensors (list[Sensor]): List of sensors at initial dynamic states.
+            # list_of_targets (list[Target]): List of targets at initial dynamic states.
             horizon (int, optional): Number of time steps to evaluate access windows
                 forward from start time. Defaults to 1.
             dt (int | float, optional): Time step (sec) at which to propagate
                 dynamics at evaluate visibility. Defaults to 100.
-            truth_or_estimated (str, optional): ["truth" | "estimated"] Tells instance
-                to use true or estimated states of Targets when propagating motion
-                and evaluating visibility. Defaults to "truth".
+            # truth_or_estimated (str, optional): ["truth" | "estimated"] Tells instance
+            #     to use true or estimated states of Targets when propagating motion
+            #     and evaluating visibility. Defaults to "truth".
             merge_windows (bool, optional): Whether of not to count an interval where
                 a target can be seen by multiple sensors as 1 or multiple windows.
                 True means that such situations will be counted as 1 window. Defaults
@@ -66,31 +80,51 @@ class AccessWindowCalculator:
             - An access period of dt_eval + eps starting at
                 t = dt_eval + eps is counted as one window.
         """
+        assert x_sensors.shape[0] == 6
+        assert x_targets.shape[0] == 6
+        if isinstance(dynamics_sensors, list):
+            assert len(dynamics_sensors) == x_sensors.shape[1]
+        if isinstance(dynamics_targets, list):
+            assert len(dynamics_targets) == x_targets.shape[1]
+
         # NOTE: Always use self._getStates() within this class, vice manually fetching
         # states from agents. This is because the desired state, truth or estimated,
         # is fetched differently depending on the parameter.
         assert horizon >= 1
 
-        start_times = [ag.time for ag in list_of_sensors]
-        start_times.extend([ag.time for ag in list_of_targets])
-        assert all(
-            [start_times[0] == st for st in start_times]
-        ), "All agents must have same time stamp."
-        self.start_time = start_times[0]
+        # start_times = [ag.time for ag in list_of_sensors]
+        # start_times.extend([ag.time for ag in list_of_targets])
+        # assert all(
+        #     [start_times[0] == st for st in start_times]
+        # ), "All agents must have same time stamp."
+        # self.start_time = start_times[0]
+        self.start_time = t_start
 
-        self.backup_list_of_targets = deepcopy(list_of_targets)
-        self.backup_list_of_sensors = deepcopy(list_of_sensors)
+        # Create surrogate agents
+        self.sensors = self._buildAgents(
+            x=x_sensors,
+            time=self.start_time,
+            dynamics=dynamics_sensors,
+        )
+        self.targets = self._buildAgents(
+            x=x_targets,
+            time=self.start_time,
+            dynamics=dynamics_targets,
+        )
+
+        self.backup_sensors = deepcopy(self.sensors)
+        self.backup_targets = deepcopy(self.targets)
         self.reset()
 
         self.merge_windows = merge_windows
-        if truth_or_estimated == "truth":
-            self.use_true_states = True
-        elif truth_or_estimated == "estimated":
-            self.use_true_states = False
+        # if truth_or_estimated == "truth":
+        #     self.use_true_states = True
+        # elif truth_or_estimated == "estimated":
+        #     self.use_true_states = False
 
         self.RE = getConstants()["earth_radius"]
-        self.num_sensors = len(self.list_of_sensors)
-        self.num_targets = len(self.list_of_targets)
+        self.num_sensors = len(self.sensors)
+        self.num_targets = len(self.targets)
         self.num_agents = self.num_targets + self.num_sensors
 
         # If dt is close in magnitude to the horizon, overwrite with a smaller
@@ -113,8 +147,8 @@ class AccessWindowCalculator:
 
         Agents are only modified within scope of AccessWindowCalculator (no leakage).
         """
-        self.list_of_sensors = deepcopy(self.backup_list_of_sensors)
-        self.list_of_targets = deepcopy(self.backup_list_of_targets)
+        self.sensors = deepcopy(self.backup_sensors)
+        self.targets = deepcopy(self.backup_targets)
 
     def calcVisHist(self) -> ndarray[int]:
         """Calculate visibility history array.
@@ -245,3 +279,34 @@ class AccessWindowCalculator:
                     vis_hist_merge[t, n] = 1
 
         return vis_hist_merge
+
+    def _buildAgents(
+        self,
+        x: ndarray,
+        time: float,
+        dynamics: str | list[str],
+    ) -> list[Agent]:
+        """Build generic agents."""
+        dynamics_model_map = {
+            "terrestrial": StaticTerrestrial,
+            "satellite": SatDynamicsModel,
+        }
+
+        if isinstance(dynamics, str):
+            dynamics = [dynamics for a in range(x.shape[1])]
+
+        agents = []
+        for i, dyn in zip(range(x.shape[1]), dynamics):
+            xi = x[:, i]
+            dyn_model = dynamics_model_map[dyn]
+            agents.extend(
+                [
+                    Agent(
+                        dynamics_model=dyn_model(),
+                        init_eci_state=xi,
+                        time=time,
+                    )
+                ]
+            )
+
+        return agents

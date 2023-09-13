@@ -1,4 +1,7 @@
 """Test access_windows.py."""
+# Third Party Imports
+from numpy import asarray
+
 # Punch Clock Imports
 from punchclock.common.agents import Agent, buildRandomAgent
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
@@ -12,8 +15,8 @@ def resetAgents(list_of_agents: list[Agent]):
     return list_of_agents
 
 
-# %% Test AccessWindowCalculator
-print("\nTest AccessWindowCalculator...")
+# %% Build dummy agents to get realistic states
+print("\nBuilding dummy agents...")
 num_sensors = 2
 num_targets = 3
 
@@ -24,11 +27,22 @@ list_of_targets = [
     buildRandomAgent(target_sensor="target") for i in range(num_targets)
 ]
 
-list_of_sensors = resetAgents(list_of_sensors)
-list_of_targets = resetAgents(list_of_targets)
+x_sensors = asarray([a.eci_state for a in list_of_sensors]).squeeze().T
+x_targets = asarray([a.eci_state for a in list_of_targets]).squeeze().T
+
+# %% Test _buildAgents
+print("\nTest _buildAgents...")
+agents = AccessWindowCalculator._buildAgents(
+    None, x_sensors, time=0, dynamics="terrestrial"
+)
+
+print(f"agents = {agents}")
+
+# %% Test AccessWindowCalculator instantiation
+print("\nTest AccessWindowCalculator instantiation...")
+
 print("  Test with default args")
 # Number of possible windows is number of steps in sim (env.horizon)
-# All starting num_windows for targets should be <=horizon
 awc = AccessWindowCalculator(
     list_of_sensors=list_of_sensors,
     list_of_targets=list_of_targets,
