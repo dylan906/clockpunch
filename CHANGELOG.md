@@ -22,6 +22,7 @@ I'm trying to get better about that.
 
 ### Fixed
 - `SimRunner._getObs()` is cleaner and now works with wrappers that don't have an `observation()` method (#49, #50).
+- `ezUKF` now accepts optional initialization time as argument (54672fe).
 
 ### Removed
 - Removed old `ActionMask` wrapper in favor of more modular wrappers.
