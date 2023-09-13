@@ -26,7 +26,7 @@ class AccessWindowCalculator:
         dt_eval: int | float = 100,
         dt_propagate: int | float = 100,
         truth_or_estimated: str = "truth",
-        # merge_windows: bool = True,
+        merge_windows: bool = True,
     ):
         """Calculate access windows for all targets.
 
@@ -88,7 +88,7 @@ class AccessWindowCalculator:
         self.backup_list_of_sensors = deepcopy(list_of_sensors)
         self.reset()
 
-        # self.merge_windows = merge_windows
+        self.merge_windows = merge_windows
         if truth_or_estimated == "truth":
             self.use_true_states = True
         elif truth_or_estimated == "estimated":
@@ -162,8 +162,38 @@ class AccessWindowCalculator:
 
     def calcNumWindows(self) -> ndarray[int]:
         vis_hist = self.calcVisHist()
-        num_windows = sum(vis_hist, axis=0)
+        if self.merge_windows is False:
+            num_windows = sum(sum(vis_hist, axis=2), axis=0)
+        else:
+            # delete multi-sensor windows and sum
+            vis_hist_merge = self.mergeWindows(vis_hist)  # returns (T, N)
+            num_windows = sum(vis_hist_merge, axis=0)
+
         return num_windows
+
+    def mergeWindows(self, vis_hist: ndarray) -> ndarray:
+        """Merge sensor elements of a (T, N, M) visibility history array.
+
+        For every (N, M) frame in vis_hist, a N-long binary vector is created.
+        If there are any 1s in the i'th row of the t'th frame, the i'th value
+        of the binary vector is set to 1. Otherwise, the value is 0. The binary
+        vectors are output as a (T, N) array.
+
+        Args:
+            vis_hist (ndarray): (T, N, M)
+
+        Returns:
+            ndarray: (T, N)
+        """
+        vis_hist_merge = zeros((vis_hist.shape[0], vis_hist.shape[1]))
+        for t in range(vis_hist.shape[0]):
+            va = vis_hist[t, :, :]
+            for n in range(va.shape[0]):
+                row = va[n, :]
+                if 1 in row:
+                    vis_hist_merge[t, n] = 1
+
+        return vis_hist_merge
 
     def getStates(self) -> ndarray:
         """Get current state (truth or estimated) from all agents.
