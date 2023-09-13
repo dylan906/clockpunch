@@ -162,6 +162,7 @@ def linear(x: float, m: float, b: float) -> float:
 
 # %% Get common logarithm
 def find_exp(number) -> int:
+    """Get the common logarithmm of the input."""
     base10 = log10(abs(number))
     return abs(floor(base10))
 
