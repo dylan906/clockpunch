@@ -62,5 +62,23 @@ awc.merge_windows = True
 vis_hist = awc.calcVisHist()
 num_windows = awc.calcNumWindows()
 print(f"num_windows = {num_windows}")
+
+# Test with non-zero agent start times
+list_of_sensors = [
+    buildRandomAgent(target_sensor="sensor", time=100)
+    for i in range(num_sensors)
+]
+list_of_targets = [
+    buildRandomAgent(target_sensor="target", time=100)
+    for i in range(num_targets)
+]
+awc = AccessWindowCalculator(
+    list_of_sensors=list_of_sensors,
+    list_of_targets=list_of_targets,
+)
+vis_hist = awc.calcVisHist()
+num_windows = awc.calcNumWindows()
+print(f"vis hist = \n{vis_hist}")
+print(f"num_windows = {num_windows}")
 # %% Done
 print("done")
