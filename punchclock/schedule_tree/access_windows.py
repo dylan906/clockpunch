@@ -69,10 +69,17 @@ class AccessWindowCalculator:
                 t = dt_eval + eps is counted as one window.
 
         """
+        assert horizon >= 1
         assert (
             dt_propagate <= dt_eval
         ), f"""dt_propagate is not <= dt_eval
         (dt_propagate = {dt_propagate}, dt_eval = {dt_eval})"""
+        start_times = [ag.time for ag in list_of_sensors]
+        start_times.extend([ag.time for ag in list_of_targets])
+        assert all(
+            [start_times[0] == st for st in start_times]
+        ), "All agents must have same time stamp."
+        self.start_time = start_times[0]
 
         self.merge_windows = merge_windows
 
@@ -84,7 +91,7 @@ class AccessWindowCalculator:
         # steps.
         self.dt_propagate = min(dt_propagate, (horizon * dt_eval) / 5)
         self.time_propagate = arange(
-            start=0,
+            start=self.start_time,
             stop=(horizon + 1) * dt_eval,
             step=dt_propagate,
         )
@@ -93,7 +100,7 @@ class AccessWindowCalculator:
         # large horizon)
         self.dt_eval = dt_eval
         self.time_eval = arange(
-            start=0,
+            start=self.start_time,
             stop=(horizon + 1) * dt_eval,
             step=dt_eval,
         )
