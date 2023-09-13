@@ -9,6 +9,7 @@ from typing import Any, Tuple
 # Third Party Imports
 import gymnasium as gym
 import numpy as np
+from gymnasium import Env
 from gymnasium.spaces import (
     Box,
     Dict,
@@ -54,6 +55,7 @@ from punchclock.environment.wrapper_utils import (
     getSpacesRange,
     remakeSpace,
 )
+from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
 # %% FloatObs
@@ -64,7 +66,7 @@ class FloatObs(gym.ObservationWrapper):
     space for int dtypes.
     """
 
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: Env):
         """Wrap environment."""
         assert isinstance(
             env.observation_space, Dict
@@ -153,14 +155,14 @@ class NestObsItems(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         new_key: Any = None,
         keys_to_nest: list = None,
     ):
         """Wrap environment with NestObsItems ObservationWrapper.
 
         Args:
-            env (gym.Env): Must have a Dict observation space.
+            env (Env): Must have a Dict observation space.
             new_key (Any, optional): The name of the new item that will be added
                 to the top level of the observation space. Defaults to "new_key".
             keys_to_nest (list, optional): Keys of items in unwrapped observation
@@ -253,11 +255,11 @@ class CopyObsItem(gym.ObservationWrapper):
 
     """
 
-    def __init__(self, env: gym.Env, key: Any, new_key: str = None):
+    def __init__(self, env: Env, key: Any, new_key: str = None):
         """Wrap env observation space.
 
         Args:
-            env (gym.Env): Must have gym.Dict observation space.
+            env (Env): Must have gym.Dict observation space.
             key (Any): A key in unwrapped observation space.
             new_key (str, optional): Override new mask item key. Defaults
                 behavior is to append "_copy".
@@ -327,7 +329,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         vis_map_key: str,
         rename_key: str = None,
         action_mask_on: bool = True,
@@ -335,7 +337,7 @@ class VisMap2ActionMask(gym.ObservationWrapper):
         """Wrap environment with VisMap2ActionMask.
 
         Args:
-            env (gym.Env): Must have:
+            env (Env): Must have:
                 - Dict observation space
                 - MultiDiscrete action space
                 - vis_map_key must be in observation space
@@ -464,11 +466,11 @@ class MultiplyObsItems(gym.ObservationWrapper):
         )
     """
 
-    def __init__(self, env: gym.Env, keys: list, new_key: str = None):
+    def __init__(self, env: Env, keys: list, new_key: str = None):
         """Wrap environment observation space.
 
         Args:
-            env (gym.Env): Gym environment.
+            env (Env): Gym environment.
             keys (list): List of keys. Keys must be in env.observation_space.
             new_key (str, optional): Key of new item in observation space where
                 return value will be placed. If None, the value of
@@ -590,13 +592,13 @@ class FlatDict(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         keys: list = None,
     ):
         """Flatten sub-levels of a Dict observation space.
 
         Args:
-            env (gym.Env): An environment with a Dict observation space.
+            env (Env): An environment with a Dict observation space.
             keys (list, optional): List of sub-levels to flatten. If empty,
                 all sub-levels are flattened. Defaults to [].
         """
@@ -659,7 +661,7 @@ class MakeDict(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
     ):
         """Wrap env."""
         super().__init__(env)
@@ -700,13 +702,13 @@ class LinScaleDictObs(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         rescale_config: dict = None,
     ):
         """Wrap an environment with LinScaleDictObs.
 
         Args:
-            env (gym.Env): Observation space must be a gymDict.
+            env (Env): Observation space must be a gymDict.
             rescale_config (dict, optional): Keys must be a subset of unwrapped
                 observation space keys. Values must be floats. If empty, wrapped
                 observation space is same as unwrapped. Defaults to {}.
@@ -788,7 +790,7 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
     See sklearn.preprocessing.MinMaxScaler for algorithm details.
     """
 
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: Env):
         """Wrap environment that has a Dict observation space."""
         assert isinstance(
             env.observation_space, gym.spaces.Dict
@@ -932,7 +934,7 @@ class SplitArrayObs(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         keys: list[str],
         new_keys: list[list[str]],
         indices_or_sections: list[int | ndarray],
@@ -941,7 +943,7 @@ class SplitArrayObs(gym.ObservationWrapper):
         """Initialize SplitArrayObs wrapper.
 
         Args:
-            env (gym.Env): Must have a Dict observation space.
+            env (Env): Must have a Dict observation space.
             keys (list[str]): (A-long) List of keys in unwrapped observation to
                 be replaced with new_keys.
             new_keys (list[list[str]]): (A-long) Nested list of new keys to replace
@@ -1011,7 +1013,7 @@ class SplitArrayObs(gym.ObservationWrapper):
 
     def buildNewObsSpace(
         self,
-        env: gym.Env,
+        env: Env,
         key_map: dict,
         obs_space: gym.spaces.Dict,
         indices_or_sections: list[int | ndarray],
@@ -1088,14 +1090,14 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         keys: list[str],
         axis: int | None = None,
     ):
         """Initialize wrapper.
 
         Args:
-            env (gym.Env): A gym environment with a Dict observation space.
+            env (Env): A gym environment with a Dict observation space.
             keys (list[str]): Keys whose values will be summed.
             axis (int | None, optional): Axis along which to sum key values. If
                 None, all elements of array will be summed. Defaults to None.
@@ -1170,7 +1172,7 @@ class CustodyWrapper(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         key: Any,
         config: dict = None,
         target_names: list = None,
@@ -1179,7 +1181,7 @@ class CustodyWrapper(gym.ObservationWrapper):
         """Wrap environment with CustodyWrapper observation space wrapper.
 
         Args:
-            env (gym.Env): Must have a Dict observation space with key in it.
+            env (Env): Must have a Dict observation space with key in it.
             key (Any): A key contained in the observation space. The value corresponding
                 to this key must conform to interface expected in CustodyTracker
                 and config.
@@ -1274,14 +1276,14 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         keys: list,
         diag_on_0_or_1: list[int] = None,
     ):
         """Wrap environment.
 
         Args:
-            env (gym.Env): Must have Dict observation space.
+            env (Env): Must have Dict observation space.
             keys (list): Items in observation space that will be diagonalized.
                 All entries must:
                     - be keys in env.observation_space
@@ -1407,7 +1409,7 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         keys: list[str],
         offset: list[int] = None,
         axis1: list[int] = None,
@@ -1418,7 +1420,7 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
         See numpy.diagonal for details.
 
         Args:
-            env (gym.Env): Must have Dict observation space.
+            env (Env): Must have Dict observation space.
             keys (list[str]): Must be in observation space. Each corresponding
                 value must be a Space with >1 dims.
             offset (list[int], optional): Offset from main diagonal. Defaults to 0.
@@ -1524,14 +1526,14 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         key: str,
         rename_key: str = None,
     ):
         """Wrap environment.
 
         Args:
-            env (gym.Env): Must have a Dict observation_space.
+            env (Env): Must have a Dict observation_space.
             key (str): Contained in env.observation_space. Must be a 1d MultiBinary
                 space.
             rename_key (str, optional): Unwrapped observation space entry key will
@@ -1669,11 +1671,11 @@ class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
         )
     """
 
-    def __init__(self, env: gym.Env, key: str):
+    def __init__(self, env: Env, key: str):
         """Wrap environment.
 
         Args:
-            env (gym.Env): Must have Dict observation space.
+            env (Env): Must have Dict observation space.
             key (str): Must be in env.observation_space. env.observation_space[key]
                 must be a Box space with high == 1, low == 0, and dtype != int.
         """
@@ -1742,14 +1744,14 @@ class SqueezeObsItems(SelectiveDictObsWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         keys: list[str],
         axis: list[int] | list[Tuple[int]] = None,
     ):
         """Initialize wrapper.
 
         Args:
-            env (gym.Env): Must have a Dict observation space.
+            env (Env): Must have a Dict observation space.
             keys (list[str]): Must be in observation space.
             axis (list[int] | list[Tuple[int]], optional): Axis on which to squeeze.
                 See numpy.squeeze for details. If len == 1, then all keys will
@@ -1834,13 +1836,11 @@ class WastedActionsMask(gym.ObservationWrapper):
     mask.
     """
 
-    def __init__(
-        self, env: gym.Env, vis_map_key: ndarray, mask_key: str = None
-    ):
+    def __init__(self, env: Env, vis_map_key: ndarray, mask_key: str = None):
         """Wrap environment with WastedActionsMask.
 
         Args:
-            env (gym.Env): Must have a Dict observation space.
+            env (Env): Must have a Dict observation space.
             vis_map_key (ndarray): Corresponds to item in observation space.
                 Corresponding value must be a (N, M) or (N+1, M) binary array.
             mask_key (str, optional): The key of the new action mask entry in the
@@ -1953,7 +1953,7 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
 
     def __init__(
         self,
-        env: gym.Env,
+        env: Env,
         numpy_func_str: str,
         key: str,
         **kwargs: Any,
@@ -1961,7 +1961,7 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
         """Wrap environment with TransformDictObsWithNumpy.
 
         Args:
-            env (gym.Env): Must have a Dict observation space.
+            env (Env): Must have a Dict observation space.
             numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
                 getattr(numpy, numpy_func_str)).
             key (str): Key of observation space to apply function to.
@@ -1996,5 +1996,5 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
 
 # %% NumWindows wrapper
 class NumWindows(gym.ObservationWrapper):
-    def __init__(self, env: gym.Env, key: str):
+    def __init__(self, env: Env, key: str):
         super().__init__(env)
