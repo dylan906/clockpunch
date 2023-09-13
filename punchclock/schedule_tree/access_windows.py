@@ -8,7 +8,7 @@ from numpy import arange, asarray, ndarray, sum, zeros
 from satvis.visibility_func import isVis
 
 # Punch Clock Imports
-from punchclock.common.agents import Agent, Sensor, Target, buildRandomAgent
+from punchclock.common.agents import Agent
 from punchclock.common.constants import getConstants
 from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
@@ -87,17 +87,8 @@ class AccessWindowCalculator:
         if isinstance(dynamics_targets, list):
             assert len(dynamics_targets) == x_targets.shape[1]
 
-        # NOTE: Always use self._getStates() within this class, vice manually fetching
-        # states from agents. This is because the desired state, truth or estimated,
-        # is fetched differently depending on the parameter.
         assert horizon >= 1
 
-        # start_times = [ag.time for ag in list_of_sensors]
-        # start_times.extend([ag.time for ag in list_of_targets])
-        # assert all(
-        #     [start_times[0] == st for st in start_times]
-        # ), "All agents must have same time stamp."
-        # self.start_time = start_times[0]
         self.start_time = t_start
 
         # Create surrogate agents
@@ -114,13 +105,8 @@ class AccessWindowCalculator:
 
         self.backup_sensors = deepcopy(self.sensors)
         self.backup_targets = deepcopy(self.targets)
-        self.reset()
 
         self.merge_windows = merge_windows
-        # if truth_or_estimated == "truth":
-        #     self.use_true_states = True
-        # elif truth_or_estimated == "estimated":
-        #     self.use_true_states = False
 
         self.RE = getConstants()["earth_radius"]
         self.num_sensors = len(self.sensors)
@@ -131,7 +117,7 @@ class AccessWindowCalculator:
         # value. This guarantees at least a reasonable (albeit small) number of sim
         # steps.
         self.dt = min(dt, (horizon * dt) / 5)
-        self.time_propagate = arange(
+        self.time_vec = arange(
             start=self.start_time,
             stop=self.start_time + (horizon + 1) * dt,
             step=dt,
@@ -163,9 +149,9 @@ class AccessWindowCalculator:
 
         vis_hist = zeros(
             (
-                len(self.time_propagate),
-                len(self.list_of_targets),
-                len(self.list_of_sensors),
+                len(self.time_vec),
+                self.num_targets,
+                self.num_sensors,
             ),
             dtype=int,
         )
@@ -175,8 +161,8 @@ class AccessWindowCalculator:
         )
 
         # loop through agents and propagate motion
-        for i, t in enumerate(self.time_propagate[1:], start=1):
-            for agent in self.list_of_sensors + self.list_of_targets:
+        for i, t in enumerate(self.time_vec[1:], start=1):
+            for agent in self.sensors + self.targets:
                 agent.propagate(t)
 
             xi = self._getStates()
@@ -204,27 +190,13 @@ class AccessWindowCalculator:
         return num_windows
 
     def _getStates(self) -> ndarray:
-        """Get current state (truth or estimated) from all agents.
-
-        If self.use_true_states == True, then truth states are fetched. Otherwise,
-        truth states are fetched for sensors and estimated states are fetched for
-        targets.
+        """Get current state from all agents.
 
         Returns:
             ndarray: (6, M + N) ECI states. Sensor states are in columns 0:M-1,
                 target states are in columns M:N-1.
         """
-        if self.use_true_states:
-            x = [
-                agent.eci_state
-                for agent in self.list_of_sensors + self.list_of_targets
-            ]
-        else:
-            # Get truth states for sensors but estimated states for targets
-            x = [agent.eci_state.squeeze() for agent in self.list_of_sensors]
-            x.extend(
-                [agent.target_filter.est_x for agent in self.list_of_targets]
-            )
+        x = [agent.eci_state for agent in self.sensors + self.targets]
 
         # return (6, M+N) array
         x = asarray(x).squeeze().transpose()
