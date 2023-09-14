@@ -130,38 +130,6 @@ class AccessWindowCalculator:
 
         return
 
-    def setup(
-        self,
-        x_sensors: ndarray,
-        x_targets: ndarray,
-        t: float,
-    ):
-        """Build surrogate agents and generate time vector.
-
-        Args:
-            x_sensors (ndarray): (6, M) ECI state vectors in columns.
-            x_targets (ndarray): (6, N) ECI state vectors in columns.
-            t (float): Current time (sec).
-        """
-        # update time
-        self.t_now = t
-
-        # Generate time vector
-        self.time_vec = self._genTime()
-        print(self.time_vec)
-
-        # Create surrogate agents
-        self.sensors = self._buildAgents(
-            x=x_sensors,
-            time=self.t_now,
-            dynamics=self.dynamics_sensors,
-        )
-        self.targets = self._buildAgents(
-            x=x_targets,
-            time=self.t_now,
-            dynamics=self.dynamics_targets,
-        )
-
     def calcVisHist(
         self,
         x_sensors: ndarray,
@@ -179,9 +147,9 @@ class AccessWindowCalculator:
             ndarray[int]: (T, N, M) binary array. A 1 indicates that the n-m
                 target-sensor can see each other at time t.
         """
-        self.setup(x_sensors=x_sensors, x_targets=x_targets, t=t)
+        # build agents and time vector
+        self._setup(x_sensors=x_sensors, x_targets=x_targets, t=t)
 
-        # self.reset()
         # Setup state history arrays
         x0 = self._getStates()
 
@@ -248,6 +216,38 @@ class AccessWindowCalculator:
             return num_windows
         else:
             return num_windows, vis_hist
+
+    def _setup(
+        self,
+        x_sensors: ndarray,
+        x_targets: ndarray,
+        t: float,
+    ):
+        """Build surrogate agents and generate time vector.
+
+        Args:
+            x_sensors (ndarray): (6, M) ECI state vectors in columns.
+            x_targets (ndarray): (6, N) ECI state vectors in columns.
+            t (float): Current time (sec).
+        """
+        # update time
+        self.t_now = t
+
+        # Generate time vector
+        self.time_vec = self._genTime()
+        print(self.time_vec)
+
+        # Create surrogate agents
+        self.sensors = self._buildAgents(
+            x=x_sensors,
+            time=self.t_now,
+            dynamics=self.dynamics_sensors,
+        )
+        self.targets = self._buildAgents(
+            x=x_targets,
+            time=self.t_now,
+            dynamics=self.dynamics_targets,
+        )
 
     def _getStates(self) -> ndarray:
         """Get current state from all agents.
