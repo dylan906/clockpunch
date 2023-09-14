@@ -2,6 +2,7 @@
 # %% Imports
 # Standard Library Imports
 from copy import deepcopy
+from typing import Tuple
 
 # Third Party Imports
 from numpy import arange, asarray, ndarray, sum, zeros
@@ -183,11 +184,20 @@ class AccessWindowCalculator:
 
         return vis_hist
 
-    def calcNumWindows(self) -> ndarray[int]:
+    def calcNumWindows(
+        self,
+        return_vis_hist: bool = False,
+    ) -> ndarray[int] | Tuple[ndarray[int], ndarray[int]]:
         """Get number of visibility windows per target from current time to horizon.
 
+        Args:
+            return_vis_hist (bool, optional): Set to True to return vis_hist in
+                addition to num_windows. Defaults to False.
+
         Returns:
-            ndarray[int]: (N,) Number of windows per target.
+            num_windows (ndarray[int]): (N,) Number of windows per target.
+            vis_hist (ndarray[int], optional): (T, N, M) Same as return from
+                self.calcVisHist(). Returns if return_vis_hist == True on input.
         """
         vis_hist = self.calcVisHist()
         if self.merge_windows is False:
@@ -197,7 +207,10 @@ class AccessWindowCalculator:
             vis_hist_merge = self._mergeWindows(vis_hist)  # returns (T, N)
             num_windows = sum(vis_hist_merge, axis=0)
 
-        return num_windows
+        if return_vis_hist is False:
+            return num_windows
+        else:
+            return num_windows, vis_hist
 
     def _getStates(self) -> ndarray:
         """Get current state from all agents.
