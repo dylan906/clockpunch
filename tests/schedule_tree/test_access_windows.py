@@ -30,7 +30,10 @@ x_targets = asarray([a.eci_state for a in list_of_targets]).squeeze().T
 # %% Test _buildAgents
 print("\nTest _buildAgents...")
 agents = AccessWindowCalculator._buildAgents(
-    None, x_sensors, time=0, dynamics="terrestrial"
+    None,
+    x_sensors,
+    time=0,
+    dynamics="terrestrial",
 )
 
 print(f"agents = {agents}")
@@ -43,8 +46,6 @@ print("  Test with default args")
 awc = AccessWindowCalculator(
     num_sensors=num_sensors,
     num_targets=num_targets,
-    # x_sensors=x_sensors,
-    # x_targets=x_targets,
     dynamics_sensors="terrestrial",
     dynamics_targets="satellite",
 )
@@ -53,7 +54,6 @@ awc = AccessWindowCalculator(
 awc._setup(x_sensors=x_sensors, x_targets=x_targets, t=0)
 print(f"t_now = {awc.t_now}")
 print(f"time vec = {awc.time_vec}")
-
 
 # %% Test _getStates
 print("\nTest _getStates...")
@@ -72,9 +72,15 @@ print(f"vis hist = \n{vis_hist}")
 
 # %% Test _mergeWindows
 print("\nTest _mergeWindows...")
-dummy_vis_hist = randint(
-    0, 2, size=(len(awc.time_vec), num_targets, num_sensors)
+awc = AccessWindowCalculator(
+    num_sensors=num_sensors,
+    num_targets=num_targets,
+    dynamics_sensors="terrestrial",
+    dynamics_targets="satellite",
+    horizon=2,
 )
+
+dummy_vis_hist = randint(0, 2, size=(awc.horizon, num_targets, num_sensors))
 # Test a full row and a full col of 0s
 dummy_vis_hist[0, 0, :] = 0
 dummy_vis_hist[1, :, 0] = 0
@@ -98,16 +104,12 @@ print("\nTest with merge_windows=False and non-default args")
 awc = AccessWindowCalculator(
     num_sensors=num_sensors,
     num_targets=num_targets,
-    # x_sensors=x_sensors,
-    # x_targets=x_targets,
     dynamics_sensors="terrestrial",
     dynamics_targets="satellite",
-    # t_start=321,
     horizon=50,
     dt=13,
     merge_windows=False,
 )
-
 
 num_windows, vis_hist = awc.calcNumWindows(
     x_sensors=x_sensors,

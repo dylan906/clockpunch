@@ -32,6 +32,31 @@ class AccessWindowCalculator:
         N: number of targets
         t: time
         dt: time step
+
+    Notes:
+        - Access window forecast range is (now:horizon]. Forecast does not include
+            the current time step, and includes the horizon (final) time step.
+        - Access windows are defined as discrete events (no duration) set to
+            occur at the beginning of a time interval (whose duration is specified
+            by dt_eval). If a sensor-target pair are visible to each other at
+            t = i * dt_eval (the beginning of the interval),
+            then this is counted as an access window. The time duration before
+            or after the instant in time the sensor-target pair can see each
+            other has no bearing on window count.
+        - merge_windows should be set to True (the default) when you do not
+            want to account for multiple sensors tasked to a single target at
+            the same time (the typical case).
+
+    Access window examples:
+        - An access period of dt_eval duration is counted as one window.
+        - An access period of eps << dt_eval encompassing t = i * dt_eval
+            is counted as one window.
+        - An access period of eps << dt_eval that occurs in the interval
+            i * dt_eval < t < (i+1) * dt_eval is not counted.
+        - An access period of dt_eval + eps starting at t = dt_eval
+            is counted as two windows.
+        - An access period of dt_eval + eps starting at
+            t = dt_eval + eps is counted as one window.
     """
 
     def __init__(
@@ -70,29 +95,6 @@ class AccessWindowCalculator:
                 a target can be seen by multiple sensors as 1 or multiple windows.
                 True means that such situations will be counted as 1 window. Defaults
                 to True.
-
-        Notes:
-            - Access windows are defined as discrete events (no duration) set to
-                occur at the beginning of a time interval (whose duration is specified
-                by dt_eval). If a sensor-target pair are visible to each other at
-                t = i * dt_eval (the beginning of the interval),
-                then this is counted as an access window. The time duration before
-                or after the instant in time the sensor-target pair can see each
-                other has no bearing on window count.
-            - merge_windows should be set to True (the default) when you do not
-                want to account for multiple sensors tasked to a single target at
-                the same time (the typical case).
-
-        Access window examples:
-            - An access period of dt_eval duration is counted as one window.
-            - An access period of eps << dt_eval encompassing t = i * dt_eval
-                is counted as one window.
-            - An access period of eps << dt_eval that occurs in the interval
-                i * dt_eval < t < (i+1) * dt_eval is not counted.
-            - An access period of dt_eval + eps starting at t = dt_eval
-                is counted as two windows.
-            - An access period of dt_eval + eps starting at
-                t = dt_eval + eps is counted as one window.
         """
         assert isinstance(dynamics_sensors, (list, str, DynamicsModel))
         assert isinstance(dynamics_targets, (list, str, DynamicsModel))
@@ -235,7 +237,6 @@ class AccessWindowCalculator:
 
         # Generate time vector
         self.time_vec = self._genTime()
-        print(self.time_vec)
 
         # Create surrogate agents
         self.sensors = self._buildAgents(
@@ -377,13 +378,13 @@ class AccessWindowCalculator:
 
             fixed_horizon_delta = self.fixed_horizon_time - self.t_now
             time_vec = arange(
-                start=self.t_now,
+                start=self.t_now + self.dt,
                 stop=self.t_now + fixed_horizon_delta,
                 step=self.dt,
             )
         else:
             time_vec = arange(
-                start=self.t_now,
+                start=self.t_now + self.dt,
                 stop=self.t_now + (self.horizon + 1) * self.dt,
                 step=self.dt,
             )
