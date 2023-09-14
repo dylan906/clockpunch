@@ -30,12 +30,15 @@ class AccessWindowCalculator:
     Notation:
         M: number of sensors
         N: number of targets
+        T: number of time steps
         t: time
         dt: time step
 
     Notes:
         - Access window forecast range is (now:horizon]. Forecast does not include
             the current time step, and includes the horizon (final) time step.
+        - If using a receding horizon, the number of time steps forecast T is constant.
+            If using fixed horizon, T changes as a function of current time.
         - Access windows are defined as discrete events (no duration) set to
             occur at the beginning of a time interval (whose duration is specified
             by dt_eval). If a sensor-target pair are visible to each other at
@@ -364,9 +367,9 @@ class AccessWindowCalculator:
     def _genTime(self) -> ndarray:
         """Generate a time vector.
 
-        If using receding horizon, T is constant. If using fixed horizon, T is the
-        difference between current time and the fixed horizon (in integer steps
-        of dt size).
+        If using receding horizon, T = self.horizon is constant. If using fixed
+        horizon, T is the difference between current time and the fixed horizon
+        (in integer steps of dt size).
 
         Returns:
             ndarray: (T, ) Time vector (sec).
