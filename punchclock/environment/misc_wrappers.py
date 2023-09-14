@@ -42,7 +42,10 @@ class IdentityWrapper(Wrapper):
 
 # %% Info Wrapper
 class InfoWrapper(ABC, Wrapper):
+    """Base class for custom info wrappers."""
+
     def __init__(self, env: Env):
+        """Wrap env with InfoWrapper."""
         super().__init__(env)
 
     @final
