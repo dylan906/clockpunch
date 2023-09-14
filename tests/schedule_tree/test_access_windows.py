@@ -6,6 +6,10 @@ from numpy.random import randint
 
 # Punch Clock Imports
 from punchclock.common.agents import buildRandomAgent
+from punchclock.dynamics.dynamics_classes import (
+    SatDynamicsModel,
+    StaticTerrestrial,
+)
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 # %% Build dummy agents to get realistic states
@@ -99,6 +103,18 @@ print("\nTest with merge_windows=True and non-default args")
 
 awc.merge_windows = True
 vis_hist = awc.calcVisHist()
+num_windows = awc.calcNumWindows()
+print(f"num_windows = {num_windows}")
+
+# %% Test with DynamicsModel input
+print("\nTest with DynamicsModel inputs")
+
+awc = AccessWindowCalculator(
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    dynamics_sensors=StaticTerrestrial(),
+    dynamics_targets=SatDynamicsModel(),
+)
 num_windows = awc.calcNumWindows()
 print(f"num_windows = {num_windows}")
 

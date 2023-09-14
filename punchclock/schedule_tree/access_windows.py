@@ -11,6 +11,7 @@ from satvis.visibility_func import isVis
 from punchclock.common.agents import Agent
 from punchclock.common.constants import getConstants
 from punchclock.dynamics.dynamics_classes import (
+    DynamicsModel,
     SatDynamicsModel,
     StaticTerrestrial,
 )
@@ -30,8 +31,8 @@ class AccessWindowCalculator:
         self,
         x_sensors: ndarray,
         x_targets: ndarray,
-        dynamics_sensors: str | list[str],
-        dynamics_targets: str | list[str],
+        dynamics_sensors: DynamicsModel | list[DynamicsModel] | str | list[str],
+        dynamics_targets: DynamicsModel | list[DynamicsModel] | str | list[str],
         t_start: float = 0.0,
         horizon: int = 1,
         dt: float = 100.0,
@@ -42,12 +43,14 @@ class AccessWindowCalculator:
         Args:
             x_sensors (ndarray): (6, M) ECI state vectors.
             x_targets (ndarray): (6, N) ECI state vectors.
-            dynamics_sensors (str | list[str]): ["terrestrial" | "satellite"] Dynamic
-                model tag for sensors. If str input, all sensors are assigned same
-                dynamic model.
-            dynamics_targets (str | list[str]): ["terrestrial" | "satellite"] Dynamic
-                model tag for targets. If str input, all targets are assigned same
-                dynamic model.
+            dynamics_sensors (DynamicsModel | list[DynamicsModel] | str | list[str]):
+                Dynamic model/model tag for sensors. If str or list input, entry(ies)
+                must be one of ["terrestrial" | "satellite"]. If str input, all
+                sensors are assigned same dynamic model.
+            dynamics_targets (DynamicsModel | list[DynamicsModel] | str | list[str]):
+                Dynamic model/model tag for targets. If str or list input, entry(ies)
+                must be one of ["terrestrial" | "satellite"]. If str input, all
+                targets are assigned same dynamic model.
             t_start (float, optional): JD initialization time. Defaults to 0.
             horizon (int, optional): Number of time steps to evaluate access windows
                 forward from start time. Defaults to 1.
@@ -83,10 +86,16 @@ class AccessWindowCalculator:
         """
         assert x_sensors.shape[0] == 6
         assert x_targets.shape[0] == 6
+        assert isinstance(dynamics_sensors, (list, str, DynamicsModel))
+        assert isinstance(dynamics_targets, (list, str, DynamicsModel))
         if isinstance(dynamics_sensors, list):
             assert len(dynamics_sensors) == x_sensors.shape[1]
         if isinstance(dynamics_targets, list):
             assert len(dynamics_targets) == x_targets.shape[1]
+        if isinstance(dynamics_sensors, str):
+            assert dynamics_sensors in ["terrestrial", "satellite"]
+        if isinstance(dynamics_targets, str):
+            assert dynamics_targets in ["terrestrial", "satellite"]
 
         assert horizon >= 1
 
@@ -257,25 +266,28 @@ class AccessWindowCalculator:
         self,
         x: ndarray,
         time: float,
-        dynamics: str | list[str],
+        dynamics: str | list[str] | DynamicsModel | list[DynamicsModel],
     ) -> list[Agent]:
         """Build generic agents."""
         dynamics_model_map = {
-            "terrestrial": StaticTerrestrial,
-            "satellite": SatDynamicsModel,
+            "terrestrial": StaticTerrestrial(),
+            "satellite": SatDynamicsModel(),
         }
 
-        if isinstance(dynamics, str):
+        if isinstance(dynamics, (str, DynamicsModel)):
             dynamics = [dynamics for a in range(x.shape[1])]
+
+        if isinstance(dynamics[0], str):
+            dynamics = [dynamics_model_map[d] for d in dynamics]
 
         agents = []
         for i, dyn in zip(range(x.shape[1]), dynamics):
             xi = x[:, i]
-            dyn_model = dynamics_model_map[dyn]
+            # dyn_model = dynamics_model_map[dyn]
             agents.extend(
                 [
                     Agent(
-                        dynamics_model=dyn_model(),
+                        dynamics_model=dyn,
                         init_eci_state=xi,
                         time=time,
                     )
