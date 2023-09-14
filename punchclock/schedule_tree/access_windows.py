@@ -268,22 +268,36 @@ class AccessWindowCalculator:
         time: float,
         dynamics: str | list[str] | DynamicsModel | list[DynamicsModel],
     ) -> list[Agent]:
-        """Build generic agents."""
+        """Build generic agents.
+
+        Args:
+            x (ndarray): (6, A) ECI state vectors in the columns.
+            time (float): JD time.
+            dynamics (str | list[str] | DynamicsModel | list[DynamicsModel]):
+                Dynamic model/model tag for agents. If str or list input, entry(ies)
+                must be one of ["terrestrial" | "satellite"]. If str input, all
+                agents are assigned same dynamic model.
+
+        Returns:
+            list[Agent]: A list of Targets or Sensors.
+        """
+        # Map if dynamics tag is used vice DynamicsModel
         dynamics_model_map = {
             "terrestrial": StaticTerrestrial(),
             "satellite": SatDynamicsModel(),
         }
 
         if isinstance(dynamics, (str, DynamicsModel)):
+            # Copy single instance to list of identical items
             dynamics = [dynamics for a in range(x.shape[1])]
 
         if isinstance(dynamics[0], str):
+            # Map from str->DynamicsModel if str inputs are used
             dynamics = [dynamics_model_map[d] for d in dynamics]
 
         agents = []
         for i, dyn in zip(range(x.shape[1]), dynamics):
             xi = x[:, i]
-            # dyn_model = dynamics_model_map[dyn]
             agents.extend(
                 [
                     Agent(
