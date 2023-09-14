@@ -11,6 +11,7 @@ from numpy import asarray, ndarray
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
+from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
@@ -155,7 +156,11 @@ class NumWindows(InfoWrapper):
 
         return t0
 
-    def _getDynamics(self, agents: list[Agent]):
+    def _getDynamics(self, agents: list[Agent]) -> list[DynamicsModel]:
+        """Get dynamics from a list of Agents."""
+        # This is its own separate method because later I may want to add more
+        # dynamics models that may make fetching them more complicated. So just
+        # making this method separated in prep for that.
         dynamics = [ag.dynamics for ag in agents]
 
         return dynamics
