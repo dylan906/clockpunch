@@ -34,10 +34,12 @@ rand_env = RandomEnv()
 agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
 agents.extend([buildRandomAgent(agent_type="target") for ag in range(3)])
 rand_env.agents = agents
+rand_env.horizon = 100
+rand_env.time_step = 100
 
 # %% Test NumWindows
 print("\nTest NumWindows...")
-nw_env = NumWindows(env=rand_env, horizon=10, dt=100, use_estimates=False)
+nw_env = NumWindows(env=rand_env, use_estimates=False)
 obs, _, _, _, info = nw_env.step(nw_env.action_space.sample())
 print(f"info = {info}")
 
