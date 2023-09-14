@@ -50,7 +50,7 @@ awc = AccessWindowCalculator(
 )
 
 # %% Test setup()
-awc.setup(x_sensors=x_sensors, x_targets=x_targets, t=0)
+awc._setup(x_sensors=x_sensors, x_targets=x_targets, t=0)
 print(f"t_now = {awc.t_now}")
 print(f"time vec = {awc.time_vec}")
 
