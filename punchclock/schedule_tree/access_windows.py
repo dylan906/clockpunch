@@ -1,7 +1,6 @@
 """Calculate access windows."""
 # %% Imports
 # Standard Library Imports
-from copy import deepcopy
 from typing import Tuple
 
 # Third Party Imports
@@ -17,36 +16,40 @@ from punchclock.dynamics.dynamics_classes import (
     StaticTerrestrial,
 )
 
-# %% calcAccessWindows
 
-
+# %% AccessWindowCalculator
 class AccessWindowCalculator:
     """Calculates access windows between Sensors and Targets.
 
     AccessWindowCalculator creates surrogate agents corresponding to the input
     states and dynamic models. It then propagates the surrogate agents' state
     history to predict visibility status.
+
+    Works with either a fixed or receding horizon.
+
+    Notation:
+        M: number of sensors
+        N: number of targets
+        t: time
+        dt: time step
     """
 
     def __init__(
         self,
-        # x_sensors: ndarray,
-        # x_targets: ndarray,
         num_sensors: int,
         num_targets: int,
         dynamics_sensors: DynamicsModel | list[DynamicsModel] | str | list[str],
         dynamics_targets: DynamicsModel | list[DynamicsModel] | str | list[str],
-        # t_start: float = 0.0,
         horizon: int = 1,
         dt: float = 100.0,
-        merge_windows: bool = True,
         fixed_horizon: bool = True,
+        merge_windows: bool = True,
     ):
         """Calculate access windows for all targets.
 
         Args:
-            x_sensors (ndarray): (6, M) ECI state vectors.
-            x_targets (ndarray): (6, N) ECI state vectors.
+            num_sensors (int): Number of sensors.
+            num_targets (int): Number of targets.
             dynamics_sensors (DynamicsModel | list[DynamicsModel] | str | list[str]):
                 Dynamic model/model tag for sensors. If str or list input, entry(ies)
                 must be one of ["terrestrial" | "satellite"]. If str input, all
@@ -55,11 +58,14 @@ class AccessWindowCalculator:
                 Dynamic model/model tag for targets. If str or list input, entry(ies)
                 must be one of ["terrestrial" | "satellite"]. If str input, all
                 targets are assigned same dynamic model.
-            t_start (float, optional): JD initialization time. Defaults to 0.
             horizon (int, optional): Number of time steps to evaluate access windows
-                forward from start time. Defaults to 1.
+                forward in time. Defaults to 1.
             dt (float, optional): Time step (sec) at which to propagate
                 dynamics at evaluate visibility. Defaults to 100.
+            fixed_horizon (bool, optional): If True, input for horizon will be
+                fixed, and subsequent calls to forecast visibility windows will
+                use a window from current time to the fixed value. If False, the
+                same number of steps are forecast on every call.
             merge_windows (bool, optional): Whether of not to count an interval where
                 a target can be seen by multiple sensors as 1 or multiple windows.
                 True means that such situations will be counted as 1 window. Defaults
@@ -88,8 +94,6 @@ class AccessWindowCalculator:
             - An access period of dt_eval + eps starting at
                 t = dt_eval + eps is counted as one window.
         """
-        # assert x_sensors.shape[0] == 6
-        # assert x_targets.shape[0] == 6
         assert isinstance(dynamics_sensors, (list, str, DynamicsModel))
         assert isinstance(dynamics_targets, (list, str, DynamicsModel))
         if isinstance(dynamics_sensors, list):
@@ -101,27 +105,10 @@ class AccessWindowCalculator:
         if isinstance(dynamics_targets, str):
             assert dynamics_targets in ["terrestrial", "satellite"]
 
-        assert horizon >= 1
+        assert horizon >= 1, "horizon not >= 1."
 
-        # self.start_time = t_start
-        # self.t_now = t_start
         self.dynamics_sensors = dynamics_sensors
         self.dynamics_targets = dynamics_targets
-
-        # # Create surrogate agents
-        # self.sensors = self._buildAgents(
-        #     x=x_sensors,
-        #     time=self.start_time,
-        #     dynamics=dynamics_sensors,
-        # )
-        # self.targets = self._buildAgents(
-        #     x=x_targets,
-        #     time=self.start_time,
-        #     dynamics=dynamics_targets,
-        # )
-
-        # self.backup_sensors = deepcopy(self.sensors)
-        # self.backup_targets = deepcopy(self.targets)
 
         self.merge_windows = merge_windows
         self.fixed_horizon = fixed_horizon
@@ -129,18 +116,13 @@ class AccessWindowCalculator:
         self.RE = getConstants()["earth_radius"]
         self.num_sensors = num_sensors
         self.num_targets = num_targets
-        # self.num_agents = self.num_targets + self.num_sensors
 
         # # If dt is close in magnitude to the horizon, overwrite with a smaller
         # # value. This guarantees at least a reasonable (albeit small) number of sim
         # # steps.
         self.dt = min(dt, (horizon * dt) / 5)
         self.horizon = horizon
-        # self.time_vec = arange(
-        #     start=self.start_time,
-        #     stop=self.start_time + (horizon + 1) * dt,
-        #     step=dt,
-        # )
+
         if fixed_horizon is True:
             self.fixed_horizon_time = (horizon + 1) * self.dt
         else:
@@ -148,24 +130,22 @@ class AccessWindowCalculator:
 
         return
 
-    def reset(self):
-        """Reset agents.
-
-        Because propagating the agents to calculate visibility windows changes their
-        states, need to be able to reset agents to original state.
-
-        Agents are only modified within scope of AccessWindowCalculator (no leakage).
-        """
-        self.sensors = deepcopy(self.backup_sensors)
-        self.targets = deepcopy(self.backup_targets)
-
     def setup(
         self,
         x_sensors: ndarray,
         x_targets: ndarray,
         t: float,
     ):
+        """Build surrogate agents and generate time vector.
+
+        Args:
+            x_sensors (ndarray): (6, M) ECI state vectors in columns.
+            x_targets (ndarray): (6, N) ECI state vectors in columns.
+            t (float): Current time (sec).
+        """
+        # update time
         self.t_now = t
+
         # Generate time vector
         self.time_vec = self._genTime()
         print(self.time_vec)
@@ -183,9 +163,17 @@ class AccessWindowCalculator:
         )
 
     def calcVisHist(
-        self, x_sensors: ndarray, x_targets: ndarray, t: float
+        self,
+        x_sensors: ndarray,
+        x_targets: ndarray,
+        t: float,
     ) -> ndarray[int]:
         """Calculate visibility history array.
+
+        Args:
+            x_sensors (ndarray): (6, M) ECI state vectors in columns.
+            x_targets (ndarray): (6, N) ECI state vectors in columns.
+            t (float): Current time (sec).
 
         Returns:
             ndarray[int]: (T, N, M) binary array. A 1 indicates that the n-m
@@ -233,13 +221,16 @@ class AccessWindowCalculator:
         """Get number of visibility windows per target from current time to horizon.
 
         Args:
+            x_sensors (ndarray): (6, M) ECI state vectors in columns.
+            x_targets (ndarray): (6, N) ECI state vectors in columns.
+            t (float): Current time (sec).
             return_vis_hist (bool, optional): Set to True to return vis_hist in
                 addition to num_windows. Defaults to False.
 
         Returns:
             num_windows (ndarray[int]): (N,) Number of windows per target.
             vis_hist (ndarray[int], optional): (T, N, M) Same as return from
-                self.calcVisHist(). Returns if return_vis_hist == True on input.
+                self.calcVisHist(). Outputs if return_vis_hist == True on input.
         """
         vis_hist = self.calcVisHist(
             x_sensors=x_sensors,
@@ -370,6 +361,15 @@ class AccessWindowCalculator:
         return agents
 
     def _genTime(self) -> ndarray:
+        """Generate a time vector.
+
+        If using receding horizon, T is constant. If using fixed horizon, T is the
+        difference between current time and the fixed horizon (in integer steps
+        of dt size).
+
+        Returns:
+            ndarray: (T, ) Time vector (sec).
+        """
         if self.fixed_horizon is True:
             assert (
                 self.t_now < self.fixed_horizon_time
