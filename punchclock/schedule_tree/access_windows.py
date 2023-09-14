@@ -30,14 +30,17 @@ class AccessWindowCalculator:
 
     def __init__(
         self,
-        x_sensors: ndarray,
-        x_targets: ndarray,
+        # x_sensors: ndarray,
+        # x_targets: ndarray,
+        num_sensors: int,
+        num_targets: int,
         dynamics_sensors: DynamicsModel | list[DynamicsModel] | str | list[str],
         dynamics_targets: DynamicsModel | list[DynamicsModel] | str | list[str],
-        t_start: float = 0.0,
+        # t_start: float = 0.0,
         horizon: int = 1,
         dt: float = 100.0,
         merge_windows: bool = True,
+        fixed_horizon: bool = True,
     ):
         """Calculate access windows for all targets.
 
@@ -85,14 +88,14 @@ class AccessWindowCalculator:
             - An access period of dt_eval + eps starting at
                 t = dt_eval + eps is counted as one window.
         """
-        assert x_sensors.shape[0] == 6
-        assert x_targets.shape[0] == 6
+        # assert x_sensors.shape[0] == 6
+        # assert x_targets.shape[0] == 6
         assert isinstance(dynamics_sensors, (list, str, DynamicsModel))
         assert isinstance(dynamics_targets, (list, str, DynamicsModel))
         if isinstance(dynamics_sensors, list):
-            assert len(dynamics_sensors) == x_sensors.shape[1]
+            assert len(dynamics_sensors) == num_sensors
         if isinstance(dynamics_targets, list):
-            assert len(dynamics_targets) == x_targets.shape[1]
+            assert len(dynamics_targets) == num_targets
         if isinstance(dynamics_sensors, str):
             assert dynamics_sensors in ["terrestrial", "satellite"]
         if isinstance(dynamics_targets, str):
@@ -100,39 +103,48 @@ class AccessWindowCalculator:
 
         assert horizon >= 1
 
-        self.start_time = t_start
+        # self.start_time = t_start
+        # self.t_now = t_start
+        self.dynamics_sensors = dynamics_sensors
+        self.dynamics_targets = dynamics_targets
 
-        # Create surrogate agents
-        self.sensors = self._buildAgents(
-            x=x_sensors,
-            time=self.start_time,
-            dynamics=dynamics_sensors,
-        )
-        self.targets = self._buildAgents(
-            x=x_targets,
-            time=self.start_time,
-            dynamics=dynamics_targets,
-        )
+        # # Create surrogate agents
+        # self.sensors = self._buildAgents(
+        #     x=x_sensors,
+        #     time=self.start_time,
+        #     dynamics=dynamics_sensors,
+        # )
+        # self.targets = self._buildAgents(
+        #     x=x_targets,
+        #     time=self.start_time,
+        #     dynamics=dynamics_targets,
+        # )
 
-        self.backup_sensors = deepcopy(self.sensors)
-        self.backup_targets = deepcopy(self.targets)
+        # self.backup_sensors = deepcopy(self.sensors)
+        # self.backup_targets = deepcopy(self.targets)
 
         self.merge_windows = merge_windows
+        self.fixed_horizon = fixed_horizon
 
         self.RE = getConstants()["earth_radius"]
-        self.num_sensors = len(self.sensors)
-        self.num_targets = len(self.targets)
-        self.num_agents = self.num_targets + self.num_sensors
+        self.num_sensors = num_sensors
+        self.num_targets = num_targets
+        # self.num_agents = self.num_targets + self.num_sensors
 
-        # If dt is close in magnitude to the horizon, overwrite with a smaller
-        # value. This guarantees at least a reasonable (albeit small) number of sim
-        # steps.
+        # # If dt is close in magnitude to the horizon, overwrite with a smaller
+        # # value. This guarantees at least a reasonable (albeit small) number of sim
+        # # steps.
         self.dt = min(dt, (horizon * dt) / 5)
-        self.time_vec = arange(
-            start=self.start_time,
-            stop=self.start_time + (horizon + 1) * dt,
-            step=dt,
-        )
+        self.horizon = horizon
+        # self.time_vec = arange(
+        #     start=self.start_time,
+        #     stop=self.start_time + (horizon + 1) * dt,
+        #     step=dt,
+        # )
+        if fixed_horizon is True:
+            self.fixed_horizon_time = (horizon + 1) * self.dt
+        else:
+            self.fixed_horizon_time = None
 
         return
 
@@ -147,14 +159,41 @@ class AccessWindowCalculator:
         self.sensors = deepcopy(self.backup_sensors)
         self.targets = deepcopy(self.backup_targets)
 
-    def calcVisHist(self) -> ndarray[int]:
+    def setup(
+        self,
+        x_sensors: ndarray,
+        x_targets: ndarray,
+        t: float,
+    ):
+        self.t_now = t
+        # Generate time vector
+        self.time_vec = self._genTime()
+        print(self.time_vec)
+
+        # Create surrogate agents
+        self.sensors = self._buildAgents(
+            x=x_sensors,
+            time=self.t_now,
+            dynamics=self.dynamics_sensors,
+        )
+        self.targets = self._buildAgents(
+            x=x_targets,
+            time=self.t_now,
+            dynamics=self.dynamics_targets,
+        )
+
+    def calcVisHist(
+        self, x_sensors: ndarray, x_targets: ndarray, t: float
+    ) -> ndarray[int]:
         """Calculate visibility history array.
 
         Returns:
             ndarray[int]: (T, N, M) binary array. A 1 indicates that the n-m
                 target-sensor can see each other at time t.
         """
-        self.reset()
+        self.setup(x_sensors=x_sensors, x_targets=x_targets, t=t)
+
+        # self.reset()
         # Setup state history arrays
         x0 = self._getStates()
 
@@ -186,6 +225,9 @@ class AccessWindowCalculator:
 
     def calcNumWindows(
         self,
+        x_sensors: ndarray,
+        x_targets: ndarray,
+        t: float,
         return_vis_hist: bool = False,
     ) -> ndarray[int] | Tuple[ndarray[int], ndarray[int]]:
         """Get number of visibility windows per target from current time to horizon.
@@ -199,7 +241,11 @@ class AccessWindowCalculator:
             vis_hist (ndarray[int], optional): (T, N, M) Same as return from
                 self.calcVisHist(). Returns if return_vis_hist == True on input.
         """
-        vis_hist = self.calcVisHist()
+        vis_hist = self.calcVisHist(
+            x_sensors=x_sensors,
+            x_targets=x_targets,
+            t=t,
+        )
         if self.merge_windows is False:
             num_windows = sum(sum(vis_hist, axis=2), axis=0)
         else:
@@ -322,3 +368,24 @@ class AccessWindowCalculator:
             )
 
         return agents
+
+    def _genTime(self) -> ndarray:
+        if self.fixed_horizon is True:
+            assert (
+                self.t_now < self.fixed_horizon_time
+            ), "Current time exceeds fixed horizon."
+
+            fixed_horizon_delta = self.fixed_horizon_time - self.t_now
+            time_vec = arange(
+                start=self.t_now,
+                stop=self.t_now + fixed_horizon_delta,
+                step=self.dt,
+            )
+        else:
+            time_vec = arange(
+                start=self.t_now,
+                stop=self.t_now + (self.horizon + 1) * self.dt,
+                step=self.dt,
+            )
+
+        return time_vec

@@ -41,11 +41,19 @@ print("\nTest AccessWindowCalculator instantiation...")
 print("  Test with default args")
 # Number of possible windows is number of steps in sim (env.horizon)
 awc = AccessWindowCalculator(
-    x_sensors=x_sensors,
-    x_targets=x_targets,
+    num_sensors=num_sensors,
+    num_targets=num_targets,
+    # x_sensors=x_sensors,
+    # x_targets=x_targets,
     dynamics_sensors="terrestrial",
     dynamics_targets="satellite",
 )
+
+# %% Test setup()
+awc.setup(x_sensors=x_sensors, x_targets=x_targets, t=0)
+print(f"t_now = {awc.t_now}")
+print(f"time vec = {awc.time_vec}")
+
 
 # %% Test _getStates
 print("\nTest _getStates...")
@@ -59,7 +67,7 @@ print(f"vis status = \n{vis}")
 
 # %% Test calcVisHist
 print("\nTest calcVisHist...")
-vis_hist = awc.calcVisHist()
+vis_hist = awc.calcVisHist(x_sensors=x_sensors, x_targets=x_targets, t=0)
 print(f"vis hist = \n{vis_hist}")
 
 # %% Test _mergeWindows
@@ -76,46 +84,65 @@ print(f"merged vis hist = \n{merged}")
 
 # %% Test calcNumWindows
 print("\nTest calcNumWindows...")
-vis_hist = awc.calcVisHist()
-num_windows = awc.calcNumWindows()
+num_windows, vis_hist = awc.calcNumWindows(
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    t=0,
+    return_vis_hist=True,
+)
 print(f"vis hist = \n{vis_hist}")
 print(f"num_windows = {num_windows}")
 
 # %% Test with non-default args and merge_windows=False
 print("\nTest with merge_windows=False and non-default args")
 awc = AccessWindowCalculator(
-    x_sensors=x_sensors,
-    x_targets=x_targets,
+    num_sensors=num_sensors,
+    num_targets=num_targets,
+    # x_sensors=x_sensors,
+    # x_targets=x_targets,
     dynamics_sensors="terrestrial",
     dynamics_targets="satellite",
-    t_start=321,
+    # t_start=321,
     horizon=50,
     dt=13,
     merge_windows=False,
 )
 
-vis_hist = awc.calcVisHist()
-num_windows = awc.calcNumWindows()
+
+num_windows, vis_hist = awc.calcNumWindows(
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    t=321.2,
+    return_vis_hist=True,
+)
 print(f"num_windows = {num_windows}")
 
 # %% Test with non-default args, merge_windows=True
 print("\nTest with merge_windows=True and non-default args")
 
 awc.merge_windows = True
-vis_hist = awc.calcVisHist()
-num_windows = awc.calcNumWindows()
+num_windows, vis_hist = awc.calcNumWindows(
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    t=321.2,
+    return_vis_hist=True,
+)
 print(f"num_windows = {num_windows}")
 
 # %% Test with DynamicsModel input
 print("\nTest with DynamicsModel inputs")
 
 awc = AccessWindowCalculator(
-    x_sensors=x_sensors,
-    x_targets=x_targets,
+    num_sensors=num_sensors,
+    num_targets=num_targets,
     dynamics_sensors=StaticTerrestrial(),
     dynamics_targets=SatDynamicsModel(),
 )
-num_windows = awc.calcNumWindows()
+num_windows = awc.calcNumWindows(
+    x_sensors=x_sensors,
+    x_targets=x_targets,
+    t=2.1,
+)
 print(f"num_windows = {num_windows}")
 
 # %% Done
