@@ -38,6 +38,8 @@ rand_env.agents = agents
 # %% Test NumWindows
 print("\nTest NumWindows...")
 nw_env = NumWindows(env=rand_env, horizon=10, dt=100, use_estimates=False)
+obs, _, _, _, info = nw_env.step(nw_env.action_space.sample())
+print(f"info = {info}")
 
 # %% Done
 print("done")

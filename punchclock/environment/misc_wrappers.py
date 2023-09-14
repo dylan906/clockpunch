@@ -3,7 +3,7 @@
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, final
+from typing import Any, Tuple, final
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
@@ -90,40 +90,50 @@ class NumWindows(InfoWrapper):
         horizon: int = None,
         dt: float = None,
         merge_windows: bool = True,
+        fixed_horizon: bool = True,
         use_estimates: bool = True,
     ):
         super().__init__(env)
+        # Type checking
         assert hasattr(env, "agents")
         assert isinstance(env.agents, list)
         assert all([isinstance(ag, (Target, Sensor)) for ag in env.agents])
 
         self.use_estimates = use_estimates
 
-        agents = deepcopy(env.agents)
-        sensors = [ag for ag in agents if isinstance(ag, Sensor)]
-        targets = [ag for ag in agents if isinstance(ag, Target)]
-        [x_sensors, x_targets] = self._getStates(
-            sensors=sensors, targets=targets
-        )
-
+        # Separate sensors from targets and dynamics
+        sensors, targets = self._getAgents()
         dyn_sensors = self._getDynamics(sensors)
         dyn_targets = self._getDynamics(targets)
+        # t0 = self._getStartTime(agents)
+        # out = self_getAwcInputs()
 
-        t0 = self._getStartTime(agents)
+        self.num_sensors = len(sensors)
+        self.num_targets = len(targets)
 
-        self.window_calculator = AccessWindowCalculator(
-            x_sensors=x_sensors,
-            x_targets=x_targets,
+        self.awc = AccessWindowCalculator(
+            num_sensors=self.num_sensors,
+            num_targets=self.num_targets,
             dynamics_sensors=dyn_sensors,
             dynamics_targets=dyn_targets,
-            t_start=t0,
             horizon=horizon,
             dt=dt,
+            fixed_horizon=fixed_horizon,
             merge_windows=merge_windows,
         )
 
+        # self.num_windows_left, self.vis_forecast = self.awc.calcNumWindows(
+        #     x_sensors=x_sensors,
+        #     x_targets=x_targets,
+        #     t=t0,
+        #     return_vis_hist=True,
+        # )
+
     def _getStates(
-        self, sensors: list[Sensor], targets: list[Target]
+        self,
+        sensors: list[Sensor],
+        targets: list[Target],
+        use_estimates: bool,
     ) -> ndarray:
         """Get current state (truth or estimated) from all agents.
 
@@ -135,7 +145,7 @@ class NumWindows(InfoWrapper):
             x_sensors (ndarray): (6, M) ECI states.
             x_targets (ndarray): (6, N) ECI states.
         """
-        if self.use_estimates is False:
+        if use_estimates is False:
             x_sensors = [agent.eci_state for agent in sensors]
             x_targets = [agent.eci_state for agent in targets]
         else:
@@ -159,6 +169,54 @@ class NumWindows(InfoWrapper):
 
         return t0
 
+    def updateInfo(
+        self,
+        observations: Any,
+        rewards: Any,
+        terminations: Any,
+        truncations: Any,
+        infos: dict,
+    ) -> dict:
+        out = self._getCalcWindowInputs()
+
+        self.num_windows_left, self.vis_forecast = self.awc.calcNumWindows(
+            x_sensors=out["x_sensors"],
+            x_targets=out["x_targets"],
+            t=out["t0"],
+            return_vis_hist=True,
+        )
+
+        new_info = {
+            "num_windows_left": self.num_windows_left,
+            "vis_forecast": self.vis_forecast,
+        }
+
+        return new_info
+
+    def _getCalcWindowInputs(self) -> dict:
+        # Separate sensors from targets and get relevant attrs
+        sensors, targets = self._getAgents()
+
+        [x_sensors, x_targets] = self._getStates(
+            sensors=sensors,
+            targets=targets,
+            use_estimates=self.use_estimates,
+        )
+
+        t0 = self._getStartTime(sensors + targets)
+
+        return {
+            "x_sensors": x_sensors,
+            "x_targets": x_targets,
+            "t0": t0,
+        }
+
+    def _getAgents(self) -> Tuple[list[Sensor], list[Target]]:
+        agents = deepcopy(self.agents)
+        sensors = [ag for ag in agents if isinstance(ag, Sensor)]
+        targets = [ag for ag in agents if isinstance(ag, Target)]
+        return sensors, targets
+
     def _getDynamics(self, agents: list[Agent]) -> list[DynamicsModel]:
         """Get dynamics from a list of Agents."""
         # This is its own separate method because later I may want to add more
@@ -167,15 +225,3 @@ class NumWindows(InfoWrapper):
         dynamics = [ag.dynamics for ag in agents]
 
         return dynamics
-
-    def updateInfo(
-        self,
-        observations: Any,
-        rewards: Any,
-        terminations: Any,
-        truncations: Any,
-        infos: dict,
-    ):
-        num_windows = self.window_calculator.calcNumWindows()
-        new_info = infos.update({"num_windows": num_windows})
-        return new_info
