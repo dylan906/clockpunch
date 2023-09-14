@@ -34,7 +34,7 @@ rand_env = RandomEnv()
 agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
 agents.extend([buildRandomAgent(agent_type="target") for ag in range(3)])
 rand_env.agents = agents
-rand_env.horizon = 100
+rand_env.horizon = 10
 rand_env.time_step = 100
 
 # %% Test NumWindows
