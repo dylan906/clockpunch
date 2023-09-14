@@ -86,6 +86,13 @@ class InfoWrapper(ABC, Wrapper):
 
 # %% NumWindows wrapper
 class NumWindows(InfoWrapper):
+    """Calculate number of target access windows over a time period.
+
+    Wraps `info` returned from env.step().
+
+    For details on access window definitions, see AccessWindowCalculator.
+    """
+
     def __init__(
         self,
         env: Env,
@@ -95,23 +102,45 @@ class NumWindows(InfoWrapper):
         fixed_horizon: bool = True,
         use_estimates: bool = True,
     ):
+        """Wrap environment with NumWindows InfoWrapper.
+
+        Args:
+            env (Env): A Gymnasium environment.
+            horizon (int, optional): Number of time steps forward to forecast access
+                windows. Defaults to env horizon.
+            dt (float, optional): Time step (sec). Defaults to env time step.
+            merge_windows (bool, optional): If True, steps when a target is accessible
+                by J sensors is counted as 1 window instead of J windows. Defaults
+                to True.
+            fixed_horizon (bool, optional): If True, wrapper forecasts access windows
+                to fixed time horizon, set by `horizon` at instantiation. If False,
+                forecasts forward by `horizon` steps every call. Defaults to True.
+            use_estimates (bool, optional): If True, use estimated states of targets
+                to forecast access windows. Otherwise, use true states. True states
+                are always used for sensors. Defaults to True.
+        """
         super().__init__(env)
         # Type checking
         assert hasattr(env, "agents")
         assert isinstance(env.agents, list)
         assert all([isinstance(ag, (Target, Sensor)) for ag in env.agents])
 
+        assert hasattr(env, "horizon")
+        if horizon is None:
+            horizon = env.horizon
+
+        assert hasattr(env, "time_step")
+        if dt is None:
+            dt = env.time_step
+
         self.use_estimates = use_estimates
 
         # Separate sensors from targets and dynamics
         sensors, targets = self._getAgents()
-        dyn_sensors = self._getDynamics(sensors)
-        dyn_targets = self._getDynamics(targets)
-        # t0 = self._getStartTime(agents)
-        # out = self_getAwcInputs()
-
         self.num_sensors = len(sensors)
         self.num_targets = len(targets)
+        dyn_sensors = self._getDynamics(sensors)
+        dyn_targets = self._getDynamics(targets)
 
         self.awc = AccessWindowCalculator(
             num_sensors=self.num_sensors,
@@ -123,13 +152,6 @@ class NumWindows(InfoWrapper):
             fixed_horizon=fixed_horizon,
             merge_windows=merge_windows,
         )
-
-        # self.num_windows_left, self.vis_forecast = self.awc.calcNumWindows(
-        #     x_sensors=x_sensors,
-        #     x_targets=x_targets,
-        #     t=t0,
-        #     return_vis_hist=True,
-        # )
 
     def _getStates(
         self,
@@ -161,7 +183,8 @@ class NumWindows(InfoWrapper):
 
         return x_sensors, x_targets
 
-    def _getStartTime(self, agents: list[Agent]) -> float:
+    def _getTime(self, agents: list[Agent]) -> float:
+        """Gets current simulation time (sec)."""
         start_times = [ag.time for ag in agents]
         assert all(
             [start_times[0] == st for st in start_times]
@@ -179,6 +202,24 @@ class NumWindows(InfoWrapper):
         truncations: Any,
         infos: dict,
     ) -> dict:
+        """Add items to info returned from env.step().
+
+        Args:
+            observations, rewards, terminations, truncations (Any): Unused.
+            infos (dict): Unwrapped info dict.
+
+        Returns:
+            dict: Same as input info, but with two new items, "num_windows_left"
+                and "vis_forecast".
+                {
+                    ...
+                    "num_windows_left": ndarray[int] (N, ) Each entry is the number
+                        of access windows to the n'th target from now to the horizon.
+                    "vis_forecast" : ndarray[int] (T, N, M) Binary array where
+                        a 1 in the (t, n, m) position indicates that sensor m has
+                        access to target n at time step t.
+                }
+        """
         out = self._getCalcWindowInputs()
 
         self.num_windows_left, self.vis_forecast = self.awc.calcNumWindows(
@@ -196,6 +237,15 @@ class NumWindows(InfoWrapper):
         return new_info
 
     def _getCalcWindowInputs(self) -> dict:
+        """Get sensor/target states and current time.
+
+        Returns:
+            dict: {
+                "x_sensors": ndarray (6, M), ECI state vectors in columns,
+                "x_targets": ndarray (6, N), ECI state vectors in columns,
+                "t0": float, Current simulation time,
+            }
+        """
         # Separate sensors from targets and get relevant attrs
         sensors, targets = self._getAgents()
 
@@ -205,7 +255,7 @@ class NumWindows(InfoWrapper):
             use_estimates=self.use_estimates,
         )
 
-        t0 = self._getStartTime(sensors + targets)
+        t0 = self._getTime(sensors + targets)
 
         return {
             "x_sensors": x_sensors,
@@ -214,6 +264,7 @@ class NumWindows(InfoWrapper):
         }
 
     def _getAgents(self) -> Tuple[list[Sensor], list[Target]]:
+        """Get agents from environment, divided into Sensor and Target lists."""
         agents = deepcopy(self.agents)
         sensors = [ag for ag in agents if isinstance(ag, Sensor)]
         targets = [ag for ag in agents if isinstance(ag, Target)]
