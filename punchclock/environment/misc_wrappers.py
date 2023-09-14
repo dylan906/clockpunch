@@ -4,6 +4,7 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Tuple, final
+from warnings import warn
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
@@ -121,17 +122,30 @@ class NumWindows(InfoWrapper):
         """
         super().__init__(env)
         # Type checking
-        assert hasattr(env, "agents")
-        assert isinstance(env.agents, list)
-        assert all([isinstance(ag, (Target, Sensor)) for ag in env.agents])
+        assert hasattr(env, "agents"), "env.agents does not exist."
+        assert isinstance(
+            env.agents, list
+        ), "env.agents must be a list of Targets/Sensors."
+        assert all(
+            [isinstance(ag, (Target, Sensor)) for ag in env.agents]
+        ), "env.agents must be a list of Targets/Sensors."
 
-        assert hasattr(env, "horizon")
+        assert hasattr(env, "horizon"), "env.horizon does not exist."
         if horizon is None:
             horizon = env.horizon
 
-        assert hasattr(env, "time_step")
+        assert hasattr(env, "time_step"), "env.time_step does not exist."
         if dt is None:
             dt = env.time_step
+
+        # check items in unwrapped info
+        [_, _, _, _, info] = deepcopy(env).step(env.action_space.sample())
+        if "num_windows_left" or "vis_forecast" in info:
+            warn(
+                """info already has 'num_windows_left' or 'vis_forecast'. These
+            items will be overwritten with this wrapper. Consider renaming the
+            unwrapped items."""
+            )
 
         self.use_estimates = use_estimates
 
@@ -202,7 +216,7 @@ class NumWindows(InfoWrapper):
         truncations: Any,
         infos: dict,
     ) -> dict:
-        """Add items to info returned from env.step().
+        """Append items to info returned from env.step().
 
         Args:
             observations, rewards, terminations, truncations (Any): Unused.
