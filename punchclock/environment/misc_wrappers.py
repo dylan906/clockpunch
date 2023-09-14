@@ -78,8 +78,10 @@ class InfoWrapper(ABC, Wrapper):
         terminations,
         truncations,
         infos,
-    ):
-        return infos
+    ) -> dict:
+        """Create a new info dict."""
+        new_info = {}
+        return new_info
 
 
 # %% NumWindows wrapper
