@@ -223,7 +223,8 @@ class SSAScheduler(gym.Env):
         observation = self._getObs()
 
         # new gymnasium API requires reset() to return an info dict
-        return observation, OrderedDict({})
+        info = self._getInfo()
+        return observation, info
 
     def _getObs(self) -> OrderedDict:
         """Get observation as dict.
