@@ -8,12 +8,51 @@ from warnings import warn
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
+from gymnasium.spaces import Box, Dict, Space
 from numpy import asarray, ndarray
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
+
+
+# %% RandomInfo
+class RandomInfo(Wrapper):
+    """Appends items to an env's info.
+
+    Used for development.
+    """
+
+    def __init__(self, env, info_space: Dict = None):
+        """Wrap an env."""
+        super().__init__(env)
+        if info_space is None:
+            info_space = Dict({0: Box(0, 1)})
+
+        assert isinstance(info_space, Dict)
+        assert all([isinstance(i, Space) for i in info_space.values()])
+        self.info_space = info_space
+
+    def step(self, action):
+        """Step an env."""
+        (
+            observations,
+            rewards,
+            terminations,
+            truncations,
+            infos,
+        ) = self.env.step(action)
+        new_info = self.info_space.sample()
+        infos.update(new_info)
+        return (observations, rewards, terminations, truncations, infos)
+
+    def reset(self):
+        """Reset me bro."""
+        obs = self.observation_space.sample()
+        info = self.info_space.sample()
+
+        return obs, info
 
 
 # %% Identity Wrapper
