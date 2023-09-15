@@ -292,7 +292,8 @@ def _prepForSpaceInstantiation(space_config: dict) -> dict:
             if isinstance(v, list):
                 new_config[k] = array(v)
             elif isinstance(v, int) and temp_space == "MultiDiscrete":
-                # Edge case to handle MultiDiscrete int arg
+                # Edge case to handle MultiDiscrete int arg (prevents dimensionless
+                # issues)
                 new_config[k] = array([v])
             else:
                 new_config[k] = v
