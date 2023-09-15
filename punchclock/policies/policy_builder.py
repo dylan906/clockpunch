@@ -286,10 +286,14 @@ def _prepForSpaceInstantiation(space_config: dict) -> dict:
     new_config = {}
     if space_config["space"] != "Dict":
         # delete "space" entry so items can be **kwargs when building Gym space
+        temp_space = deepcopy(space_config["space"])
         del space_config["space"]
         for k, v in space_config.items():
             if isinstance(v, list):
                 new_config[k] = array(v)
+            elif isinstance(v, int) and temp_space == "MultiDiscrete":
+                # Edge case to handle MultiDiscrete int arg
+                new_config[k] = array([v])
             else:
                 new_config[k] = v
             if k == "dtype":

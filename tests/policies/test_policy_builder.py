@@ -100,6 +100,12 @@ try:
 except Exception as err:
     print(err)
 
+# %% Edge case
+md2 = buildSpace({"space": "MultiDiscrete", "nvec": 2})
+print(md2.contains(md2.sample()))
+
+md2 = buildSpace({"space": "MultiDiscrete", "nvec": [2]})
+print(md2.contains(md2.sample()))
 # %% Test buildSpaceConfig
 gym_box = Box(low=array([0, 0]), high=array([1, 1]), dtype=int)
 gym_md = MultiDiscrete([3, 3, 3])
