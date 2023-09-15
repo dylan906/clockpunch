@@ -14,6 +14,7 @@ from numpy import asarray, ndarray
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.dynamics.dynamics_classes import DynamicsModel
+from punchclock.policies.policy_builder import buildSpace
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
@@ -91,6 +92,7 @@ class AppendInfoItemToObs(Wrapper):
         self,
         env: Env,
         info_key: str,
+        info_space_config: dict,
         obs_key: str = None,
     ):
         """Wrap environment with a Dict observation space.
@@ -98,6 +100,12 @@ class AppendInfoItemToObs(Wrapper):
         Args:
             env (Env): Gymnasium environment with Dict observation space.
             info_key (str): Must be in info returned by env.step() and env.reset().
+            info_space_config (dict): Config to build a space corresponding to
+                the desired item in info. See buildSpace for details. Format is:
+                    {
+                        "space": Name of space class (e.g. "MultiDiscrete"),
+                        kwargs: kwargs used for the desired space,
+                    }
             obs_key (str, optional): Key assigned to value copied from info to
                 observation. If None, info_key will be used. Defaults to None.
         """
@@ -120,6 +128,12 @@ class AppendInfoItemToObs(Wrapper):
 
         self.info_key = info_key
         self.obs_key = obs_key
+
+        # build new observation space
+        self.info_item_space = buildSpace(space_config=info_space_config)
+        new_obs_space = deepcopy(env.observation_space)
+        new_obs_space[self.obs_key] = self.info_item_space
+        self.observation_space = new_obs_space
 
     def reset(self) -> Tuple[dict, dict]:
         """Reset env."""

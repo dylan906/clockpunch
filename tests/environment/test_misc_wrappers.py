@@ -1,7 +1,7 @@
 """Tests for misc_wrappers.py."""
 # %% Imports
 # Third Party Imports
-from gymnasium.spaces import Box, Dict, MultiDiscrete
+from gymnasium.spaces import Box, Dict
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -12,6 +12,7 @@ from punchclock.environment.misc_wrappers import (
     NumWindows,
     RandomInfo,
 )
+from punchclock.policies.policy_builder import buildSpace
 
 # %% Test IdentityWrapper
 print("\nTest IdentityWrapper...")
@@ -56,18 +57,29 @@ print(f"wrapped info = {info_wrapped}")
 
 # %% AppendInfoItemToObs
 print("\nTest AppendInfoItemToObs...")
+info_space_config = {"space": "Box", "low": 0, "high": 3}
 rand_env = RandomInfo(
     RandomEnv({"observation_space": Dict({"a": Box(0, 1)})}),
-    info_space=Dict({"b": MultiDiscrete(2)}),
+    info_space=Dict({"b": buildSpace(info_space_config)}),
 )
-appinfo_env = AppendInfoItemToObs(rand_env, info_key="b")
+
+appinfo_env = AppendInfoItemToObs(
+    rand_env,
+    info_key="b",
+    info_space_config=info_space_config,
+)
 obs, info = appinfo_env.reset()
+print(f"unwrapped obs space = {rand_env.observation_space}")
+print(f"wrapped obs space = {appinfo_env.observation_space}")
 print(f"reset obs = {obs}")
 print(f"reset info = {info}")
+assert appinfo_env.observation_space.contains(obs)
 
 obs, _, _, _, info = appinfo_env.step(appinfo_env.action_space.sample())
 print(f"step obs = {obs}")
 print(f"step info = {info}")
+assert appinfo_env.observation_space.contains(obs)
+
 # %% Test NumWindows
 print("\nTest NumWindows...")
 nw_env = NumWindows(env=rand_env, use_estimates=False)
