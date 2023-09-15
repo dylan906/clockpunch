@@ -69,7 +69,7 @@ class InfoWrapper(ABC, Wrapper):
         )
         infos.update(new_info)
 
-        return (observations, rewards, terminations, truncations, new_info)
+        return (observations, rewards, terminations, truncations, infos)
 
     @abstractmethod
     def updateInfo(
@@ -139,7 +139,8 @@ class NumWindows(InfoWrapper):
             dt = env.time_step
 
         # check items in unwrapped info
-        [_, _, _, _, info] = deepcopy(env).step(env.action_space.sample())
+        env_copy = deepcopy(env)
+        [_, info] = env_copy.reset()
         if "num_windows_left" or "vis_forecast" in info:
             warn(
                 """info already has 'num_windows_left' or 'vis_forecast'. These
