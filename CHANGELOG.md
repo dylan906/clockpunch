@@ -12,7 +12,7 @@ I'm trying to get better about that.
 - Sim results now include action mask violations (#53).
 - Added function to generate random agents (used for debugging/tests) (#55). 
 - Wrapper that copies item from info to observation (#59).
-- New module for info wrappers (#60).
+- New `InfoWrapper` base class and module for info wrappers (#60).
 
 ### Changed
 - Made null actions optionally ignorable in `MaskReward` wrapper (#48).
