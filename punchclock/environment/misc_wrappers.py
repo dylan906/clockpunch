@@ -2,6 +2,7 @@
 # %% Imports
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from copy import deepcopy
 from typing import Any, Tuple, final
 from warnings import warn
@@ -85,7 +86,10 @@ class IdentityWrapper(Wrapper):
 class AppendInfoItemToObs(Wrapper):
     """Append an item from info to observation.
 
-    Overwrites existing obs_key.value, if it already exists.
+    Copy an item from `info` (as returned from env.step() or env.reset()) into
+    `observation`. Overwrites existing observation item, if it already exists.
+
+    Environment must have Dict observation space.
     """
 
     def __init__(
@@ -95,7 +99,7 @@ class AppendInfoItemToObs(Wrapper):
         info_space_config: dict,
         obs_key: str = None,
     ):
-        """Wrap environment with a Dict observation space.
+        """Wrap environment with AppendInfoItemToObs wrapper.
 
         Args:
             env (Env): Gymnasium environment with Dict observation space.
@@ -119,6 +123,7 @@ class AppendInfoItemToObs(Wrapper):
         assert info_key in info, f"{info_key} is not a key in `info`."
 
         if obs_key is None:
+            # default key
             obs_key = info_key
 
         if obs_key in env.observation_space.spaces:
@@ -135,7 +140,7 @@ class AppendInfoItemToObs(Wrapper):
         new_obs_space[self.obs_key] = self.info_item_space
         self.observation_space = new_obs_space
 
-    def reset(self) -> Tuple[dict, dict]:
+    def reset(self) -> Tuple[OrderedDict, dict]:
         """Reset env."""
         obs, info = self.env.reset()
         new_item = self._getAppendInfoItem(info)
@@ -143,8 +148,11 @@ class AppendInfoItemToObs(Wrapper):
         obs.update(new_item)
         return obs, info
 
-    def step(self, action) -> Tuple[dict, float, bool, bool, dict]:
-        """Copy entry from unwrapped info to wrapped observation."""
+    def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
+        """Copy entry from unwrapped info to wrapped observation.
+
+        Argument unused in this method.
+        """
         (
             observations,
             rewards,
