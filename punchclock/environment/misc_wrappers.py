@@ -80,6 +80,79 @@ class IdentityWrapper(Wrapper):
         return obs
 
 
+# %% AppendInfoItemToObs
+class AppendInfoItemToObs(Wrapper):
+    """Append an item from info to observation.
+
+    Overwrites existing obs_key.value, if it already exists.
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        info_key: str,
+        obs_key: str = None,
+    ):
+        """Wrap environment with a Dict observation space.
+
+        Args:
+            env (Env): Gymnasium environment with Dict observation space.
+            info_key (str): Must be in info returned by env.step() and env.reset().
+            obs_key (str, optional): Key assigned to value copied from info to
+                observation. If None, info_key will be used. Defaults to None.
+        """
+        super().__init__(env)
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
+
+        env_copy = deepcopy(env)
+        _, info = env_copy.reset()
+        assert info_key in info, f"{info_key} is not a key in `info`."
+
+        if obs_key is None:
+            obs_key = info_key
+
+        if obs_key in env.observation_space.spaces:
+            warn(
+                f"{obs_key} is already in observation space. Value will be overwritten."
+            )
+
+        self.info_key = info_key
+        self.obs_key = obs_key
+
+    def reset(self) -> Tuple[dict, dict]:
+        """Reset env."""
+        obs, info = self.env.reset()
+        new_item = self._getAppendInfoItem(info)
+        obs = deepcopy(obs)
+        obs.update(new_item)
+        return obs, info
+
+    def step(self, action) -> Tuple[dict, float, bool, bool, dict]:
+        """Copy entry from unwrapped info to wrapped observation."""
+        (
+            observations,
+            rewards,
+            terminations,
+            truncations,
+            infos,
+        ) = self.env.step(action)
+
+        new_obs = self._getAppendInfoItem(infos)
+        observations = deepcopy(observations)
+        observations.update(new_obs)
+
+        return (observations, rewards, terminations, truncations, infos)
+
+    def _getAppendInfoItem(self, info: dict) -> dict:
+        """Copy the item (specified at instantiation) from info."""
+        info = deepcopy(info)
+        value = deepcopy(info[self.info_key])
+        obs_item = {self.info_key: value}
+        return obs_item
+
+
 # %% Info Wrapper
 class InfoWrapper(ABC, Wrapper):
     """Base class for custom info wrappers."""
