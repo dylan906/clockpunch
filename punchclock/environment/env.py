@@ -37,8 +37,6 @@ class SSAScheduler(gym.Env):
             other.
         "obs_staleness" Box(low=0, high=inf, shape=(1, N)): The difference between
             the simulation time and the last time the given target was tasked (sec).
-        "num_windows_left" Box(low=0, high=inf, shape=(1, N), dtype=int): Number
-            of observation windows left in scenario for given target.
         "num_tasked" Box(low=0, high=inf, shape=(1, N), dtype=int): Number of times
             target has been tasked during simulation.
 
@@ -72,8 +70,6 @@ class SSAScheduler(gym.Env):
         "true_states" (ndarray[float]): (6, N + M) True states of all agents.
         "vis_map_est" (ndarray[int]): (N, M) Estimated visibility map.
         "vis_map_truth" (ndarray[int]): (N, M) True visibility map.
-        "num_windows_left" list[int] N-long,  Number of observation windows left
-            in scenario for given target.
         "obs_staleness" list[float]: N-long,  The difference between the simulation
             time and the last time the given target was tasked (sec).
         "num_tasked" (list[int]): N-long, Number of times each target has been
@@ -161,9 +157,6 @@ class SSAScheduler(gym.Env):
                 "obs_staleness": Box(
                     low=0, high=inf, shape=(1, self.num_targets)
                 ),
-                "num_windows_left": Box(
-                    low=0, high=inf, shape=(1, self.num_targets), dtype=int
-                ),
                 "num_tasked": Box(
                     low=0, high=inf, shape=(1, self.num_targets), dtype=int
                 ),
@@ -242,8 +235,6 @@ class SSAScheduler(gym.Env):
                 "obs_staleness": ndarray[float] (1, self.num_targets),  # The
                     difference between the simulation time and the last time the
                     given target was tasked (sec).
-                "num_windows_left": ndarray[int](1, self.num_targets),  # Number
-                    of observation windows left in scenario for given target.
                 "num_tasked": ndarray[int] (1, self.num_targets),  # Number of
                     times target has been tasked during simulation.
                 }
@@ -262,15 +253,10 @@ class SSAScheduler(gym.Env):
 
         obs_staleness_list = info_local["obs_staleness"]
 
-        num_windows_left_list = info_local["num_windows_left"]
-
         num_tasked_list = deepcopy(info_local["num_tasked"])
 
-        # est_cov = cov_diags
         obs_staleness = asarray(obs_staleness_list, dtype=float32)
         obs_staleness = obs_staleness.reshape((1, -1))
-        num_windows_left = asarray(num_windows_left_list)
-        num_windows_left = num_windows_left.reshape((1, -1))
         num_tasked = asarray(num_tasked_list)
         num_tasked = num_tasked.reshape((1, -1))
 
@@ -280,7 +266,6 @@ class SSAScheduler(gym.Env):
                 "est_cov": est_cov,
                 "vis_map_est": vis_map_est,
                 "obs_staleness": obs_staleness,
-                "num_windows_left": num_windows_left,
                 "num_tasked": num_tasked,
             }
         )
@@ -326,12 +311,6 @@ class SSAScheduler(gym.Env):
         assert isinstance(
             self.info["vis_map_truth"][0, 0], int64
         ), "vis_map_truth entries must be ints"
-        assert (
-            len(self.info["num_windows_left"]) == self.num_targets
-        ), "num_windows_left must be N-long list"
-        assert isinstance(
-            self.info["num_windows_left"][0], int
-        ), "Entries of num_windows_left must be ints"
         assert (
             len(self.info["num_tasked"]) == self.num_targets
         ), "num_tasked must be N-long list"
@@ -465,13 +444,6 @@ class SSAScheduler(gym.Env):
         # Get number of times each target has been tasked.
         self.info["num_tasked"] = [
             ag.num_tasked for ag in self.agents if isinstance(ag, Target)
-        ]
-
-        # Get number of visibility windows left
-        self.info["num_windows_left"] = [
-            agent.num_windows_left
-            for agent in self.agents
-            if type(agent) is Target
         ]
 
         # Calc observation staleness. Force convert to float to avoid np.float64

@@ -254,9 +254,6 @@ env.reset()
 
 # step through environment through multiple resets
 for _ in range(max_steps * 3 + 1):
-    # num_windows_left should all decrement every step (until 0)
-    print(f"num_windows_left = {env._getObs()['num_windows_left']}")
-
     # pick arbitrary action
     action_step = env.action_space.sample()
 
@@ -268,7 +265,7 @@ for _ in range(max_steps * 3 + 1):
             f"AFTER RESET: \n"
             f"  env._getInfo() = {env._getInfo()} \n"
             f"  eci_state[:3] = {env.agents[3].eci_state[:3]}\n"
-            f"  num_windows_left = {env._getObs()['num_windows_left']}"
+            # f"  num_windows_left = {env._getObs()['num_windows_left']}"
         )
 # %% More thorough reset() test.
 # Make sure that all properties of agent and agent.target_filter get reset to initial conditions
@@ -402,15 +399,6 @@ axs[0].set_title("num_non_vis_taskings_truth")
 axs[0].plot([i["num_non_vis_taskings_truth"] for i in info_hist_long])
 axs[1].set_title("num_multiple_taskings")
 axs[1].plot([i["num_multiple_taskings"] for i in info_hist_long])
-plt.tight_layout()
-
-# plot number of windows left
-fig, axs = plt.subplots(2)
-fig.suptitle("Number of Windows Left (short vs long step)")
-axs[0].set_title("num_windows_left, short step")
-axs[0].plot([i["num_windows_left"].squeeze() for i in obs_hist_short])
-axs[1].set_title("num_windows_left, long step")
-axs[1].plot([i["num_windows_left"].squeeze() for i in obs_hist_long])
 plt.tight_layout()
 
 # %% Check environment passes Ray and Gym checkers
