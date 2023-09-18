@@ -1,6 +1,8 @@
 """Custom policy builder and utils."""
 # NOTE: Import numpy.Inf necessary for buildSpace, but does not appear in function.
 # %% Imports
+from __future__ import annotations
+
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from copy import deepcopy
