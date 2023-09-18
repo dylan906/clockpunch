@@ -24,6 +24,7 @@ from numpy import (
     all,
     append,
     array,
+    asarray,
     concatenate,
     diag,
     diagonal,
@@ -843,8 +844,13 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
         new_obs = {}
         for k, v in obs.items():
             if isinstance(self.observation_space[k], MultiBinary):
+                # skip loop early if MultiBinary; values already scaled [0, 1].
                 new_obs[k] = v
                 continue
+            if isinstance(v, list):
+                # edge case: Env checkers can pass in 1d arrays as lists, so correct
+                # here to satisfy checker.
+                v = asarray(v)
 
             v, reshaped = self.make2d(v)
             v, flip = self.transposeHorizontalArray(v)
