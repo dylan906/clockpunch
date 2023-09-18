@@ -6,7 +6,6 @@ from __future__ import annotations
 from copy import deepcopy
 
 # Third Party Imports
-from intervaltree import Interval, IntervalTree
 from numpy import arange, asarray, diagonal, eye, ndarray, sqrt, zeros
 from numpy.random import normal
 
@@ -131,7 +130,7 @@ class SSASchedulerParams:
                 terrestrial or satellite).
             - All targets must have the same dynamics (all sensors are either
                 terrestrial or satellite).
-            - If "*_dist" is 'normal', each row in "*_dist_params" is [mean, std]
+            - If "*_dist" is 'normal', each row in "*_dist_params" is [mean, std]  # noqa
             - If "*_dist" is 'uniform', each row is "*_dist_params" is [low, high]
         """
         # %% Assign agent_params defaults if keys not specified
@@ -237,7 +236,6 @@ class SSASchedulerParams:
         # self.reward_func = self.buildRewardFunc(reward_params)
         self.reward_func = None
         # %% Build agents
-        num_agents = agent_params["num_sensors"] + agent_params["num_targets"]
         # ---Generate initial states---
         # Check for fixed vs stochastic IC generation -- sensors
         if self.agent_params["sensor_dist"] is None:
@@ -285,8 +283,8 @@ class SSASchedulerParams:
             )
 
         # ---Generate filters---
-        # each target_filter has same basic structure, but with initial estimates close to
-        # initial state
+        # each target_filter has same basic structure, but with initial estimates
+        # close to initial state
         target_filters = self.genFilters(
             target_ICs,
             self.agent_params["target_dynamics"],
