@@ -138,12 +138,7 @@ obs_space = {
         },
         "b": {"space": "MultiBinary", "n": [2, 3]},
     },
-    "action_mask": {
-        "space": "Box",
-        "low": [0, 0],
-        "high": [1, 1],
-        "dtype": "int",
-    },
+    "action_mask": {"space": "MultiBinary", "n": [2, 2]},
 }
 act_space = {
     "space": "MultiDiscrete",
