@@ -30,6 +30,7 @@ I'm trying to get better about that.
 
 ### Removed
 - Removed old `ActionMask` wrapper in favor of more modular wrappers.
+- Removed number of access windows left tracking from base environment (#62).
 
 ## [0.7.0] - 2023-09-06
 
