@@ -78,6 +78,8 @@ class NumWindows(InfoWrapper):
             (t, n, m) position indicates that sensor m has access to target n at
             time step t.
 
+    The names of the new info items are overridable via the new_keys arg.
+
     For details on access window definitions, see AccessWindowCalculator.
     """
 
@@ -89,6 +91,7 @@ class NumWindows(InfoWrapper):
         merge_windows: bool = True,
         fixed_horizon: bool = True,
         use_estimates: bool = True,
+        new_keys: list[str] = None,
     ):
         """Wrap environment with NumWindows InfoWrapper.
 
@@ -106,6 +109,10 @@ class NumWindows(InfoWrapper):
             use_estimates (bool, optional): If True, use estimated states of targets
                 to forecast access windows. Otherwise, use true states. True states
                 are always used for sensors. Defaults to True.
+            new_keys (list[str], optional): Override default names to be appended
+                to info. The 0th value will override "num_windows_left"; the 1st
+                value will override "vis_forecast". Defaults to None, meaning
+                "num_windows_left" and "vis_forecast" are used.
         """
         super().__init__(env)
         # Type checking
@@ -125,6 +132,19 @@ class NumWindows(InfoWrapper):
         if dt is None:
             dt = env.time_step
 
+        if new_keys is None:
+            new_keys = ["num_windows_left", "vis_forecast"]
+        else:
+            assert len(new_keys) == 2, "len(new_keys) != 2."
+            print(
+                f"""Default keys for NumWindows wrapper overridden. Using following
+                map for new info key names: {{
+                    'num_windows_left': {new_keys[0]},
+                    'vis_forecast': {new_keys[1]},
+                }}
+                """
+            )
+
         # check items in unwrapped info
         env_copy = deepcopy(env)
         [_, info] = env_copy.reset()
@@ -135,6 +155,11 @@ class NumWindows(InfoWrapper):
             unwrapped items."""
             )
 
+        # names of new keys to append to info
+        self.new_keys_map = {
+            "num_windows_left": new_keys[0],
+            "vis_forecast": new_keys[1],
+        }
         self.use_estimates = use_estimates
 
         # Separate sensors from targets and dynamics
@@ -232,8 +257,8 @@ class NumWindows(InfoWrapper):
         )
 
         new_info = {
-            "num_windows_left": self.num_windows_left,
-            "vis_forecast": self.vis_forecast,
+            self.new_keys_map["num_windows_left"]: self.num_windows_left,
+            self.new_keys_map["vis_forecast"]: self.vis_forecast,
         }
 
         return new_info
