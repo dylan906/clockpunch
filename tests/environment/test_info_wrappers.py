@@ -1,6 +1,7 @@
 """Tests for info_wrappers.py."""
 # %% Imports
 # Third Party Imports
+from gymnasium.utils.env_checker import check_env
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -21,3 +22,9 @@ print("\nTest NumWindows...")
 nw_env = NumWindows(env=rand_env, use_estimates=False)
 obs, _, _, _, info = nw_env.step(nw_env.action_space.sample())
 print(f"info = {info}")
+
+# %% Use gym checker
+# check_env(rand_env)
+
+# %% done
+print("done")

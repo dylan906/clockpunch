@@ -2,6 +2,7 @@
 # %% Imports
 # Third Party Imports
 from gymnasium.spaces import Box, Dict
+from gymnasium.utils.env_checker import check_env
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -31,6 +32,11 @@ identity_env = IdentityWrapper(rand_env, id="foo")
 print(f"identity env = {identity_env}")
 print(f"env.id = {identity_env.id}")
 
+try:
+    check_env(identity_env)
+except Exception as ex:
+    print(ex)
+
 # %% RandomInfo
 print("\nTest RandomInfo...")
 rand_env = RandomEnv()
@@ -43,6 +49,11 @@ print(f"wrapped info = {info_wrapped}")
 randinfo_env = RandomInfo(rand_env, info_space=Dict({"a": Box(0, 1)}))
 _, _, _, _, info_wrapped = randinfo_env.step(randinfo_env.action_space.sample())
 print(f"wrapped info = {info_wrapped}")
+
+try:
+    check_env(randinfo_env)
+except Exception as ex:
+    print(ex)
 
 # %% AppendInfoItemToObs
 print("\nTest AppendInfoItemToObs...")
@@ -69,6 +80,10 @@ print(f"step obs = {obs}")
 print(f"step info = {info}")
 assert appinfo_env.observation_space.contains(obs)
 
+try:
+    check_env(appinfo_env)
+except Exception as ex:
+    print(ex)
 
 # %% Done
 print("done")

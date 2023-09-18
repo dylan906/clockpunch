@@ -24,6 +24,13 @@ class InfoWrapper(ABC, Wrapper):
         """Wrap env with InfoWrapper."""
         super().__init__(env)
 
+    def reset(
+        self, seed: int | None = None, options: dict | None = None
+    ) -> tuple:
+        """Reset environment."""
+        obs, info = super().reset(seed=seed, options=options)
+        return obs, info
+
     @final
     def step(self, action):
         """Step environment forward. Do not modify."""

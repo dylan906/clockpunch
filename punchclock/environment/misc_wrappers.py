@@ -44,7 +44,7 @@ class RandomInfo(Wrapper):
         infos.update(new_info)
         return (observations, rewards, terminations, truncations, infos)
 
-    def reset(self):
+    def reset(self, seed: int | None = None, options=None):
         """Reset me bro."""
         obs = self.observation_space.sample()
         info = self.info_space.sample()
@@ -135,9 +135,11 @@ class AppendInfoItemToObs(Wrapper):
         new_obs_space[self.obs_key] = self.info_item_space
         self.observation_space = new_obs_space
 
-    def reset(self) -> Tuple[OrderedDict, dict]:
+    def reset(
+        self, seed: int | None = None, options=None
+    ) -> Tuple[OrderedDict, dict]:
         """Reset env."""
-        obs, info = self.env.reset()
+        obs, info = super().reset(seed=seed, options=options)
         new_item = self._getAppendInfoItem(info)
         obs = deepcopy(obs)
         obs.update(new_item)
