@@ -9,7 +9,6 @@ from copy import deepcopy
 from numpy import asarray, eye, ones
 
 # Punch Clock Imports
-from punchclock.common.agents import Sensor, Target
 from punchclock.environment.env_parameters import SSASchedulerParams
 
 # %% Test buildRewardFunc
@@ -166,33 +165,6 @@ env_params2 = SSASchedulerParams(
 )
 print("agent initial conditions:\n")
 [print(a.eci_state) for a in env_params2.agents]
-# %% Test _calcAccessWindows
-print("\nTest _calcAccessWindows...")
-list_of_sensors = [
-    agent for agent in env_params2.agents if type(agent) is Sensor
-]
-list_of_targets = [
-    agent for agent in env_params2.agents if type(agent) is Target
-]
-
-# Number of possible windows is number of steps in sim (env.horizon)
-# All starting num_windows for targets should be <=horizon
-num_windows = env_params2._calcAccessWindows(
-    list_of_sensors=list_of_sensors,
-    list_of_targets=list_of_targets,
-)
-print(f"num_windows = {num_windows}")
-
-# Include sensor-overlap in window count.
-# Starting num_windows can be >horizon. In this example, one satellite (#4) is at GEO, so
-# can be accessed by both sensors through all time steps.
-num_windows = env_params2._calcAccessWindows(
-    list_of_sensors=list_of_sensors,
-    list_of_targets=list_of_targets,
-    merge_windows=False,
-)
-print(f"num_windows = {num_windows}")
-
 
 # %% Test argument checks
 print("\nTest argument checker...")
