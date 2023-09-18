@@ -108,7 +108,6 @@ class Target(Agent):
         time: float | int = 0,
         init_num_tasked: int = 0,
         init_last_time_tasked: float = 0,
-        num_windows_left: int = 0,
     ):
         """Initialize target subclass of Agent superclass.
 
@@ -125,8 +124,6 @@ class Target(Agent):
                 been tasked. Defaults to 0.
             init_last_time_tasked (float, optional): Initial time stamp of last
                 time target was tasked. Defaults to 0.
-            num_windows_left (int, optional): Number of viewing windows of target
-                left in simulation. Defaults to 0.
 
         Derived attribute:
             meas_cov (ndarray): Measurement covariance matrix. Not to be confused
@@ -144,7 +141,6 @@ class Target(Agent):
         self.target_filter = target_filter
         self.num_tasked = init_num_tasked
         self.last_time_tasked = npfloat32(init_last_time_tasked)
-        self.num_windows_left = num_windows_left
 
     def updateNonPhysical(
         self,
@@ -154,11 +150,6 @@ class Target(Agent):
 
         Arguments:
             task (bool): Set to True if target is tasked, otherwise  set to False
-
-        Notes:
-            - If self.num_windows_left was not set (default=None), then it is not
-                updated with this function call.
-            - If self.num_windows_left is 0, then it will remain as 0.
         """
         # If target is tasked,
         #   - increment num_tasked
@@ -181,12 +172,6 @@ class Target(Agent):
             self.last_time_tasked = npfloat32(
                 self.target_filter.last_measurement_time
             )
-
-        if self.num_windows_left is not None:
-            if self.num_windows_left == 0:
-                pass
-            else:
-                self.num_windows_left = self.num_windows_left - 1
 
     def getMeasurement(self) -> ndarray:
         """Measure dynamic state of target.

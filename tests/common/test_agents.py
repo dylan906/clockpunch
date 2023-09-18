@@ -209,24 +209,6 @@ print(f"target.target_filter.time = {b.target_filter.time}")
 print(f"target.eci_state = \n{b.eci_state}")
 print(f"target.target_filter.est_x = \n{b.target_filter.est_x}")
 
-# %% Test num_windows_left
-print("\nTest num_window_left decrement...")
-
-c = Target(
-    dynamics_model=sat_dynamics,
-    init_eci_state=array([7000, 0, 0, 0, 4, 0]),
-    agent_id=2,
-    target_filter=deepcopy(my_filter),
-    num_windows_left=2,
-)
-print(f"num_windows_left = {c.num_windows_left}")
-
-# num_windows_left should decrement until 0, then stay at 0
-for t in [10, 20, 30]:
-    c.propagate(t)
-    c.updateNonPhysical(task=False)
-    print(f"num_windows_left = {c.num_windows_left}")
-
 # %% Test toJson
 print("\ntoJson...")
 # assign a attributes to be numpy dtypes to test conversion to python types
