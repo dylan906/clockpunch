@@ -64,7 +64,12 @@ class InfoWrapper(ABC, Wrapper):
 class NumWindows(InfoWrapper):
     """Calculate number of target access windows over a time period.
 
-    Wraps `info` returned from env.step().
+    Wraps `info` returned from env.step(). Appends 2 items to info:
+        "num_windows_left": ndarray[int] (N, ) Each entry is the number of access
+            windows to the n'th target from now to the horizon.
+        "vis_forecast" : ndarray[int] (T, N, M) Binary array where a 1 in the
+            (t, n, m) position indicates that sensor m has access to target n at
+            time step t.
 
     For details on access window definitions, see AccessWindowCalculator.
     """
