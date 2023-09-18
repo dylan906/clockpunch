@@ -6,7 +6,7 @@ from copy import deepcopy
 
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import array
+from numpy import Inf, array
 
 # Punch Clock Imports
 from punchclock.common.utilities import loadJSONFile, saveJSONFile
@@ -22,12 +22,19 @@ from punchclock.policies.policy_builder import (
 
 # %% Test Space Configs
 print("\nTest space configs...")
-box_config = BoxConfig(
+box_config1 = BoxConfig(
     low=array([0, 0]),
     high=array([1, 1]),
     dtype="int",
 )
-print(f"box config = {box_config}")
+print(f"box config 1 = {box_config1}")
+
+box_config2 = BoxConfig(
+    low=array([-Inf, 0]),
+    high=array([Inf, Inf]),
+    dtype="int",
+)
+print(f"box config 2 = {box_config2}")
 
 md_config = MultiDiscreteConfig(nvec=array([3, 3, 3]))
 print(f"md config = {md_config}")
@@ -41,7 +48,7 @@ print(f"Dict config = {dict_config1}")
 dict_config2 = DictConfig(
     spaces={
         "a": md_config,
-        "b": DictConfig({"b1": box_config, "b2": md_config}),
+        "b": DictConfig({"b1": box_config1, "b2": md_config}),
     }
 )
 print(f"Dict config = {dict_config2}")
@@ -64,7 +71,8 @@ fpath = "tests/policies/data/"
 fname_list = []
 for i, config in enumerate(
     [
-        box_config,
+        box_config1,
+        box_config2,
         md_config,
         mb_config,
         dict_config1,

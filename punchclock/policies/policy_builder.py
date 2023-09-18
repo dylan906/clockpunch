@@ -1,7 +1,6 @@
 """Custom policy builder and utils."""
+# NOTE: Import numpy.Inf necessary for buildSpace, but does not appear in function.
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -9,7 +8,7 @@ from typing import Tuple, final
 
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete, Space
-from numpy import array, float32, int64, ndarray
+from numpy import Inf, array, float32, int64, ndarray
 
 # Punch Clock Imports
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
