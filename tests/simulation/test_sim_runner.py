@@ -158,7 +158,6 @@ config = OrderedDict(
                             "eci_state",
                             "est_cov",
                             "num_tasked",
-                            "num_windows_left",
                             "obs_staleness",
                             "vis_map_est",
                         ]
@@ -183,7 +182,6 @@ config = OrderedDict(
                             "eci_state",
                             "est_cov",
                             "num_tasked",
-                            "num_windows_left",
                             "obs_staleness",
                             "vis_map_est",
                         ],
