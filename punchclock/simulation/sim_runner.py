@@ -246,7 +246,8 @@ class SimRunner:
         self.action_hist = [None] * self.max_steps
         self.obs_hist = [None] * self.max_steps
 
-        # CustomPolicy requires obs = {"observations": Dict, "action_mask": Box}
+        # Getting initial obs and info requires tailored methods. Obs structure
+        # differs depending on Custom vs Ray policy.
         if isinstance(self.policy, CustomPolicy):
             self.obs_hist[0] = self._getObs(stop_at_identity_wrapper=True)
         else:
