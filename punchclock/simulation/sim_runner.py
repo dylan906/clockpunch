@@ -11,7 +11,6 @@ from typing import Any, Tuple, Union
 
 # Third Party Imports
 import gymnasium as gym
-from gymnasium import ObservationWrapper
 from gymnasium.spaces.utils import flatten
 from numpy import (
     array,
