@@ -24,13 +24,20 @@ class InfoWrapper(ABC, Wrapper):
         """Wrap env with InfoWrapper."""
         super().__init__(env)
 
-    def reset(self, seed: int | None = None, options: dict | None = None) -> tuple:
+    def reset(
+        self, seed: int | None = None, options: dict | None = None
+    ) -> tuple:
         """Reset environment."""
         obs, info = super().reset(seed=seed, options=options)
         new_info = self.updateInfo(obs, 0, False, False, info)
         info.update(new_info)
+        self.info = deepcopy(info)
 
         return obs, info
+
+    @final
+    def _getInfo(self):
+        return deepcopy(self.info)
 
     @final
     def step(self, action):
