@@ -216,16 +216,20 @@ class SimRunner:
         return checkwrap
 
     def _getInfo(self):
-        """Abstraction for getting info from wrapped or bare environment."""
+        """Abstraction for getting info from wrapped environment."""
+        # Drill down through wrappers until find one that outputs info. Assumes
+        # wrappers that modify info have '_getInfo()` method. Base env SSAScheduler
+        # has _getInfo().
         for i in range(0, self.num_env_wrappers + 1):
             env = getXLevelWrapper(deepcopy(self.env), i)
             if hasattr(env, "_getInfo"):
                 info = env._getInfo()
                 break
-        # if isinstance(self.env, gym.Wrapper):
-        #     info = self.env.unwrapped._getInfo()
-        # else:
-        #     info = self.env._getInfo()
+            else:
+                info = None
+
+        if info is None:
+            Exception("Base environment and wrappers do not have _getInfo().")
 
         return info
 

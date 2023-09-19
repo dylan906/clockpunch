@@ -130,15 +130,7 @@ agent_params = {
     "init_last_time_tasked": None,
 }
 
-reward_params = {
-    "reward_func": "Threshold",
-    "obs_or_info": "obs",
-    "metric": "num_tasked",
-    "metric_value": 3,
-    "penalty": 1,
-    "inequality": ">=",
-    "preprocessors": ["min"],
-}
+reward_params = None
 
 # assign build params as a dict for easier env recreation/changing
 # ActionMask wrapper required for SimRunner
@@ -174,9 +166,9 @@ config = OrderedDict(
                     "wrapper": "VisMap2ActionMask",
                     "wrapper_config": {"vis_map_key": "action_mask"},
                 },
-                {
-                    "wrapper": "NumWindows",
-                },
+                # {
+                #     "wrapper": "NumWindows",
+                # },
                 {
                     "wrapper": "NestObsItems",
                     "wrapper_config": {
