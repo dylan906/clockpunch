@@ -138,15 +138,29 @@ class AppendInfoItemToObs(Wrapper):
     def reset(
         self, seed: int | None = None, options=None
     ) -> Tuple[OrderedDict, dict]:
-        """Reset env."""
+        """Copy of info is stored on call (as self.info).
+
+        Args:
+            seed (int | None, optional): _description_. Defaults to None.
+            options (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            obs (OrderedDict): Observation.
+            info (dict): Info.
+        """
         obs, info = super().reset(seed=seed, options=options)
         new_item = self._getAppendInfoItem(info)
+
+        self.info = deepcopy(info)
+
         obs = deepcopy(obs)
         obs.update(new_item)
         return obs, info
 
     def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
         """Copy entry from unwrapped info to wrapped observation.
+
+        self.info is updated on step.
 
         Argument unused in this method.
         """
@@ -158,11 +172,30 @@ class AppendInfoItemToObs(Wrapper):
             infos,
         ) = self.env.step(action)
 
+        self.info = deepcopy(infos)
+
         new_obs = self._getAppendInfoItem(infos)
         observations = deepcopy(observations)
         observations.update(new_obs)
 
         return (observations, rewards, terminations, truncations, infos)
+
+    def observation(self, observation: OrderedDict) -> OrderedDict:
+        """Append item to unwrapped observation.
+
+        Args:
+            observation (OrderedDict): Unwrapped observation.
+
+        Returns:
+            OrderedDict: Same as input, but with item from info, as saved at last
+                reset() or step() call.
+        """
+        info = deepcopy(self.info)
+        new_info = self._getAppendInfoItem(info)
+        new_obs = deepcopy(observation)
+        new_obs.update(new_info)
+
+        return new_obs
 
     def _getAppendInfoItem(self, info: dict) -> dict:
         """Copy the item (specified at instantiation) from info."""
