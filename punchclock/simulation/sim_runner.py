@@ -165,7 +165,8 @@ class SimRunner:
                     deepcopy(self.env), self.num_env_wrappers - i
                 )
                 # print(env)
-                if isinstance(env, ObservationWrapper):
+                # if isinstance(env, ObservationWrapper):
+                if hasattr(env, "observation"):
                     # for wrappers that have modify observation, do it;
                     # otherwise obs_in = obs_out
                     obs = env.observation(obs)
