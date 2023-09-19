@@ -175,6 +175,9 @@ config = OrderedDict(
                     "wrapper_config": {"vis_map_key": "action_mask"},
                 },
                 {
+                    "wrapper": "NumWindows",
+                },
+                {
                     "wrapper": "NestObsItems",
                     "wrapper_config": {
                         "new_key": "observations",

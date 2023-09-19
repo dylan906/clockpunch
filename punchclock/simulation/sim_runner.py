@@ -217,10 +217,15 @@ class SimRunner:
 
     def _getInfo(self):
         """Abstraction for getting info from wrapped or bare environment."""
-        if isinstance(self.env, gym.Wrapper):
-            info = self.env.unwrapped._getInfo()
-        else:
-            info = self.env._getInfo()
+        for i in range(0, self.num_env_wrappers + 1):
+            env = getXLevelWrapper(deepcopy(self.env), i)
+            if hasattr(env, "_getInfo"):
+                info = env._getInfo()
+                break
+        # if isinstance(self.env, gym.Wrapper):
+        #     info = self.env.unwrapped._getInfo()
+        # else:
+        #     info = self.env._getInfo()
 
         return info
 
