@@ -60,42 +60,40 @@
     "constructor_params": {
       "wrappers": [
         {
-          "wrapper": "filter_observation",
+          "wrapper": "FilterObservation",
           "wrapper_config": {
             "filter_keys": [
               "vis_map_est",
-              "num_tasked",
               "est_cov"
             ]
           }
         },
         {
-          "wrapper": "copy_obs_item",
+          "wrapper": "CopyObsItem",
           "wrapper_config": {
             "key": "vis_map_est",
             "new_key": "vm_copy"
           }
         },
         {
-          "wrapper": "vis_map_action_mask",
+          "wrapper": "VisMap2ActionMask",
           "wrapper_config": {
             "rename_key": "action_mask",
             "vis_map_key": "vm_copy"
           }
         },
         {
-          "wrapper": "nest_obs_items",
+          "wrapper": "NestObsItems",
           "wrapper_config": {
             "keys_to_nest": [
               "vis_map_est",
-              "num_tasked",
               "est_cov"
             ],
             "new_key": "observations"
           }
         },
         {
-          "wrapper": "flat_dict"
+          "wrapper": "FlatDict"
         }
       ]
     },

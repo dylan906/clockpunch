@@ -12,6 +12,7 @@ tests/simulation/data/mc_results/*.csv
 tests/simulation/data/mc_results/*.json
 tests/simulation/data/mc_results/*.pkl
 tests/simulation/data/mc_results/*/
+tests/simulation/data/test_checkpoint2/test_trial/*.json
 
 tests/policies/data/*.json
 
