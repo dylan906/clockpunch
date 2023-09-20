@@ -261,13 +261,13 @@ def addPostProcessedCols(
         axis=1,
     )
 
-    df["action_mask_violations"] = df.apply(
-        lambda x: countMaskViolations(
-            x=x["action_array"],
-            mask=x["action_mask"],
-        ),
-        axis=1,
-    )
+    # df["action_mask_violations"] = df.apply(
+    #     lambda x: countMaskViolations(
+    #         x=x["action_array"],
+    #         mask=x["action_mask"],
+    #     ),
+    #     axis=1,
+    # )
 
     df["seed"] = info.get("seed", None)
 

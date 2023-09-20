@@ -37,7 +37,7 @@ print("\nBuild policy configs...")
 
 checkpoint_path = (
     fpath
-    + "/data/test_checkpoint2/test_trial/PPO_ssa_env_f26ba_00000_0_2023-08-22_11-52-50/checkpoint_000001/policies/default_policy"
+    + "/data/test_checkpoint2/test_trial/PPO_ssa_env_6a185_00000_0_2023-09-20_12-40-31/checkpoint_000001/policies/default_policy"
 )
 results_dir = "tests/simulation/data/mc_results"
 

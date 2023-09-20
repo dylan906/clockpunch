@@ -67,9 +67,7 @@ constructor_params = {
     "wrappers": [
         {
             "wrapper": "FilterObservation",
-            "wrapper_config": {
-                "filter_keys": ["vis_map_est", "num_tasked", "est_cov"]
-            },
+            "wrapper_config": {"filter_keys": ["vis_map_est", "est_cov"]},
         },
         {
             "wrapper": "CopyObsItem",
@@ -86,9 +84,10 @@ constructor_params = {
             "wrapper": "NestObsItems",
             "wrapper_config": {
                 "new_key": "observations",
-                "keys_to_nest": ["vis_map_est", "num_tasked", "est_cov"],
+                "keys_to_nest": ["vis_map_est", "est_cov"],
             },
         },
+        {"wrapper": "IdentityWrapper"},
         {"wrapper": "FlatDict"},
     ]
 }
