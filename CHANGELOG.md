@@ -14,6 +14,7 @@ I'm trying to get better about that.
 - Wrapper that copies item from info to observation (#59).
 - New `InfoWrapper` base class and module for info wrappers (#60).
 - New wrapper `NumWindows(InfoWrapper)` dynamically updates number of sensor-target access windows left (#38).
+- Added reverse-nest option to `NestObsItems` wrapper (#65).
 
 ### Changed
 - Made null actions optionally ignorable in `MaskReward` wrapper (#48).
