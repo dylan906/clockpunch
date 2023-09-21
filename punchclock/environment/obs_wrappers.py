@@ -158,6 +158,7 @@ class NestObsItems(gym.ObservationWrapper):
         env: Env,
         new_key: Any = None,
         keys_to_nest: list = None,
+        reverse: bool = False,
     ):
         """Wrap environment with NestObsItems ObservationWrapper.
 
@@ -169,6 +170,9 @@ class NestObsItems(gym.ObservationWrapper):
                 space that will be combined into a Dict space under new_key. If
                 None, all items in observation space will be nested under single
                 item. Defaults to None.
+            reverse (bool, optional): If True, keys NOT in keys_to_nest will be
+                nested. Items in keys_to_nest will remain at top level of dict.
+                Defaults to False.
         """
         assert isinstance(
             env.observation_space, Dict
@@ -181,31 +185,76 @@ class NestObsItems(gym.ObservationWrapper):
         assert all(
             [k in env.observation_space.spaces.keys() for k in keys_to_nest]
         ), "All entries in keys_to_nest must be in observation space."
-        self.keys_to_nest = keys_to_nest
 
         super().__init__(env)
 
         if new_key is None:
             new_key = "new_key"
         self.new_key = new_key
+        self.reverse = reverse
 
-        # iterate over observation space items (not keys_to_nest) to maintain order
-        nested_spaces = OrderedDict({})
+        spaces_in_list, spaces_notin_list = self._getNestedSpaces(
+            env=env, keys=keys_to_nest
+        )
+
+        if reverse is False:
+            self.keys_to_nest = keys_to_nest
+            self.observation_space = self._createNewObsSpace(
+                unnested_spaces=spaces_notin_list,
+                nested_spaces=spaces_in_list,
+                nest_key=new_key,
+            )
+        elif reverse is True:
+            # reverse keys_to_nest from arg
+            self.keys_to_nest = [k for k in spaces_notin_list.keys()]
+            self.observation_space = self._createNewObsSpace(
+                unnested_spaces=spaces_in_list,
+                nested_spaces=spaces_notin_list,
+                nest_key=new_key,
+            )
+
+    def _getNestedSpaces(
+        self, env: Env, keys: list[str]
+    ) -> tuple[OrderedDict[Space], OrderedDict[Space]]:
+        """Get Spaces from env observation space that are in and not in keys.
+
+        Args:
+            env (Env): A Gym environment with a Dict obs space.
+            keys (list[str]): List of keys; all must be in obs space.
+
+        Returns:
+            spaces_in_list (OrderedDict[Space]): Spaces from
+                env.observation_space.spaces that are in keys.
+            spaces_notin_list (OrderedDict[Space]): Spaces from
+                env.observation_space.spaces that are NOT in keys.
+        """
+        spaces_in_list = OrderedDict({})
         for k, v in env.observation_space.spaces.items():
-            if k in keys_to_nest:
-                nested_spaces[k] = v
+            if k in keys:
+                spaces_in_list[k] = v
 
-        unnested_spaces = OrderedDict({})
+        spaces_notin_list = OrderedDict({})
         for k, v in env.observation_space.items():
-            if k not in keys_to_nest:
-                unnested_spaces[k] = v
+            if k not in keys:
+                spaces_notin_list[k] = v
 
-        self.observation_space = Dict(
+        return spaces_in_list, spaces_notin_list
+
+    def _createNewObsSpace(
+        self,
+        unnested_spaces: OrderedDict[Space],
+        nested_spaces: OrderedDict[Space],
+        nest_key: str,
+    ):
+        """Create a Dict space with a list of nested/unnested spaces."""
+        new_obs_space = Dict(
             {
                 **unnested_spaces,
-                self.new_key: Dict(nested_spaces),
+                nest_key: Dict(nested_spaces),
             }
         )
+
+        return new_obs_space
 
     def observation(self, obs: dict) -> OrderedDict:
         """Nest item(s) from obs into a new item, leave other items at top.

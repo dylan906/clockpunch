@@ -81,6 +81,18 @@ assert env_postnest.observation_space.contains(obs_nested)
 
 env_postnest.reset()
 
+# reverse nest
+env_postnest = NestObsItems(
+    env=env_prenest,
+    new_key="top_level",
+    keys_to_nest=["c", "a"],
+    reverse=True,
+)
+obs_nested = env_postnest.observation(env_prenest.observation_space.sample())
+assert env_postnest.observation_space.contains(obs_nested)
+
+env_postnest.reset()
+
 # %% Test CopyObsItem
 print("\nTest CopyObsItem...")
 env_premask = RandomEnv(
