@@ -1,8 +1,7 @@
 """Tests for reward_wrappers.py."""
 # %% Imports
 # Third Party Imports
-from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import array
+from gymnasium.spaces import Box, Dict, MultiDiscrete
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -10,10 +9,7 @@ from punchclock.environment.misc_wrappers import RandomInfo
 from punchclock.environment.reward_wrappers import (
     AssignInfoToReward,
     AssignObsToReward,
-    AssignThingToReward,
     LogisticTransformReward,
-    MaskReward,
-    NullActionReward,
     ThresholdReward,
     ZeroReward,
 )
