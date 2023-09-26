@@ -14,7 +14,7 @@ from numpy import asarray, ndarray
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.dynamics.dynamics_classes import DynamicsModel
-from punchclock.environment.wrapper_utils import getInfo
+from punchclock.environment.wrapper_utils import countNullActiveActions, getInfo
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
@@ -399,14 +399,11 @@ class ActionTypeCounter(InfoWrapper):
                 self.new_key: Sum of null/active actions this step.
                 }
         """
-        if self.count_null_actions is True:
-            # Count null actions
-            act_count = (action == self.null_action_index).sum(dtype=int)
-
-        else:
-            # count non-null actions (aka active actions)
-            act_count = (action != self.null_action_index).sum(dtype=int)
-
+        act_count = countNullActiveActions(
+            action=action,
+            null_action_index=self.null_action_index,
+            count_null=self.count_null_actions,
+        )
         info = {self.new_key: act_count}
 
         return info

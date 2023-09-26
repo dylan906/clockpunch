@@ -97,28 +97,6 @@ print(f"\nobs['a'] = \n{obs['a']}")
 print(f"action = {action}")
 print(f"reward={reward}")
 
-# %% Test NullActionReward
-print("\nTest NullActionReward...")
-rand_env = RandomEnv(
-    {
-        "observation_space": Dict({"a": MultiBinary((2, 2))}),
-        "action_space": MultiDiscrete([3, 3]),
-    }
-)
-nar_env = NullActionReward(rand_env, reward=-0.1)
-
-action = array([0, 2])
-(obs, reward, term, trunc, info) = nar_env.step(action)
-print(f"action = {action}")
-print(f"reward={reward}")
-
-
-nar_env = NullActionReward(rand_env, reward_null_actions=False)
-
-action = array([0, 0])
-(obs, reward, term, trunc, info) = nar_env.step(action)
-print(f"action = {action}")
-print(f"reward = {reward}")
 
 # %% Test ThresholdReward
 print("\nTest ThresholdReward...")

@@ -435,3 +435,30 @@ def getInfo(env: Env) -> dict:
     env_copy = deepcopy(env)
     _, info = env_copy.reset()
     return info
+
+
+def countNullActiveActions(
+    action: ndarray[int],
+    null_action_index: int,
+    count_null: bool,
+) -> int:
+    """Count null/active actions in an action array.
+
+    Args:
+        action (ndarray[int]): An action array
+        null_action_index (int): index of action corresponding to the null action.
+        count_null (bool): If True, count null actions. If False, count active
+            actions.
+
+    Returns:
+        int: A count of null/active actions.
+    """
+    if count_null is True:
+        # Count null actions
+        act_count = (action == null_action_index).sum(dtype=int)
+
+    else:
+        # count non-null actions (aka active actions)
+        act_count = (action != null_action_index).sum(dtype=int)
+
+    return act_count
