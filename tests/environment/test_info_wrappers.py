@@ -15,6 +15,7 @@ from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     MaskViolationCounter,
     NumWindows,
+    ThresholdReward,
 )
 from punchclock.ray.build_env import buildEnv
 
