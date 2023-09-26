@@ -29,7 +29,7 @@ class RewardBase(ABC, Wrapper):
     the class defines only a reward scheme, it does not modify other inputs/outputs
     of step.
 
-    When subclasses of RewardBase are stacked, rewards from all layers are summed.
+    Overwrites input reward with output of calcReward().
     """
 
     def __init__(self, env: Env):
@@ -57,7 +57,7 @@ class RewardBase(ABC, Wrapper):
         ) = self.env.step(action)
 
         # add unwrapped reward to new reward
-        rewards = unwrapped_rewards + self.calcReward(
+        rewards = self.calcReward(
             observations,
             unwrapped_rewards,
             terminations,
