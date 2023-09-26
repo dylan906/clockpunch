@@ -113,10 +113,31 @@ ssa_env.reset()
 # test in loop
 for _ in range(horizon - 1):
     obs, _, _, _, info = ssa_env.step(ssa_env.action_space.sample())
-    print(f"num windows left = {info['num_windows_left']}")
+    print(f"num windows left = {info['num_windows_alt']}")
     print(f"vis vorecast shape = {info['vis_forecast'].shape}")
 # %% Use gym checker
 # check_env(rand_env)
+# %% Test NullActionCounter
+print("\nTest NullActionCounter...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"a": MultiBinary((2, 2))}),
+        "action_space": MultiDiscrete([3, 3]),
+    }
+)
+nar_env = NullActionCounter(rand_env, new_key="count")
 
+action = array([0, 2])
+(obs, reward, term, trunc, info) = nar_env.step(action)
+print(f"action = {action}")
+print(f"info={info}")
+
+
+nar_env = NullActionCounter(rand_env, new_key="count", count_null_actions=False)
+
+action = array([0, 0])
+(obs, reward, term, trunc, info) = nar_env.step(action)
+print(f"action = {action}")
+print(f"info={info}")
 # %% done
 print("done")

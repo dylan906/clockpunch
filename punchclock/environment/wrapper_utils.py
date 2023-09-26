@@ -428,3 +428,10 @@ def getXLevelWrapper(env: Env, x: int) -> Env:
         i += 1
 
     return env_x
+
+
+def getInfo(env: Env) -> dict:
+    """Gets info from env in a safe way."""
+    env_copy = deepcopy(env)
+    _, info = env_copy.reset()
+    return info

@@ -14,6 +14,7 @@ from numpy import asarray, ndarray
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.dynamics.dynamics_classes import DynamicsModel
+from punchclock.environment.wrapper_utils import getInfo
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
@@ -167,8 +168,7 @@ class NumWindows(InfoWrapper):
             )
 
         # check items in unwrapped info
-        env_copy = deepcopy(env)
-        [_, info] = env_copy.reset()
+        info = getInfo(env)
         if "num_windows_left" or "vis_forecast" in info:
             warn(
                 """info already has 'num_windows_left' or 'vis_forecast'. These
@@ -330,7 +330,7 @@ class NumWindows(InfoWrapper):
 
 
 # %% NullActionCounter
-class NullActionReward(InfoWrapper):
+class NullActionCounter(InfoWrapper):
     """Counts null actions.
 
     The null action is the max value allowed in a MultiDiscrete action space. All
@@ -344,7 +344,7 @@ class NullActionReward(InfoWrapper):
 
     Example:
         action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
-        wrapped_env = NullActionReward(env, reward_null_actions=False)
+        wrapped_env = NullActionReward(env, count_null_actions=False)
         action = array([0, 1, 3])
         reward = 1 + 1 + 0 = 2
 
@@ -353,25 +353,31 @@ class NullActionReward(InfoWrapper):
     def __init__(
         self,
         env: Env,
-        reward: float = 1,
-        reward_null_actions: bool = True,
+        new_key: str,
+        count_null_actions: bool = True,
     ):
         """Wrap environment.
 
         Args:
             env (Env): See RewardBase for requirements.
-            reward (float, optional): Reward generated per (non-)null action assignment.
-                Defaults to 1.
-            reward_null_actions (bool, optional): If True, reward is assigned for
+            new_key (str): New key in info to assign null action count value to.
+            count_null_actions (bool, optional): If True, reward is assigned for
                 null actions. If False, reward is assigned for non-null actions.
                 Defaults to True.
         """
         super().__init__(env)
-        self.reward_per_null_action = reward
-        self.reward_null_actions = reward_null_actions
+        info = getInfo(env)
+        if new_key in info:
+            warn(
+                f"""{new_key} already in info returned by env. Will be overwritten
+                by wrapper. Consider using different value for new_key={new_key}."""
+            )
+
+        self.new_key = new_key
+        self.count_null_actions = count_null_actions
         self.null_action_index = env.action_space.nvec[0] - 1
 
-    def calcReward(
+    def updateInfo(
         self,
         obs: Any,
         reward: Any,
@@ -379,8 +385,8 @@ class NullActionReward(InfoWrapper):
         truncationAny: Any,
         info: Any,
         action: ndarray[int],
-    ) -> float:
-        """Calculate null action reward.
+    ) -> dict:
+        """Counts null actions.
 
         Args:
             obs, reward, termination, truncation, info: Unused.
@@ -389,18 +395,16 @@ class NullActionReward(InfoWrapper):
                 a value of N denotes null action.
 
         Returns:
-            float: Total reward for step.
+            info (dict[str[int]]): Sum of null actions this step.
         """
-        if self.reward_null_actions is True:
-            # Reward null actions
-            reward = (
-                self.reward_per_null_action
-                * (action == self.null_action_index).sum()
-            )
+        if self.count_null_actions is True:
+            # Count null actions
+            act_count = (action == self.null_action_index).sum(dtype=int)
+
         else:
-            # reward non-null actions (aka active actions)
-            reward = (
-                self.reward_per_null_action
-                * (action != self.null_action_index).sum()
-            )
-        return reward
+            # count non-null actions (aka active actions)
+            act_count = (action != self.null_action_index).sum(dtype=int)
+
+        info = {self.new_key: act_count}
+
+        return info
