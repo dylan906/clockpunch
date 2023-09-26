@@ -13,7 +13,7 @@ from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
-    CountMaskViolations,
+    MaskViolationCounter,
     NumWindows,
 )
 from punchclock.ray.build_env import buildEnv
@@ -144,8 +144,8 @@ action = array([0, 0])
 print(f"action = {action}")
 print(f"info={info}")
 
-# %% Test CountMaskViolations
-print("\nTest CountMaskViolations...")
+# %% Test MaskViolationCounter
+print("\nTest MaskViolationCounter...")
 rand_env = RandomEnv(
     {
         "observation_space": Dict({"a": MultiBinary((3, 4))}),
@@ -153,7 +153,7 @@ rand_env = RandomEnv(
         "reward_space": Box(0, 0),
     }
 )
-maskvio_env = CountMaskViolations(
+maskvio_env = MaskViolationCounter(
     rand_env,
     new_key="count",
     action_mask_key="a",
@@ -165,12 +165,12 @@ print(f"obs['a'] = \n{obs['a']}")
 print(f"action = {action}")
 print(f"info={info}")
 
-# Test with rewarding (penalizing) invalid actions
-maskvio_env = CountMaskViolations(
+# Test with counting valid actions instead
+maskvio_env = MaskViolationCounter(
     rand_env,
     new_key="count",
     action_mask_key="a",
-    count_valid_actions=False,
+    count_valid_actions=True,
 )
 
 (obs, reward, term, trunc, info) = maskvio_env.step(action)
@@ -179,7 +179,7 @@ print(f"action = {action}")
 print(f"info={info}")
 
 # Test with accounting for null actions
-maskvio_env = CountMaskViolations(
+maskvio_env = MaskViolationCounter(
     rand_env,
     new_key="count",
     action_mask_key="a",

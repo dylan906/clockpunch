@@ -412,7 +412,7 @@ class ActionTypeCounter(InfoWrapper):
 
 
 # %% Mask Reward
-class CountMaskViolations(InfoWrapper):
+class MaskViolationCounter(InfoWrapper):
     """Count sensors assigned to valid (or invalid) action.
 
     Nomenclature:
@@ -421,7 +421,7 @@ class CountMaskViolations(InfoWrapper):
 
     Example:
         # for 3 sensors, 2 targets, null actions included, count valid actions
-        wrapped_env = CountMaskViolations(env, "action_mask", ignore_null_actions=False)
+        wrapped_env = MaskViolationCounter(env, "action_mask", ignore_null_actions=False)
         # action_mask = array([[1, 1, 1],
                                [0, 0, 1]
                                [1, 1, 1]])  # last row is null action
@@ -434,7 +434,7 @@ class CountMaskViolations(InfoWrapper):
 
     Example:
         # for 3 sensors, 2 targets, null actions ignored, count invalid actions
-        wrapped_env = CountMaskViolations(env, "action_mask",
+        wrapped_env = MaskViolationCounter(env, "action_mask",
             count_valid_actions=False, ignore_null_actions=True)
         # action_mask = array([[1, 1, 1],
                                [0, 0, 1],
@@ -452,7 +452,7 @@ class CountMaskViolations(InfoWrapper):
         env: Env,
         new_key: str,
         action_mask_key: str,
-        count_valid_actions: bool = True,
+        count_valid_actions: bool = False,
         ignore_null_actions: bool = True,
     ):
         """Wrap environment.
@@ -465,10 +465,11 @@ class CountMaskViolations(InfoWrapper):
                 array where a 1 indicates the sensor-action the pairing is a valid
                 action). The bottom row denotes null action.
             count_valid_actions (bool, optional): If True, valid actions are counted.
-                If False, invalid actions are counted. Defaults to True.
+                If False, invalid actions are counted. Defaults to False.
             ignore_null_actions (bool, optional): If True, the bottom row of the
-                action mask is ignored; action values of N are ignored. Defaults
-                to True.
+                action mask is ignored; action values of N are ignored. If False,
+                Null actions are counted according to mask value and count_valid_actions
+                value. Defaults to True.
         """
         super().__init__(env)
         assert (
