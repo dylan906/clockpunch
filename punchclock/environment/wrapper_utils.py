@@ -18,7 +18,7 @@ from gymnasium.spaces import (
     MultiDiscrete,
     Space,
 )
-from numpy import all, int8, int64, max, min, ndarray, ravel
+from numpy import all, int8, int64, max, min, multiply, ndarray, ravel, sum
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import IdentityWrapper
@@ -462,3 +462,38 @@ def countNullActiveActions(
         act_count = (action != null_action_index).sum(dtype=int)
 
     return act_count
+
+
+def countMaskViolations(
+    action: ndarray[int],
+    mask: ndarray[int],
+    count_valid_actions: bool,
+    ignore_null_actions: bool,
+):
+    """Count action mask violations/non-violations.
+
+    Args:
+        action (ndarray[int]): (N+1, M) Binary array.
+        mask (ndarray[int]): (N+1, M) Binary array.
+        count_valid_actions (bool): If True, count valid actions. If False, count
+            invalid actions.
+        ignore_null_actions (bool): If True, bottom rows of action and mask will
+            be ignored.
+
+    Returns:
+        int: Count of valid/invalid actions.
+    """
+    if ignore_null_actions is True:
+        # crop arrays if null actions are ignored
+        action = action[:-1, :]
+        mask = mask[:-1, :]
+
+    if count_valid_actions is True:
+        # count valid actions
+        count_mat = multiply(mask, action)
+    else:
+        # count invalid actions
+        count_mat = multiply((1 - mask), action)
+
+    tot = sum(count_mat, dtype=int)
+    return tot

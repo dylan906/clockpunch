@@ -17,7 +17,11 @@ from numpy import asarray, multiply, ndarray, sum
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.common.utilities import actionSpace2Array
 from punchclock.dynamics.dynamics_classes import DynamicsModel
-from punchclock.environment.wrapper_utils import countNullActiveActions, getInfo
+from punchclock.environment.wrapper_utils import (
+    countMaskViolations,
+    countNullActiveActions,
+    getInfo,
+)
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
 
@@ -524,19 +528,13 @@ class MaskViolationCounter(InfoWrapper):
         action_2d = self.action_converter(action)
         action_mask = obs[self.action_mask_key]
 
-        if self.ignore_null_actions is True:
-            # crop arrays if null actions are ignored
-            action_2d = action_2d[:-1, :]
-            action_mask = action_mask[:-1, :]
+        tot = countMaskViolations(
+            action=action_2d,
+            mask=action_mask,
+            count_valid_actions=self.count_valid_actions,
+            ignore_null_actions=self.ignore_null_actions,
+        )
 
-        if self.count_valid_actions is True:
-            # count valid actions
-            count_mat = multiply(action_mask, action_2d)
-        else:
-            # count invalid actions
-            count_mat = multiply((1 - action_mask), action_2d)
-
-        tot = sum(count_mat, dtype=int)
         info = {self.new_key: tot}
 
         return info
