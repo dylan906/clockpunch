@@ -9,13 +9,13 @@ from typing import Any, final
 
 # Third Party Imports
 from gymnasium import Env, RewardWrapper, Wrapper
-from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
+from gymnasium.spaces import Dict, MultiDiscrete
 from gymnasium.wrappers import TransformReward
-from numpy import float32, int8, int_, multiply, ndarray, sum
+from numpy import float32, int8, int_, ndarray
 
 # Punch Clock Imports
 from punchclock.common.math import logistic
-from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
+from punchclock.common.utilities import getInequalityFunc
 
 
 # %% Base class for reward configuration wrappers
