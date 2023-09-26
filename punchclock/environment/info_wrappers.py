@@ -10,8 +10,8 @@ from warnings import warn
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
-from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import asarray, multiply, ndarray, sum
+from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
+from numpy import asarray, ndarray
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
