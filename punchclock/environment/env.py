@@ -84,7 +84,6 @@ class SSAScheduler(gym.Env):
         num_sensors (int): Number of sensors in environment.
         num_targets (int): Number of targets in environment.
         observation_space (Dict): See Observation Space.
-        reward_func (RewardFunc): Reward function.
         reset_params (SSASchedulerParams): Parameters used to reset environment.
         sensor_ids (list): List of sensor IDs.
         target_ids (list): List of target IDs.
@@ -115,10 +114,6 @@ class SSAScheduler(gym.Env):
         self.num_targets = scenario_params.agent_params["num_targets"]
         self.num_sensors = scenario_params.agent_params["num_sensors"]
         self.num_agents = len(self.agents)
-
-        # policy parameters
-        # self.policy = scenario_params.policy
-        self.reward_func = scenario_params.reward_func
 
         # initialize info (filled out in reset())
         self.info = {}
@@ -185,9 +180,6 @@ class SSAScheduler(gym.Env):
         super().reset(seed=seed)
         # reset tasking metrics tracker
         self.tracker.reset()
-        # Reset reward function
-        # TODO: Remove reward func from base env (#27)
-        # self.reward_func.reset()
 
         # reset parameters that always start at 0
         self.info["num_steps"] = 0
@@ -329,17 +321,14 @@ class SSAScheduler(gym.Env):
     def _earnReward(self, actions: ndarray[int]) -> float:
         """Calculates true reward received from environment.
 
+        Use wrappers to define a reward scheme, outside of the base env.
+
         Args:
             actions (ndarray[int]): (M, )
 
         Returns:
             float: Reward earned from environment at single time step.
         """
-        # reward_earned = self.reward_func.calcNetReward(
-        #     obs=self._getObs(),
-        #     info=self._getInfo(),
-        #     actions=actions,
-        # )
         return 0
 
     def updateInfoPreTasking(self, action: ndarray[int]):

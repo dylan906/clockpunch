@@ -71,31 +71,11 @@ ukf_params = {
     "p_init": 1 * diag_matrix,
 }
 
-reward_params = {
-    "reward_func": "Threshold",
-    "obs_or_info": "info",
-    "metric": "num_tasked",
-    "metric_value": 3,
-    "inequality": ">",
-    "preprocessors": min,
-    "reward": 0,
-    "penalty": 0,
-    "penalties": {
-        "multi_assignment": 1.1,
-        "non_vis_assignment": 0.3,
-    },
-    "subsidies": {
-        "inaction": 0.1,
-        "active_action": 0.2,
-    },
-}
-
 env_params = SSASchedulerParams(
     time_step=1.2,
     horizon=10,
     agent_params=agent_params,
     filter_params=ukf_params,
-    reward_params=deepcopy(reward_params),
 )
 
 env = SSAScheduler(env_params)
@@ -126,28 +106,9 @@ print(f"env._getInfo()=\n{info}")
 
 # %% Test _earnReward()
 print("\nTest ._earnReward()...")
-print("Remember that Target1 can't see any sensors")
-action_array_blank = zeros([env.num_sensors], dtype=int)
 
-print(f"vis map truth = \n{env.info['vis_map_truth']}")
-
-# Task 1 non-visible sensor-target pair
-action_test1 = deepcopy(action_array_blank)
-action_test1[0] = 1
-rewards1 = env._earnReward(action_test1)
-print(f"rewards (2 visible, 1 not) = {rewards1}")
-
-# Task a sensor to inaction, other 2 sensors to non-conflicting targets
-action_test2 = deepcopy(action_array_blank)
-action_test2[0] = env.num_targets
-action_test2[1] = 1
-rewards2 = env._earnReward(action_test2)
-print(f"rewards (2 visible, 1 inaction (subsidy)) = {rewards2}")
-
-# Task multiple sensors to same target
-action_test4 = deepcopy(action_array_blank)
-rewards4 = env._earnReward(action_test4)
-print(f"rewards (multi-sensors to single target) = {rewards4}")
+reward = env._earnReward(env.action_space.sample())
+print(f"reward = {reward}")
 
 # %% Test updateInfoPreTasking()
 # time and num_unique_targets_tasked should both update.
@@ -212,7 +173,6 @@ env_params_long_ts = SSASchedulerParams(
     horizon=10,
     agent_params=agent_params,
     filter_params=ukf_params,
-    reward_params=deepcopy(reward_params),
 )
 env_long_ts = SSAScheduler(env_params_long_ts)
 env_long_ts.reset()
@@ -245,7 +205,6 @@ env_params = SSASchedulerParams(
     horizon=max_steps,
     agent_params=agent_params,
     filter_params=ukf_params,
-    reward_params=deepcopy(reward_params),
 )
 
 # build and reset environment
@@ -299,14 +258,12 @@ params_short_step = SSASchedulerParams(
     horizon=50,
     agent_params=agent_params,
     filter_params=ukf_params,
-    reward_params=deepcopy(reward_params),
 )
 params_long_step = SSASchedulerParams(
     time_step=200,
     horizon=50,
     agent_params=agent_params,
     filter_params=ukf_params,
-    reward_params=deepcopy(reward_params),
 )
 
 env_short_step = SSAScheduler(params_short_step)

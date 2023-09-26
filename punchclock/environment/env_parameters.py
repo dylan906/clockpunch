@@ -2,9 +2,6 @@
 # %% Imports
 from __future__ import annotations
 
-# Standard Library Imports
-from copy import deepcopy
-
 # Third Party Imports
 from numpy import arange, asarray, diagonal, eye, ndarray, sqrt, zeros
 from numpy.random import normal
@@ -17,11 +14,8 @@ from punchclock.dynamics.dynamics_classes import (
 )
 from punchclock.estimation.ez_ukf import ezUKF
 from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
-from punchclock.reward_funcs.generic_reward import GenericReward
-from punchclock.reward_funcs.reward_base_class import RewardFunc
 
 # from punchclock.policies.threshold import Threshold
-from punchclock.reward_funcs.threshold_v2 import Threshold
 from punchclock.simulation.sim_utils import genInitStates
 
 
@@ -56,7 +50,6 @@ class SSASchedulerParams:
         - agents (`list`): (N + M)-long list of `Sensor` and `Target` objects. Sensors
             listed first.
         - filter_params (`dict`): See __init__ for details.
-        - reward_func (`RewardFunc`): A child of `RewardFunc` base class.
         - horizon (`int`): Number of steps at which simulation resets.
         - time_step (`float`): Time in seconds.
     """
@@ -66,7 +59,6 @@ class SSASchedulerParams:
         horizon: int,
         agent_params: dict,
         filter_params: dict,
-        reward_params: dict = None,
         time_step: float = 100,
         seed: int = None,
     ):
@@ -114,13 +106,6 @@ class SSASchedulerParams:
                     "R": `float` | `list[list[float *6] *6]`,  # Measurement noise
                     "p_init": `float` | `list[list[float *6] *6]`,  # recommend
                         setting an order of magnitude greater than R
-                }
-            reward_params (`dict`): Parameters of a reward function.
-                {
-                    "reward_func": ("Threshold", "NormalizedMetric") Name of reward
-                        function. Must be in predefined list.
-                    [other_params]: ([type_varies]),  # Keyword arguments for
-                        reward function
                 }
             time_step (`float`, optional): Time in seconds. Defaults to 100.
             seed (`int`, optional): Initial conditions RNG seed. Defaults to None.
@@ -230,11 +215,6 @@ class SSASchedulerParams:
         self.agent_params = agent_params
         self.filter_params = filter_params
 
-        # %% Reward function lookup
-        # TODO: Remove reward function config from base env (#27)
-        # Lookup and build reward function.
-        # self.reward_func = self.buildRewardFunc(reward_params)
-        self.reward_func = None
         # %% Build agents
         # ---Generate initial states---
         # Check for fixed vs stochastic IC generation -- sensors
@@ -482,41 +462,41 @@ class SSASchedulerParams:
 
         return [dict(zip(keys, values)) for values in params_tuples]
 
-    def buildRewardFunc(
-        self,
-        params: dict,
-    ) -> RewardFunc:
-        """Build reward function given parameters.
+    # def buildRewardFunc(
+    #     self,
+    #     params: dict,
+    # ) -> RewardFunc:
+    #     """Build reward function given parameters.
 
-        Input keys must match keyword arguments of chosen reward function.
+    #     Input keys must match keyword arguments of chosen reward function.
 
-        Args:
-            params (`dict`): Keys vary depending on the reward function, but at
-                minimum must have
-                {
-                    "reward_func" (`str`): Name of reward function,
-                }
+    #     Args:
+    #         params (`dict`): Keys vary depending on the reward function, but at
+    #             minimum must have
+    #             {
+    #                 "reward_func" (`str`): Name of reward function,
+    #             }
 
-        Returns:
-            `RewardFunc`: Instance of specified reward function.
-        """
-        # Add to list of recognized reward functions as more are built.
-        reward_func_map = {
-            "Threshold": Threshold,
-            "GenericReward": GenericReward,
-            # NormalizedMetric is for backward compatibility (pre v0.6.0)
-            "NormalizedMetric": GenericReward,
-        }
+    #     Returns:
+    #         `RewardFunc`: Instance of specified reward function.
+    #     """
+    #     # Add to list of recognized reward functions as more are built.
+    #     reward_func_map = {
+    #         "Threshold": Threshold,
+    #         "GenericReward": GenericReward,
+    #         # NormalizedMetric is for backward compatibility (pre v0.6.0)
+    #         "NormalizedMetric": GenericReward,
+    #     }
 
-        # get reward function name
-        name = params["reward_func"]
-        # Deepcopy params. Needed for multiple env instantiation.
-        params_copy = deepcopy(params)
-        # remove "reward_func" from keys so the rest of params can be input via **kwargs
-        params_copy.pop("reward_func")
+    #     # get reward function name
+    #     name = params["reward_func"]
+    #     # Deepcopy params. Needed for multiple env instantiation.
+    #     params_copy = deepcopy(params)
+    #     # remove "reward_func" from keys so the rest of params can be input via **kwargs
+    #     params_copy.pop("reward_func")
 
-        # Build Reward function.
-        reward_func_uncalled = reward_func_map[name]
+    #     # Build Reward function.
+    #     reward_func_uncalled = reward_func_map[name]
 
-        reward_func = reward_func_uncalled(**params_copy)
-        return reward_func
+    #     reward_func = reward_func_uncalled(**params_copy)
+    #     return reward_func

@@ -11,23 +11,6 @@ from numpy import asarray, eye, ones
 # Punch Clock Imports
 from punchclock.environment.env_parameters import SSASchedulerParams
 
-# %% Test buildRewardFunc
-print("\nTest buildRewardFunc...")
-reward_params = {
-    "reward_func": "Threshold",
-    "obs_or_info": "obs",
-    "metric": "num_tasked",
-    "metric_value": 3,
-    "penalty": 1,
-    "inequality": ">",
-    "preprocessors": ["min"],
-}
-reward_func = SSASchedulerParams.buildRewardFunc(
-    None,
-    params=deepcopy(reward_params),
-)
-
-
 # %% Test genFilters
 print("\nTest genFilters...")
 initial_conditions = [ones([6, 1]) for i in range(3)]
@@ -113,7 +96,6 @@ print("\nTest SSAScheduleParams class...")
 env_params = SSASchedulerParams(
     time_step=1.1,
     horizon=10,
-    reward_params=deepcopy(reward_params),
     agent_params=agent_params,
     filter_params=filter_params,
 )
@@ -159,7 +141,6 @@ agent_params2 = {
 env_params2 = SSASchedulerParams(
     time_step=100,
     horizon=4,
-    reward_params=deepcopy(reward_params),
     agent_params=agent_params2,
     filter_params=filter_params,
 )
@@ -176,7 +157,6 @@ try:
     env_params3 = SSASchedulerParams(
         time_step=1.1,
         horizon=10,
-        reward_params=deepcopy(reward_params),
         agent_params=agent_params3,
         filter_params=filter_params,
     )
@@ -190,7 +170,6 @@ try:
     env_params4 = SSASchedulerParams(
         time_step=1.1,
         horizon=10,
-        reward_params=deepcopy(reward_params),
         agent_params=agent_params4,
         filter_params=filter_params,
     )
@@ -204,7 +183,6 @@ try:
     env_params5 = SSASchedulerParams(
         time_step=1.1,
         horizon=10,
-        reward_params=deepcopy(reward_params),
         agent_params=agent_params5,
         filter_params=filter_params,
     )
@@ -234,12 +212,10 @@ agent_params6 = {
 
 env_params6 = SSASchedulerParams(
     horizon=10,
-    reward_params=reward_params,
     agent_params=agent_params6,
     filter_params=filter_params,
 )
 print(f"env_params6.time_step = {env_params6.time_step}")
-print(f"env_params6.reward_func = {env_params6.reward_func}")
 print(f"sensor_dist = {env_params6.agent_params['sensor_dist']}")
 print(f"sensor_dist_params = {env_params6.agent_params['sensor_dist_params']}")
 print(
