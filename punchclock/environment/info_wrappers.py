@@ -8,6 +8,7 @@ from warnings import warn
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
+from gymnasium.spaces import Box, Dict, MultiDiscrete
 from numpy import asarray, ndarray
 
 # Punch Clock Imports
@@ -22,6 +23,16 @@ class InfoWrapper(ABC, Wrapper):
 
     def __init__(self, env: Env):
         """Wrap env with InfoWrapper."""
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a Dict."
+        super().__init__(env)
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "env.action_space must be a MultiDiscrete."
+        assert all(
+            env.action_space.nvec == env.action_space.nvec[0]
+        ), "All values in action_space.nvec must be same."
         super().__init__(env)
 
     def reset(
@@ -29,7 +40,7 @@ class InfoWrapper(ABC, Wrapper):
     ) -> tuple:
         """Reset environment."""
         obs, info = super().reset(seed=seed, options=options)
-        new_info = self.updateInfo(obs, 0, False, False, info)
+        new_info = self.updateInfo(obs, 0, False, False, info, None)
         info.update(new_info)
         self.info = deepcopy(info)
 
@@ -56,6 +67,7 @@ class InfoWrapper(ABC, Wrapper):
             terminations,
             truncations,
             infos,
+            action,
         )
         infos.update(new_info)
 
@@ -69,6 +81,7 @@ class InfoWrapper(ABC, Wrapper):
         terminations,
         truncations,
         infos,
+        action,
     ) -> dict:
         """Create a new info dict."""
         new_info = {}
@@ -236,11 +249,12 @@ class NumWindows(InfoWrapper):
         terminations: Any,
         truncations: Any,
         infos: dict,
+        action: Any,
     ) -> dict:
         """Append items to info returned from env.step().
 
         Args:
-            observations, rewards, terminations, truncations (Any): Unused.
+            observations, rewards, terminations, truncations, action (Any): Unused.
             infos (dict): Unwrapped info dict.
 
         Returns:

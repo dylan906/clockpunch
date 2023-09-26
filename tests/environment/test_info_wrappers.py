@@ -1,6 +1,8 @@
 """Tests for info_wrappers.py."""
 # %% Imports
 # Third Party Imports
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
+
 # from gymnasium.utils.env_checker import check_env
 from numpy import array, diag, pi
 from ray.rllib.examples.env.random_env import RandomEnv
@@ -9,12 +11,17 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from punchclock.common.agents import buildRandomAgent
 from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
-from punchclock.environment.info_wrappers import NumWindows
+from punchclock.environment.info_wrappers import NullActionCounter, NumWindows
 from punchclock.ray.build_env import buildEnv
 
 # %% Build env for NumWindows wrapper
 print("\nBuild env for NumWindows test...")
-rand_env = RandomEnv()
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict({"a": Box(low=0, high=1)}),
+        "action_space": MultiDiscrete([1]),
+    }
+)
 agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
 agents.extend([buildRandomAgent(agent_type="target") for ag in range(3)])
 rand_env.agents = agents
@@ -98,7 +105,6 @@ env_config = {
     "horizon": horizon,
     "agent_params": agent_params,
     "filter_params": filter_params,
-    "reward_params": reward_params,
     "time_step": time_step,
     "constructor_params": constructor_params,
 }
