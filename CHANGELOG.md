@@ -21,6 +21,7 @@ I'm trying to get better about that.
 - Some tests for `SimRunner` now make more sense given the increased emphasis on wrappers (#50).
 - Changed behavior of `RewardBase` to sum unwrapped reward with new (wrapped) reward (#48).
 - Cleaned up `test/analysis_utils` (#54).
+- `RewardBase` no longer sums unwrapped with wrapped reward (#66).
 
 ### Deprecated
 
