@@ -40,7 +40,6 @@ def buildEnv(env_config: dict) -> gym.Env:
             "horizon" (`int`): See `SSASChedulerParams`,
             "agent_params" (`dict`): See `SSASChedulerParams`,
             "filter_params" (`dict`): See `SSASChedulerParams`,
-            "reward_params" (`dict`): See `SSASChedulerParams`,
             "time_step" (`float`, optional): See `SSASChedulerParams`,
             "seed" (`int`, optional): See `SSASChedulerParams`,
             "constructor_params" (`dict`, optional):
