@@ -15,7 +15,7 @@ from numpy import asarray, ndarray
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
-from punchclock.common.utilities import actionSpace2Array
+from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
     countMaskViolations,
@@ -541,58 +541,79 @@ class MaskViolationCounter(InfoWrapper):
 
 
 # %% Threshold Reward
-class ThresholdReward(RewardWrapper):
-    """Gives a reward if unwrapped reward meets an inequality operation.
+class ThresholdReward(InfoWrapper):
+    """Outputs a binary if value in info meets an inequality operation.
 
-    Overrides unwrapped reward.
+    If specified value is <= (by default) the threshold, then True is output.
+    Otherwise, False is returned. The inequality is set on instantiation (can be
+    <=, >=, <, or >) and does not change.
 
-    If unwrapped reward is <= (by default) the threshold, then a reward is granted.
-        The reward per step is set on instantiation and does not change.
-        The inequality is set on instantiation (can be <=, >=, <, or >) and does
-        not change.
+    If threshold_reward is set, then updateInfo returns a value instead of a bool.
     """
 
     def __init__(
         self,
         env: Env,
-        unwrapped_reward_threshold: float | int,
-        reward: float = 1,
+        key: str,
+        threshold: float | int,
+        threshold_reward: float | None = None,
         inequality: str = "<=",
     ):
         """Wrap environment with ThresholdReward.
 
         Args:
             env (Env): A Gymnasium environment.
-            unwrapped_reward_threshold (float | int): Threshold to evaluate
-                unwrapped reward against.
-            reward (float, optional): Reward generated per step that inequality
-                evaluates to True. Defaults to 1.
+            key (str): Key to item in info to check against threshold.
+            threshold (float | int): Threshold to evaluate info[key] against.
+            threshold_reward (float | None, optional): Reward generated per step
+                that threshold evaluates to True. If not set (or set to None),
+                output of updateInfo is a bool. Defaults to None.
             inequality (str, optional): String representation of inequality operator
                 to use in threshold operation. Must be one of ['<=', '>=', '<', '>'].
                 Defaults to "<=".
         """
         super().__init__(env)
 
-        self.reward_per_step = reward
+        self.key = key
+        self.threshold_reward = threshold_reward
         # getInequalityFunc checks arg type
         self.inequalityFunc = getInequalityFunc(inequality)
-        self.threshold = unwrapped_reward_threshold
+        self.threshold = threshold
 
-    def reward(self, reward: float) -> float:
-        """Calculate threshold reward.
+    def updateInfo(
+        self,
+        observations,
+        rewards,
+        terminations,
+        truncations,
+        infos,
+        action,
+    ) -> dict:
+        """Append threshold item to info.
+
+        Args:
+            observations (_type_): _description_
+            rewards (_type_): _description_
+            terminations (_type_): _description_
+            truncations (_type_): _description_
+            infos (_type_): _description_
+            action (_type_): _description_
 
         Returns:
-            float: Either 0 (if inequality evaluates to False) or self.reward_per_step
-                (if inequality evaluates to True) specified on instantiation.
+            dict: _description_
         """
-        inbounds = self.inequalityFunc(reward, self.threshold)
-        # inequalityFunc returns numpy bool, which needs to be compared with "=="
-        # instead of "is"
-        if inbounds == True:  # noqa
-            new_reward = self.reward_per_step
-        elif inbounds == False:  # noqa
-            new_reward = 0
-        else:
-            TypeError("inbounds is neither True nor False")
+        inbounds = self.inequalityFunc(infos[self.key], self.threshold)
 
-        return new_reward
+        if self.threshold_reward is not None:
+            # inequalityFunc returns numpy bool, which needs to be compared with "=="
+            # instead of "is"
+            if inbounds == True:  # noqa
+                inbounds = self.threshold_reward
+            elif inbounds == False:  # noqa
+                inbounds = 0
+            else:
+                TypeError("inbounds is neither True nor False")
+
+        info = {self.new_key: inbounds}
+
+        return info
