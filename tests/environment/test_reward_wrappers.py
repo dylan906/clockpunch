@@ -6,8 +6,11 @@ from numpy import array
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
+from punchclock.environment.misc_wrappers import RandomInfo
 from punchclock.environment.reward_wrappers import (
+    AssignInfoToReward,
     AssignObsToReward,
+    AssignThingToReward,
     LogisticTransformReward,
     MaskReward,
     NullActionReward,
@@ -38,6 +41,28 @@ print(f"reward = {reward}")
 ass_env = AssignObsToReward(rand_env, "b")
 (obs, reward, term, trunc, info) = ass_env.step(ass_env.action_space.sample())
 print(f"obs = {obs}")
+print(f"reward = {reward}")
+
+# %% Assign InfoToReward
+print("\nTest AssignInfoToReward...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {
+            "observation_space": Dict(
+                {
+                    "a": Box(low=-1, high=1),
+                    "b": Box(low=-1, high=1, shape=()),
+                }
+            ),
+            "action_space": MultiDiscrete([1]),
+        }
+    )
+)
+assinfo_env = AssignInfoToReward(rand_env, key=0)
+(obs, reward, term, trunc, info) = assinfo_env.step(
+    assinfo_env.action_space.sample()
+)
+print(f"info = {info}")
 print(f"reward = {reward}")
 # %% Test MaskReward
 print("\nTest MaskReward...")

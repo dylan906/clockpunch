@@ -3,6 +3,7 @@
 # Standard Library Imports
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from copy import deepcopy
 from functools import partial
 from typing import Any, final
 
@@ -94,8 +95,83 @@ class RewardBase(ABC, Wrapper):
         return reward
 
 
+# %% Assign ObsInfo Base Class
+class AssignThingToReward(RewardBase):
+    """Assign an value from observation or info to reward.
+
+    Overwrites existing reward.
+
+    Required Dict observation space. By Gymnasium Env API, info is already a dict.
+    """
+
+    def __init__(self, env: Env, key: str, info_or_obs: str):
+        """Wrap environment with AssignObsToReward.
+
+        Args:
+            env (Env): See RewardBase for requirements.
+            key (str): Key corresponding to value in observation space or info
+                dict that will be assigned to reward.
+            info_or_obs (str): ["info" | "obs"] Whether to pull from the info or
+                observation.
+        """
+        super().__init__(env)
+        if info_or_obs == "obs":
+            spaces = env.observation_space.spaces
+        elif info_or_obs == "info":
+            _, spaces = deepcopy(env).reset()
+
+        assert key in spaces, f"{key} must be in observation_space.spaces."
+        assert spaces[key].shape in [
+            (1,),
+            (),
+        ], f"observation_space['{key}'] must be a (1,)- or ()-sized space."
+        assert spaces[key].dtype in (
+            float,
+            int,
+            float32,
+            int_,
+            int8,
+        ), f"{key} must correspond to a scalar value."
+
+        self.key = key
+        self.info_or_obs = info_or_obs
+
+    def calcReward(
+        self,
+        obs: OrderedDict,
+        reward: Any,
+        termination: Any,
+        truncationAny: Any,
+        info: Any,
+        action: Any,
+    ):
+        """Assign item to reward.
+
+        Args:
+            obs (OrderedDict): Observation from environment.
+            reward, termination, truncation: Unused.
+            info (dict): Info from environment.
+
+
+        Returns:
+            _type_: _description_
+        """
+        if self.info_or_obs == "info":
+            io = deepcopy(info)
+        elif self.info_or_obs == "obs":
+            io = deepcopy(obs)
+
+        # overwrite reward
+        if io[self.key].shape == (1,):
+            reward = io[self.key][0]
+        elif io[self.key].shape == ():
+            reward = io[self.key]
+
+        return reward
+
+
 # %% Assign observation space variable to reward
-class AssignObsToReward(RewardBase):
+class AssignObsToReward(AssignThingToReward):
     """Get an item in the observation space and assign reward to the value.
 
     The value gotten from the observation must have shape (1,) or (). Does not modify
@@ -110,41 +186,26 @@ class AssignObsToReward(RewardBase):
             key (str): Key corresponding to value in observation space
                 that will be assigned to reward.
         """
-        super().__init__(env)
+        super().__init__(env=env, key=key, info_or_obs="obs")
 
-        assert (
-            key in env.observation_space.spaces
-        ), f"{key} must be in observation_space.spaces."
-        assert env.observation_space.spaces[key].shape in [
-            (1,),
-            (),
-        ], f"observation_space['{key}'] must be a (1,)- or ()-sized space."
-        assert env.observation_space.spaces[key].dtype in (
-            float,
-            int,
-            float32,
-            int_,
-            int8,
-        ), f"{key} must correspond to a scalar value."
 
-        self.key = key
+# %% AssignInfoToReward
+class AssignInfoToReward(AssignThingToReward):
+    """Get an item in the info and assign reward to the value.
 
-    def calcReward(
-        self,
-        obs: OrderedDict,
-        reward: Any,
-        termination: Any,
-        truncationAny: Any,
-        info: Any,
-        action: Any,
-    ):
-        """Calculate reward."""
-        if obs[self.key].shape == (1,):
-            reward = obs[self.key][0]
-        elif obs[self.key].shape == ():
-            reward = obs[self.key]
+    The value gotten from the info must have shape (1,) or (). Does not modify
+    info.
+    """
 
-        return reward
+    def __init__(self, env: Env, key: str):
+        """Wrap environment with AssignItemToReward.
+
+        Args:
+            env (Env): See RewardBase for requirements.
+            key (str): Key corresponding to value in item space
+                that will be assigned to reward.
+        """
+        super().__init__(env, key=key, info_or_obs="info")
 
 
 # %% Binary Reward
