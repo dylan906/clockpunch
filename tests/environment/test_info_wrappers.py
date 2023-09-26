@@ -153,40 +153,40 @@ rand_env = RandomEnv(
         "reward_space": Box(0, 0),
     }
 )
-binary_env = CountMaskViolations(
+maskvio_env = CountMaskViolations(
     rand_env,
     new_key="count",
     action_mask_key="a",
 )
 action = array([0, 0, 0, 2])
 
-(obs, reward, term, trunc, info) = binary_env.step(action)
+(obs, reward, term, trunc, info) = maskvio_env.step(action)
 print(f"obs['a'] = \n{obs['a']}")
 print(f"action = {action}")
 print(f"info={info}")
 
 # Test with rewarding (penalizing) invalid actions
-binary_env = CountMaskViolations(
+maskvio_env = CountMaskViolations(
     rand_env,
     new_key="count",
     action_mask_key="a",
     count_valid_actions=False,
 )
 
-(obs, reward, term, trunc, info) = binary_env.step(action)
+(obs, reward, term, trunc, info) = maskvio_env.step(action)
 print(f"\nobs['a'] = \n{obs['a']}")
 print(f"action = {action}")
 print(f"info={info}")
 
 # Test with accounting for null actions
-binary_env = CountMaskViolations(
+maskvio_env = CountMaskViolations(
     rand_env,
     new_key="count",
     action_mask_key="a",
     ignore_null_actions=False,
 )
 
-(obs, reward, term, trunc, info) = binary_env.step(action)
+(obs, reward, term, trunc, info) = maskvio_env.step(action)
 print(f"\nobs['a'] = \n{obs['a']}")
 print(f"action = {action}")
 print(f"info={info}")

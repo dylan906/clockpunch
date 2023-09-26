@@ -11,7 +11,7 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import asarray, multiply, ndarray
+from numpy import asarray, multiply, ndarray, sum
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
@@ -420,31 +420,31 @@ class CountMaskViolations(InfoWrapper):
         N: Number of targets.
 
     Example:
-        # for 3 sensors, 2 targets, null actions included, reward valid actions
+        # for 3 sensors, 2 targets, null actions included, count valid actions
         wrapped_env = CountMaskViolations(env, "action_mask", ignore_null_actions=False)
         # action_mask = array([[1, 1, 1],
                                [0, 0, 1]
                                [1, 1, 1]])  # last row is null action
         action = array([0, 1, 2])
-        # reward = 1 + 0 + 1 = 2
+        # count = 1 + 0 + 1 = 2
 
-        Sensor 0 earns 1 reward because it tasked a valid (1) action.
-        Sensor 1 earns 0 reward because it tasked an invalid (0) action.
-        Sensor 2 earns 1 reward because it tasked a valid (1) action.
+        Sensor 0 counts 1 because it tasked a valid (1) action.
+        Sensor 1 counts 0 because it tasked an invalid (0) action.
+        Sensor 2 counts 1 because it tasked a valid (1) action.
 
     Example:
-        # for 3 sensors, 2 targets, null actions ignored, penalize invalid actions
-        wrapped_env = CountMaskViolations(env, "action_mask", reward=-1,
+        # for 3 sensors, 2 targets, null actions ignored, count invalid actions
+        wrapped_env = CountMaskViolations(env, "action_mask",
             count_valid_actions=False, ignore_null_actions=True)
         # action_mask = array([[1, 1, 1],
                                [0, 0, 1],
                                [1, 1, 1]])
         action = array([0, 1, 2])
-        # reward = 0 + -1 + 0 = -1
+        # count = 0 + 1 + 0 = 1
 
-        Sensor 0 earns 0 reward because it tasked a valid (1) action.
-        Sensor 1 earns -1 reward because it tasked an invalid (0) action.
-        Sensor 2 earns 0 reward because null-actions (2) are ignored.
+        Sensor 0 counts 0 because it tasked a valid (1) action.
+        Sensor 1 counts 1 because it tasked an invalid (0) action.
+        Sensor 2 counts 0 because null-actions (2) are ignored.
     """
 
     def __init__(
@@ -458,14 +458,14 @@ class CountMaskViolations(InfoWrapper):
         """Wrap environment.
 
         Args:
-            env (Env): See RewardBase for requirements.
+            env (Env): See InfoWrapper for requirements.
             new_key (str): New key in info to assign mask violation count value to.
             action_mask_key (str): Key corresponding to action mask in observation
                 space. Value associated with action_mask_key must be (N+1, M) binary
                 array where a 1 indicates the sensor-action the pairing is a valid
                 action). The bottom row denotes null action.
-            count_valid_actions (bool, optional): If True, valid actions are rewarded.
-                If False, invalid actions are reward. Defaults to True.
+            count_valid_actions (bool, optional): If True, valid actions are counted.
+                If False, invalid actions are counted. Defaults to True.
             ignore_null_actions (bool, optional): If True, the bottom row of the
                 action mask is ignored; action values of N are ignored. Defaults
                 to True.
@@ -516,7 +516,9 @@ class CountMaskViolations(InfoWrapper):
                 a value of N denotes null action.
 
         Returns:
-            int: Total count.
+            info[str[int]]: {
+                self.new_key: valid/invalid action count (int)
+            }
         """
         action_2d = self.action_converter(action)
         action_mask = obs[self.action_mask_key]
@@ -527,13 +529,13 @@ class CountMaskViolations(InfoWrapper):
             action_mask = action_mask[:-1, :]
 
         if self.count_valid_actions is True:
-            # Reward valid actions
-            reward_mat = multiply(action_mask, action_2d)
+            # count valid actions
+            count_mat = multiply(action_mask, action_2d)
         else:
-            # Reward invalid actions
-            reward_mat = multiply((1 - action_mask), action_2d)
+            # count invalid actions
+            count_mat = multiply((1 - action_mask), action_2d)
 
-        reward = sum(reward_mat)
-        info = {self.new_key: reward}
+        tot = sum(count_mat, dtype=int)
+        info = {self.new_key: tot}
 
         return info
