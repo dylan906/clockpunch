@@ -2,17 +2,20 @@
 # %% Import
 # Standard Library Imports
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from copy import deepcopy
+from functools import partial
 from typing import Any, Tuple, final
 from warnings import warn
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
-from gymnasium.spaces import Box, Dict, MultiDiscrete
-from numpy import asarray, ndarray
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
+from numpy import asarray, multiply, ndarray
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
+from punchclock.common.utilities import actionSpace2Array
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import countNullActiveActions, getInfo
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
@@ -340,13 +343,13 @@ class ActionTypeCounter(InfoWrapper):
         action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
         wrapped_env = ActionTypeCounter(env)
         action = array([0, 1, 3])
-        reward = 0 + 0 + 1 = 1
+        count = 0 + 0 + 1 = 1
 
     Example:
         action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
         wrapped_env = ActionTypeCounter(env, count_null_actions=False)
         action = array([0, 1, 3])
-        reward = 1 + 1 + 0 = 2
+        count = 1 + 1 + 0 = 2
 
     """
 
@@ -359,11 +362,10 @@ class ActionTypeCounter(InfoWrapper):
         """Wrap environment.
 
         Args:
-            env (Env): See RewardBase for requirements.
+            env (Env): See InfoWrapper for requirements.
             new_key (str): New key in info to assign action count value to.
-            count_null_actions (bool, optional): If True, reward is assigned for
-                null actions. If False, reward is assigned for active actions.
-                Defaults to True.
+            count_null_actions (bool, optional): If True, null actions are counted.
+                If False, active actions are counted. Defaults to True.
         """
         super().__init__(env)
         info = getInfo(env)
@@ -410,11 +412,8 @@ class ActionTypeCounter(InfoWrapper):
 
 
 # %% Mask Reward
-class MaskReward(RewardBase):
-    """Grants a constant reward per sensor assigned to valid (or invalid) action.
-
-    Use to reward tasking sensors to valid targets or penalize for tasking to invalid
-    ones.
+class CountMaskViolations(InfoWrapper):
+    """Count sensors assigned to valid (or invalid) action.
 
     Nomenclature:
         M: Number of sensors.
@@ -422,7 +421,7 @@ class MaskReward(RewardBase):
 
     Example:
         # for 3 sensors, 2 targets, null actions included, reward valid actions
-        wrapped_env = MaskReward(env, "action_mask", ignore_null_actions=False)
+        wrapped_env = CountMaskViolations(env, "action_mask", ignore_null_actions=False)
         # action_mask = array([[1, 1, 1],
                                [0, 0, 1]
                                [1, 1, 1]])  # last row is null action
@@ -435,8 +434,8 @@ class MaskReward(RewardBase):
 
     Example:
         # for 3 sensors, 2 targets, null actions ignored, penalize invalid actions
-        wrapped_env = MaskReward(env, "action_mask", reward=-1,
-            reward_valid_actions=False, ignore_null_actions=True)
+        wrapped_env = CountMaskViolations(env, "action_mask", reward=-1,
+            count_valid_actions=False, ignore_null_actions=True)
         # action_mask = array([[1, 1, 1],
                                [0, 0, 1],
                                [1, 1, 1]])
@@ -451,22 +450,21 @@ class MaskReward(RewardBase):
     def __init__(
         self,
         env: Env,
+        new_key: str,
         action_mask_key: str,
-        reward: float = 1,
-        reward_valid_actions: bool = True,
+        count_valid_actions: bool = True,
         ignore_null_actions: bool = True,
     ):
         """Wrap environment.
 
         Args:
             env (Env): See RewardBase for requirements.
+            new_key (str): New key in info to assign mask violation count value to.
             action_mask_key (str): Key corresponding to action mask in observation
                 space. Value associated with action_mask_key must be (N+1, M) binary
                 array where a 1 indicates the sensor-action the pairing is a valid
                 action). The bottom row denotes null action.
-            reward (float, optional): Reward generated per (in)valid sensor-target
-                assignment. Defaults to 1.
-            reward_valid_actions (bool, optional): If True, valid actions are rewarded.
+            count_valid_actions (bool, optional): If True, valid actions are rewarded.
                 If False, invalid actions are reward. Defaults to True.
             ignore_null_actions (bool, optional): If True, the bottom row of the
                 action mask is ignored; action values of N are ignored. Defaults
@@ -489,9 +487,9 @@ class MaskReward(RewardBase):
         ), f"""env.observation_space['{action_mask_key}'] must have shape (N+1, M),
         which in this case is ({self.num_targets+1}, {self.num_sensors})."""
 
+        self.new_key = new_key
         self.action_mask_key = action_mask_key
-        self.reward_per_valid = reward
-        self.reward_valid_actions = reward_valid_actions
+        self.count_valid_actions = count_valid_actions
         self.ignore_null_actions = ignore_null_actions
         self.action_converter = partial(
             actionSpace2Array,
@@ -499,7 +497,7 @@ class MaskReward(RewardBase):
             num_targets=self.num_targets,
         )
 
-    def calcReward(
+    def updateInfo(
         self,
         obs: OrderedDict,
         reward: Any,
@@ -508,7 +506,7 @@ class MaskReward(RewardBase):
         info: Any,
         action: ndarray[int],
     ) -> float:
-        """Calculate binary reward.
+        """Count invalid/valid actions.
 
         Args:
             obs (OrderedDict): Must have action_mask_key in it.
@@ -518,7 +516,7 @@ class MaskReward(RewardBase):
                 a value of N denotes null action.
 
         Returns:
-            float: Total reward for step.
+            int: Total count.
         """
         action_2d = self.action_converter(action)
         action_mask = obs[self.action_mask_key]
@@ -528,17 +526,14 @@ class MaskReward(RewardBase):
             action_2d = action_2d[:-1, :]
             action_mask = action_mask[:-1, :]
 
-        if self.reward_valid_actions is True:
+        if self.count_valid_actions is True:
             # Reward valid actions
-            reward_mat = multiply(
-                self.reward_per_valid * action_mask, action_2d
-            )
+            reward_mat = multiply(action_mask, action_2d)
         else:
             # Reward invalid actions
-            reward_mat = multiply(
-                self.reward_per_valid * (1 - action_mask), action_2d
-            )
+            reward_mat = multiply((1 - action_mask), action_2d)
 
         reward = sum(reward_mat)
+        info = {self.new_key: reward}
 
-        return reward
+        return info
