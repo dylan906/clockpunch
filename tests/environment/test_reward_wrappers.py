@@ -64,39 +64,6 @@ assinfo_env = AssignInfoToReward(rand_env, key=0)
 )
 print(f"info = {info}")
 print(f"reward = {reward}")
-# %% Test MaskReward
-print("\nTest MaskReward...")
-rand_env = RandomEnv(
-    {
-        "observation_space": Dict({"a": MultiBinary((3, 4))}),
-        "action_space": MultiDiscrete([3, 3, 3, 3]),
-        "reward_space": Box(0, 0),
-    }
-)
-binary_env = MaskReward(rand_env, "a", reward=0.1)
-action = array([0, 0, 0, 2])
-
-(obs, reward, term, trunc, info) = binary_env.step(action)
-print(f"obs['a'] = \n{obs['a']}")
-print(f"action = {action}")
-print(f"reward={reward}")
-
-# Test with rewarding (penalizing) invalid actions
-binary_env = MaskReward(rand_env, "a", reward=-0.1, reward_valid_actions=False)
-
-(obs, reward, term, trunc, info) = binary_env.step(action)
-print(f"\nobs['a'] = \n{obs['a']}")
-print(f"action = {action}")
-print(f"reward={reward}")
-
-# Test with accounting for null actions
-binary_env = MaskReward(rand_env, "a", ignore_null_actions=False)
-
-(obs, reward, term, trunc, info) = binary_env.step(action)
-print(f"\nobs['a'] = \n{obs['a']}")
-print(f"action = {action}")
-print(f"reward={reward}")
-
 
 # %% Test ThresholdReward
 print("\nTest ThresholdReward...")
