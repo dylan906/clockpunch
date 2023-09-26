@@ -11,7 +11,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from punchclock.common.agents import buildRandomAgent
 from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
-from punchclock.environment.info_wrappers import NullActionCounter, NumWindows
+from punchclock.environment.info_wrappers import ActionTypeCounter, NumWindows
 from punchclock.ray.build_env import buildEnv
 
 # %% Build env for NumWindows wrapper
@@ -117,15 +117,15 @@ for _ in range(horizon - 1):
     print(f"vis vorecast shape = {info['vis_forecast'].shape}")
 # %% Use gym checker
 # check_env(rand_env)
-# %% Test NullActionCounter
-print("\nTest NullActionCounter...")
+# %% Test ActionTypeCounter
+print("\nTest ActionTypeCounter...")
 rand_env = RandomEnv(
     {
         "observation_space": Dict({"a": MultiBinary((2, 2))}),
         "action_space": MultiDiscrete([3, 3]),
     }
 )
-nar_env = NullActionCounter(rand_env, new_key="count")
+nar_env = ActionTypeCounter(rand_env, new_key="count")
 
 action = array([0, 2])
 (obs, reward, term, trunc, info) = nar_env.step(action)
@@ -133,7 +133,7 @@ print(f"action = {action}")
 print(f"info={info}")
 
 
-nar_env = NullActionCounter(rand_env, new_key="count", count_null_actions=False)
+nar_env = ActionTypeCounter(rand_env, new_key="count", count_null_actions=False)
 
 action = array([0, 0])
 (obs, reward, term, trunc, info) = nar_env.step(action)

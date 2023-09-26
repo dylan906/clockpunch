@@ -329,22 +329,22 @@ class NumWindows(InfoWrapper):
         return dynamics
 
 
-# %% NullActionCounter
-class NullActionCounter(InfoWrapper):
-    """Counts null actions.
+# %% ActionTypeCounter
+class ActionTypeCounter(InfoWrapper):
+    """Counts null or active actions.
 
     The null action is the max value allowed in a MultiDiscrete action space. All
         values in action space must be identical.
 
     Example:
         action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
-        wrapped_env = NullActionReward(env)
+        wrapped_env = ActionTypeCounter(env)
         action = array([0, 1, 3])
         reward = 0 + 0 + 1 = 1
 
     Example:
         action_space = MultiDiscrete([3, 3, 3]) # 3 is the null action
-        wrapped_env = NullActionReward(env, count_null_actions=False)
+        wrapped_env = ActionTypeCounter(env, count_null_actions=False)
         action = array([0, 1, 3])
         reward = 1 + 1 + 0 = 2
 
@@ -360,9 +360,9 @@ class NullActionCounter(InfoWrapper):
 
         Args:
             env (Env): See RewardBase for requirements.
-            new_key (str): New key in info to assign null action count value to.
+            new_key (str): New key in info to assign action count value to.
             count_null_actions (bool, optional): If True, reward is assigned for
-                null actions. If False, reward is assigned for non-null actions.
+                null actions. If False, reward is assigned for active actions.
                 Defaults to True.
         """
         super().__init__(env)
@@ -386,16 +386,18 @@ class NullActionCounter(InfoWrapper):
         info: Any,
         action: ndarray[int],
     ) -> dict:
-        """Counts null actions.
+        """Count actions.
 
         Args:
             obs, reward, termination, truncation, info: Unused.
             action (ndarray[int]): A (N,) array of ints where the i-th value is
                 the i-th sensor and the value denotes the target number (0 to N-1);
-                a value of N denotes null action.
+                the value N denotes number of null/active actions.
 
         Returns:
-            info (dict[str[int]]): Sum of null actions this step.
+            info (dict[str[int]]): {
+                self.new_key: Sum of null/active actions this step.
+                }
         """
         if self.count_null_actions is True:
             # Count null actions
