@@ -340,7 +340,7 @@ class SSAScheduler(gym.Env):
         #     info=self._getInfo(),
         #     actions=actions,
         # )
-        return 1
+        return 0
 
     def updateInfoPreTasking(self, action: ndarray[int]):
         """Update information prior to tasking.
