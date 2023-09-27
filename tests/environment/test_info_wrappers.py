@@ -13,6 +13,7 @@ from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
+    LogisticTransformInfo,
     MaskViolationCounter,
     NumWindows,
     ThresholdInfo,
@@ -257,5 +258,26 @@ thresh_env = ThresholdInfo(
 )
 print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
+
+# %% Test LogisticTransformInfo
+print("\nTest LogisticTransformInfo...")
+
+rand_env = RandomInfo(
+    RandomEnv(
+        {
+            "observation_space": Dict({}),
+            "action_space": MultiDiscrete([1]),
+        }
+    )
+)
+log_env = LogisticTransformInfo(rand_env, key=0)
+
+_, info_unwrapped = log_env.env.reset()
+info_wrapped = log_env.updateInfo(None, None, None, None, info_unwrapped, None)
+print(f"info (unwrapped) = {info_unwrapped}")
+print(f"info (wrapped) = {info_wrapped}")
+
+(_, _, _, _, info) = log_env.step(log_env.action_space.sample())
+print(f"info (via step) = {info}")
 # %% done
 print("done")

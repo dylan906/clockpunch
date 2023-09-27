@@ -15,6 +15,7 @@ from numpy import asarray, ndarray
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
+from punchclock.common.math import logistic
 from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
@@ -631,3 +632,44 @@ class ThresholdInfo(InfoWrapper):
         info = {self.new_key: inbounds}
 
         return info
+
+
+# %% LogisticTransformInfo
+class LogisticTransformInfo(InfoWrapper):
+    """Transform item in info through logistic function.
+
+    Overwrites unwrapped item in info.
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        key: str,
+        x0: float = 0.0,
+        k: float = 1.0,
+        L: float = 1.0,
+    ):
+        """Wrap environment with LogisticTransformReward.
+
+        Args:
+            env (Env): A Gymnasium environment.
+            key (str): Key to item in info to transform.
+            x0 (float, optional): Value of x at sigmoid's midpoint. Defaults to 0.0.
+            k (float, optional): Steepness parameter. Defaults to 1.0.
+            L (float, optional): Max value of output. Defaults to 1.0.
+        """
+        super().__init__(env)
+        info = getInfo(env)
+        assert key in info, f"{key} not in info"
+
+        self.logisticPartial = partial(logistic, x0=x0, k=k, L=L)
+        self.key = key
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ):
+        """Transform infos[self.key] by logistic function."""
+        x = infos[self.key]
+        x_transform = self.logisticPartial(x)
+        new_info = {self.key: x_transform}
+        return new_info
