@@ -5,10 +5,12 @@ from abc import ABC
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
+from functools import partial
 from typing import Tuple, final
 
 # Third Party Imports
 import gymnasium as gym
+import numpy as np
 from gymnasium import Env
 from gymnasium.spaces import (
     Box,
@@ -490,3 +492,24 @@ def countMaskViolations(
 
     tot = sum(count_mat, dtype=int)
     return tot
+
+
+def convertNumpyFuncStrToCallable(numpy_func_str: str, **kwargs):
+    """Convert a str representation of a Numpy func to a Callable partial.
+
+    Args:
+        numpy_func_str (str): Name of a numpy function.
+        **kwargs, optional: Kwargs to numpy function
+
+    Returns
+        Callable: Partial of a numpy function.
+
+    """
+    func = getattr(np, numpy_func_str, None)
+    assert (
+        func is not None
+    ), f"""Specified function {numpy_func_str} not recognized as an attr of
+         numpy."""
+
+    partial_func = partial(func, **kwargs)
+    return partial_func

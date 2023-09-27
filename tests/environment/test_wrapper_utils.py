@@ -8,7 +8,7 @@ from copy import deepcopy
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 from gymnasium.wrappers.filter_observation import FilterObservation
-from numpy import Inf, sum
+from numpy import Inf, array, ones, sum
 from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
 
@@ -19,6 +19,7 @@ from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
     convertBinaryBoxToMultiBinary,
+    convertNumpyFuncStrToCallable,
     getIdentityWrapperEnv,
     getNumWrappers,
     getSpaceClosestCommonDtype,
@@ -207,5 +208,14 @@ wrapped_env = IdentityWrapper(IdentityWrapper(RandomEnv()))
 xlevel = getXLevelWrapper(wrapped_env, 2)
 print(f"wrapped env = {wrapped_env}")
 print(f"xlevel wrapper = {xlevel}")
+
+# %% Test convertNumpyFuncStrToCallable
+print("\nTest convertNumpyFuncStrToCallable...")
+
+Np_partial = convertNumpyFuncStrToCallable("sum")
+print(Np_partial([1, 2, 3]))
+
+Np_partial = convertNumpyFuncStrToCallable("sum", axis=1)
+print(Np_partial(ones((2, 2))))
 # %% done
 print("done")

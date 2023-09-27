@@ -52,6 +52,7 @@ from punchclock.environment.wrapper_utils import (
     SelectiveDictProcessor,
     checkDictSpaceContains,
     convertBinaryBoxToMultiBinary,
+    convertNumpyFuncStrToCallable,
     getSpaceClosestCommonDtype,
     getSpacesRange,
     remakeSpace,
@@ -1952,13 +1953,9 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
             key (str): Key of observation space to apply function to.
             kwargs (Any, optional): Any kwargs to be used in numpy function.
         """
-        func = getattr(np, numpy_func_str, None)
-        assert (
-            func is not None
-        ), f"""Specified function {numpy_func_str} not recognized as an attr of
-         numpy."""
-
-        partial_func = partial(func, **kwargs)
+        partial_func = convertNumpyFuncStrToCallable(
+            numpy_func_str=numpy_func_str, **kwargs
+        )
 
         # Make new observation space by trasnforming sample observation, then getting
         # shape and dtype. Assume bounds are (-Inf, Inf).
