@@ -15,7 +15,7 @@ from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     MaskViolationCounter,
     NumWindows,
-    ThresholdReward,
+    ThresholdInfo,
 )
 from punchclock.environment.misc_wrappers import RandomInfo
 from punchclock.ray.build_env import buildEnv
@@ -192,8 +192,8 @@ maskvio_env = MaskViolationCounter(
 print(f"\nobs['a'] = \n{obs['a']}")
 print(f"action = {action}")
 print(f"info={info}")
-# %% Test ThresholdReward
-print("\nTest ThresholdReward...")
+# %% Test ThresholdInfo
+print("\nTest ThresholdInfo...")
 rand_env = RandomInfo(
     RandomEnv(
         {
@@ -203,7 +203,7 @@ rand_env = RandomInfo(
     )
 )
 
-thresh_env = ThresholdReward(
+thresh_env = ThresholdInfo(
     rand_env,
     info_key=0,
     new_key="meets_threshold",
@@ -212,6 +212,7 @@ thresh_env = ThresholdReward(
 (obs, reward, term, trunc, info) = thresh_env.step(
     thresh_env.action_space.sample()
 )
+print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
 
 # Test with MultiBinary space
@@ -224,13 +225,13 @@ rand_env = RandomInfo(
     ),
     info_space=Dict({"a": MultiBinary(n=())}),
 )
-thresh_env = ThresholdReward(
+thresh_env = ThresholdInfo(
     rand_env, info_key="a", new_key="meets_threshold", threshold=0.5
 )
-# thresh_env = ThresholdReward(rand_env, 1)
 (obs, reward, term, trunc, info) = thresh_env.step(
     thresh_env.action_space.sample()
 )
+print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
 
 # Test with threshold_reward
@@ -243,7 +244,7 @@ rand_env = RandomInfo(
     )
 )
 
-thresh_env = ThresholdReward(
+thresh_env = ThresholdInfo(
     rand_env,
     info_key=0,
     new_key="meets_threshold",
@@ -254,6 +255,7 @@ thresh_env = ThresholdReward(
 (obs, reward, term, trunc, info) = thresh_env.step(
     thresh_env.action_space.sample()
 )
+print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
 # %% done
 print("done")
