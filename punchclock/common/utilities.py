@@ -385,3 +385,11 @@ def getInequalityFunc(inequality_str: str) -> Callable:
     inequality_func = inequality_map[inequality_str]
 
     return inequality_func
+
+
+# %% get info from env
+def getInfo(env: Env) -> dict:
+    """Gets info from env in a safe way."""
+    env_copy = deepcopy(env)
+    _, info = env_copy.reset()
+    return info
