@@ -12,7 +12,7 @@ I'm trying to get better about that.
 
 
 ### Changed
-
+- Replaced `CopyObsItem` with more flexible `CopyObsInfoItem` wrapper (#68).
 
 ### Deprecated
 
