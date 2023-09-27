@@ -93,21 +93,6 @@ assert env_postnest.observation_space.contains(obs_nested)
 
 env_postnest.reset()
 
-# %% Test CopyObsItem
-print("\nTest CopyObsItem...")
-env_premask = RandomEnv(
-    {
-        "observation_space": Dict(
-            {"a": MultiBinary(2), "b": Box(0, 1, shape=(2, 3))}
-        )
-    }
-)
-env_postmask = CopyObsItem(env=env_premask, key="a")
-obs_mask = env_postmask.observation(env_premask.observation_space.sample())
-print(f"pre-mask obs space = {env_premask.observation_space}")
-print(f"post-mask obs space = {env_postmask.observation_space}")
-assert env_postmask.observation_space.contains(obs_mask)
-
 # %% Test VisMap2ActionMask
 print("\nTest VisMap2ActionMask...")
 env_premask = RandomEnv(
