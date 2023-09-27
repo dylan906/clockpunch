@@ -8,7 +8,7 @@ from copy import deepcopy
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 from gymnasium.wrappers.filter_observation import FilterObservation
-from numpy import Inf, array, ones, sum
+from numpy import Inf, ones, sum
 from numpy.random import rand
 from ray.rllib.examples.env.random_env import RandomEnv
 

@@ -499,7 +499,7 @@ def convertNumpyFuncStrToCallable(numpy_func_str: str, **kwargs):
 
     Args:
         numpy_func_str (str): Name of a numpy function.
-        **kwargs, optional: Kwargs to numpy function
+        kwargs, optional: Kwargs to numpy function
 
     Returns
         Callable: Partial of a numpy function.

@@ -8,7 +8,6 @@ from typing import Any, Tuple
 
 # Third Party Imports
 import gymnasium as gym
-import numpy as np
 from gymnasium import Env
 from gymnasium.spaces import (
     Box,
