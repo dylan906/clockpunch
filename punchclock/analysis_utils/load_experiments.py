@@ -1,7 +1,5 @@
 """Load experiment files."""
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 import os
 from pathlib import Path
@@ -82,8 +80,6 @@ def loadExpResults(
 
 
 # %% Load Env and/or Trial Configs
-
-
 def loadTrialConfigs(
     local_dir: str,
     exp_names: list[str],
@@ -166,6 +162,3 @@ def loadEnvConfigs(
     env_configs = [tc["env_config"] for tc in trial_configs]
 
     return env_configs
-
-
-# %%
