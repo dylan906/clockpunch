@@ -18,7 +18,6 @@ from punchclock.environment.obs_wrappers import (
     Convert2dTo3dObsItems,
     ConvertCustody2ActionMask,
     ConvertObsBoxToMultiBinary,
-    CopyObsItem,
     CustodyWrapper,
     DiagonalObsItems,
     FlatDict,
