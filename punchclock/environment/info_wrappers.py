@@ -23,6 +23,7 @@ from punchclock.common.utilities import (
 )
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
+    convertNumpyFuncStrToCallable,
     countMaskViolations,
     countNullActiveActions,
 )
@@ -82,6 +83,7 @@ class InfoWrapper(ABC, Wrapper):
             action,
         )
         infos.update(new_info)
+        self.info = deepcopy(infos)
 
         return (observations, rewards, terminations, truncations, infos)
 
@@ -675,4 +677,52 @@ class LogisticTransformInfo(InfoWrapper):
         x = infos[self.key]
         x_transform = self.logisticPartial(x)
         new_info = {self.key: x_transform}
+        return new_info
+
+
+# %% TransformInfoWithNumpy
+class TransformInfoWithNumpy(InfoWrapper):
+    """Transform an item in info with a Numpy function.
+
+    Apply a numpy function to a single entry in a dict info.
+
+    Works only with numpy functions that can be called like numpy.[func](args).
+
+    Overwrites key[value] in info.
+    """
+
+    def __init__(self, env: Env, numpy_func_str: str, key: str, **kwargs):
+        """Wrap environment with TransformInfoWithNumpy.
+
+        Args:
+            env (Env): A Gymnasium Environment.
+            numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
+                getattr(numpy, numpy_func_str)).
+            key (str): Key in info, as returned from env.step().
+        """
+        super().__init__(env)
+        self.partialFunc = convertNumpyFuncStrToCallable(
+            numpy_func_str=numpy_func_str,
+            **kwargs,
+        )
+        self.key = key
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ) -> dict:
+        """Update info from an env.
+
+        Args:
+            observations, rewards, terminations, truncations, action: Unused.
+            infos (dict): Info from an env.
+
+        Returns:
+            dict: Same keys as input, but with one item's value transformed by
+                Numpy function.
+        """
+        new_info = deepcopy(infos)
+        val = new_info[self.key]
+        val_trans = self.partialFunc(val)
+        new_info[self.key] = val_trans
+
         return new_info

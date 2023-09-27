@@ -17,6 +17,7 @@ from punchclock.environment.info_wrappers import (
     MaskViolationCounter,
     NumWindows,
     ThresholdInfo,
+    TransformInfoWithNumpy,
 )
 from punchclock.environment.misc_wrappers import RandomInfo
 from punchclock.ray.build_env import buildEnv
@@ -264,10 +265,7 @@ print("\nTest LogisticTransformInfo...")
 
 rand_env = RandomInfo(
     RandomEnv(
-        {
-            "observation_space": Dict({}),
-            "action_space": MultiDiscrete([1]),
-        }
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
     )
 )
 log_env = LogisticTransformInfo(rand_env, key=0)
@@ -279,5 +277,19 @@ print(f"info (wrapped) = {info_wrapped}")
 
 (_, _, _, _, info) = log_env.step(log_env.action_space.sample())
 print(f"info (via step) = {info}")
+
+# %% TransformInfoWith Numpy
+print("\nTest TransformInfoWithNumpy...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict({"a": Box(low=0, high=2, shape=(2, 2))}),
+)
+
+np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="sum", key="a")
+(_, _, _, _, info) = np_env.step(np_env.action_space.sample())
+print(f"info (via step) = {info}")
+
 # %% done
 print("done")
