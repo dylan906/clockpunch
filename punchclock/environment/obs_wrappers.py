@@ -280,6 +280,7 @@ class NestObsItems(gym.ObservationWrapper):
 
         return new_obs
 
+
 # %% VisMap2ActionMask
 class VisMap2ActionMask(gym.ObservationWrapper):
     """Convert visibility map within an observation space into a 2d action mask.
