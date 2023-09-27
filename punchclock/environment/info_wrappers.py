@@ -16,12 +16,15 @@ from numpy import asarray, ndarray
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.common.math import logistic
-from punchclock.common.utilities import actionSpace2Array, getInequalityFunc
+from punchclock.common.utilities import (
+    actionSpace2Array,
+    getInequalityFunc,
+    getInfo,
+)
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
     countMaskViolations,
     countNullActiveActions,
-    getInfo,
 )
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 
