@@ -9,7 +9,7 @@ I'm trying to get better about that.
 ## [unreleased] - 20YY-MM-DD
 
 ### Added
-
+- New `InfoWrapper`s: `CombineInfoItems`, `TransformInfoWithNumpy` (#51).
 
 ### Changed
 - Replaced `CopyObsItem` with more flexible `CopyObsInfoItem` wrapper (#68).
