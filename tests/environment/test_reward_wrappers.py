@@ -10,7 +10,6 @@ from punchclock.environment.reward_wrappers import (
     AssignInfoToReward,
     AssignObsToReward,
     LogisticTransformReward,
-    ThresholdReward,
     ZeroReward,
 )
 
@@ -60,23 +59,6 @@ assinfo_env = AssignInfoToReward(rand_env, key=0)
 )
 print(f"info = {info}")
 print(f"reward = {reward}")
-
-# %% Test ThresholdReward
-print("\nTest ThresholdReward...")
-rand_env = RandomEnv()
-
-thresh_env = ThresholdReward(rand_env, -2)
-(obs, reward, term, trunc, info) = thresh_env.step(
-    thresh_env.action_space.sample()
-)
-print(f"reward (Box space) = {reward}")
-
-# Test with MultiBinary space
-thresh_env = ThresholdReward(rand_env, 1)
-(obs, reward, term, trunc, info) = thresh_env.step(
-    thresh_env.action_space.sample()
-)
-print(f"reward (MultiBinary space) = {reward}")
 
 # %% Test ZeroReward
 print("\nTest ZeroReward...")

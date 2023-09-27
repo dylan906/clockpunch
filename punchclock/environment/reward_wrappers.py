@@ -8,14 +8,13 @@ from functools import partial
 from typing import Any, final
 
 # Third Party Imports
-from gymnasium import Env, RewardWrapper, Wrapper
+from gymnasium import Env, Wrapper
 from gymnasium.spaces import Dict, MultiDiscrete
 from gymnasium.wrappers import TransformReward
 from numpy import float32, int8, int_, ndarray
 
 # Punch Clock Imports
 from punchclock.common.math import logistic
-from punchclock.common.utilities import getInequalityFunc
 
 
 # %% Base class for reward configuration wrappers
@@ -206,64 +205,6 @@ class AssignInfoToReward(AssignThingToReward):
                 that will be assigned to reward.
         """
         super().__init__(env, key=key, info_or_obs="info")
-
-
-# %% Threshold Reward
-class ThresholdReward(RewardWrapper):
-    """Gives a reward if unwrapped reward meets an inequality operation.
-
-    Overrides unwrapped reward.
-
-    If unwrapped reward is <= (by default) the threshold, then a reward is granted.
-        The reward per step is set on instantiation and does not change.
-        The inequality is set on instantiation (can be <=, >=, <, or >) and does
-        not change.
-    """
-
-    def __init__(
-        self,
-        env: Env,
-        unwrapped_reward_threshold: float | int,
-        reward: float = 1,
-        inequality: str = "<=",
-    ):
-        """Wrap environment with ThresholdReward.
-
-        Args:
-            env (Env): A Gymnasium environment.
-            unwrapped_reward_threshold (float | int): Threshold to evaluate
-                unwrapped reward against.
-            reward (float, optional): Reward generated per step that inequality
-                evaluates to True. Defaults to 1.
-            inequality (str, optional): String representation of inequality operator
-                to use in threshold operation. Must be one of ['<=', '>=', '<', '>'].
-                Defaults to "<=".
-        """
-        super().__init__(env)
-
-        self.reward_per_step = reward
-        # getInequalityFunc checks arg type
-        self.inequalityFunc = getInequalityFunc(inequality)
-        self.threshold = unwrapped_reward_threshold
-
-    def reward(self, reward: float) -> float:
-        """Calculate threshold reward.
-
-        Returns:
-            float: Either 0 (if inequality evaluates to False) or self.reward_per_step
-                (if inequality evaluates to True) specified on instantiation.
-        """
-        inbounds = self.inequalityFunc(reward, self.threshold)
-        # inequalityFunc returns numpy bool, which needs to be compared with "=="
-        # instead of "is"
-        if inbounds == True:  # noqa
-            new_reward = self.reward_per_step
-        elif inbounds == False:  # noqa
-            new_reward = 0
-        else:
-            TypeError("inbounds is neither True nor False")
-
-        return new_reward
 
 
 # %% ZeroReward
