@@ -1922,7 +1922,7 @@ class WastedActionsMask(gym.ObservationWrapper):
 class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
     """Transform an entry in a Dict observation space by a numpy function.
 
-    Apply a numpy function to a single entry in an dict observation. Converts
+    Apply a numpy function to a single entry in a dict observation. Converts
     the corresponding entry in the observation space to a Box with (-Inf, Inf)
     bounds.
 
