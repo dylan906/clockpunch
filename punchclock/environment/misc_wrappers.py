@@ -11,6 +11,7 @@ from gymnasium import Env, Wrapper
 from gymnasium.spaces import Box, Dict, Space
 
 # Punch Clock Imports
+from punchclock.common.utilities import getInfo
 from punchclock.policies.policy_builder import buildSpace
 
 
@@ -77,12 +78,11 @@ class IdentityWrapper(Wrapper):
         return obs
 
 
-# %% AppendInfoItemToObs
-class AppendInfoItemToObs(Wrapper):
-    """Append an item from info to observation.
+# %% CopyObsInfoItem
+class CopyObsInfoItem(Wrapper):
+    """Copy an item from and obs/info to obs/info.
 
-    Copy an item from `info` (as returned from env.step() or env.reset()) into
-    `observation`. Overwrites existing observation item, if it already exists.
+    Overwrites existing item, if it already exists.
 
     Environment must have Dict observation space.
     """
@@ -90,50 +90,82 @@ class AppendInfoItemToObs(Wrapper):
     def __init__(
         self,
         env: Env,
-        info_key: str,
-        info_space_config: dict,
-        obs_key: str = None,
+        copy_from: str,
+        copy_to: str,
+        from_key: str,
+        to_key: str = None,
+        info_space_config: dict = None,
     ):
-        """Wrap environment with AppendInfoItemToObs wrapper.
+        """Wrap environment with CopyObsInfoItem wrapper.
 
         Args:
             env (Env): Gymnasium environment with Dict observation space.
-            info_key (str): Must be in info returned by env.step() and env.reset().
-            info_space_config (dict): Config to build a space corresponding to
-                the desired item in info. See buildSpace for details. Format is:
+            copy_from (str): ["obs" | "info"] The source of the item.
+            copy_to (str): ["obs" | "info"] The place to copy the source item to.
+            from_key (str): Must be in copy_from associated dict.
+            to_key (str, optional): Key assigned to copied value. If None, from_key
+                will be used. Defaults to None.
+            info_space_config (dict, optional): Required if copy_from/copy_to
+                are "info"/"obs". Ignored otherwise. Config to build a space
+                corresponding to source item in info. See buildSpace for details.
+                Format is:
                     {
                         "space": Name of space class (e.g. "MultiDiscrete"),
                         kwargs: kwargs used for the desired space,
                     }
-            obs_key (str, optional): Key assigned to value copied from info to
-                observation. If None, info_key will be used. Defaults to None.
         """
         super().__init__(env)
         assert isinstance(
             env.observation_space, Dict
         ), "env.observation_space must be a gymnasium.spaces.Dict."
+        for k in [copy_from, copy_to]:
+            assert k in ["info", "obs"]
 
-        env_copy = deepcopy(env)
-        _, info = env_copy.reset()
-        assert info_key in info, f"{info_key} is not a key in `info`."
+        if copy_from == "info":
+            copy_source = getInfo(env)
+        elif copy_from == "obs":
+            copy_source = deepcopy(env.observation_space.spaces)
 
-        if obs_key is None:
+        if copy_to == "info":
+            copy_destination = getInfo(env)
+        elif copy_to == "obs":
+            copy_destination = deepcopy(env.observation_space)
+
+        assert (
+            from_key in copy_source
+        ), f"{from_key} is not a key in {copy_from}."
+
+        if to_key is None:
             # default key
-            obs_key = info_key
+            to_key = from_key
 
-        if obs_key in env.observation_space.spaces:
+        if to_key in copy_destination:
             warn(
-                f"{obs_key} is already in observation space. Value will be overwritten."
+                f"{to_key} is already in {copy_destination}. Value will be overwritten."
             )
 
-        self.info_key = info_key
-        self.obs_key = obs_key
+        if copy_from == "info" and copy_to == "obs":
+            assert (
+                info_space_config is not None
+            ), "info_space_config is required if copy from info into obs."
 
-        # build new observation space
-        self.info_item_space = buildSpace(space_config=info_space_config)
-        new_obs_space = deepcopy(env.observation_space)
-        new_obs_space[self.obs_key] = self.info_item_space
-        self.observation_space = new_obs_space
+        self.copy_from = copy_from
+        self.copy_to = copy_to
+        self.from_key = from_key
+        self.to_key = to_key
+
+        # build new observation space, if required
+        if self.copy_to == "obs":
+            new_obs_space = deepcopy(env.observation_space)
+            if self.copy_from == "info":
+                self.info_item_space = buildSpace(
+                    space_config=info_space_config
+                )
+                new_obs_space[self.to_key] = self.info_item_space
+            elif self.copy_from == "obs":
+                new_obs_space[self.to_key] = copy_source[self.from_key]
+
+            self.observation_space = new_obs_space
 
     def reset(
         self, seed: int | None = None, options=None
@@ -149,13 +181,17 @@ class AppendInfoItemToObs(Wrapper):
             info (dict): Info.
         """
         obs, info = super().reset(seed=seed, options=options)
-        new_item = self._getAppendInfoItem(info)
+        new_item = self._getSourceItem(info=info, obs=obs)
+        info_new, obs_new = self._copySourceToDestinationItem(
+            info=info,
+            obs=obs,
+            source_item=new_item,
+        )
 
-        self.info = deepcopy(info)
+        # store info for use in self.observation()
+        self.info = deepcopy(info_new)
 
-        obs = deepcopy(obs)
-        obs.update(new_item)
-        return obs, info
+        return obs_new, info_new
 
     def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
         """Copy entry from unwrapped info to wrapped observation.
@@ -174,11 +210,14 @@ class AppendInfoItemToObs(Wrapper):
 
         self.info = deepcopy(infos)
 
-        new_obs = self._getAppendInfoItem(infos)
-        observations = deepcopy(observations)
-        observations.update(new_obs)
+        new_item = self._getSourceItem(info=infos, obs=observations)
+        info_new, obs_new = self._copySourceToDestinationItem(
+            info=infos,
+            obs=observations,
+            source_item=new_item,
+        )
 
-        return (observations, rewards, terminations, truncations, infos)
+        return (obs_new, rewards, terminations, truncations, info_new)
 
     def observation(self, observation: OrderedDict) -> OrderedDict:
         """Append item to unwrapped observation.
@@ -190,16 +229,54 @@ class AppendInfoItemToObs(Wrapper):
             OrderedDict: Same as input, but with item from info, as saved at last
                 reset() or step() call.
         """
-        info = deepcopy(self.info)
-        new_info = self._getAppendInfoItem(info)
-        new_obs = deepcopy(observation)
-        new_obs.update(new_info)
+        if self.copy_to == "obs":
+            # only update observation if wrapper modified obs
+            info = deepcopy(self.info)
+            new_item = self._getSourceItem(info=info, obs=observation)
+            _, new_obs = self._copySourceToDestinationItem(
+                info=info,
+                obs=observation,
+                source_item=new_item,
+            )
+
+        else:
+            new_obs = observation
 
         return new_obs
 
-    def _getAppendInfoItem(self, info: dict) -> dict:
-        """Copy the item (specified at instantiation) from info."""
-        info = deepcopy(info)
-        value = deepcopy(info[self.info_key])
-        obs_item = {self.info_key: value}
-        return obs_item
+    def _getSourceItem(self, info: dict, obs: dict) -> dict:
+        """Copy an item from obs or info."""
+        if self.copy_from == "info":
+            source = deepcopy(info)
+        elif self.copy_from == "obs":
+            source = deepcopy(obs)
+
+        source_value = source[self.from_key]
+        new_item = {self.from_key: source_value}
+
+        return new_item
+
+    def _copySourceToDestinationItem(
+        self,
+        info: dict,
+        obs: dict,
+        source_item: dict,
+    ) -> Tuple[dict, dict]:
+        """Copy source item to either info or dict, return updated info/dict.
+
+        One of the returns (info or obs) is modified. The other return is same
+        as input.
+
+        Returns:
+            info (dict): info
+            obs (dict): observation
+        """
+        destination_item = {self.to_key: source_item[self.from_key]}
+        if self.copy_to == "info":
+            info = deepcopy(info)
+            info.update(destination_item)
+        elif self.copy_to == "obs":
+            obs = deepcopy(obs)
+            obs.update(destination_item)
+
+        return info, obs

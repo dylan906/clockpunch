@@ -7,7 +7,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
-    AppendInfoItemToObs,
+    CopyObsInfoItem,
     IdentityWrapper,
     RandomInfo,
 )
@@ -55,17 +55,20 @@ try:
 except Exception as ex:
     print(ex)
 
-# %% AppendInfoItemToObs
-print("\nTest AppendInfoItemToObs...")
+# %% CopyObsInfoItem
+print("\nTest CopyObsInfoItem...")
 info_space_config = {"space": "Box", "low": 0, "high": 3}
 rand_env = RandomInfo(
     RandomEnv({"observation_space": Dict({"a": Box(0, 1)})}),
     info_space=Dict({"b": buildSpace(info_space_config)}),
 )
 
-appinfo_env = AppendInfoItemToObs(
+print("\n  info -> obs")
+appinfo_env = CopyObsInfoItem(
     rand_env,
-    info_key="b",
+    copy_from="info",
+    copy_to="obs",
+    from_key="b",
     info_space_config=info_space_config,
 )
 obs, info = appinfo_env.reset()
@@ -84,6 +87,53 @@ try:
     check_env(appinfo_env)
 except Exception as ex:
     print(ex)
+
+print("\n  obs -> info")
+appinfo_env = CopyObsInfoItem(
+    rand_env,
+    copy_from="obs",
+    copy_to="info",
+    from_key="a",
+)
+obs, info = appinfo_env.reset()
+print(f"unwrapped obs space = {rand_env.observation_space}")
+print(f"wrapped obs space = {appinfo_env.observation_space}")
+print(f"reset obs = {obs}")
+print(f"reset info = {info}")
+
+obs, _, _, _, info = appinfo_env.step(appinfo_env.action_space.sample())
+print(f"step obs = {obs}")
+print(f"step info = {info}")
+
+print("\n  obs -> obs")
+appinfo_env = CopyObsInfoItem(
+    rand_env,
+    copy_from="obs",
+    copy_to="obs",
+    from_key="a",
+    to_key="a_copy",
+)
+obs, info = appinfo_env.reset()
+print(f"unwrapped obs space = {rand_env.observation_space}")
+print(f"wrapped obs space = {appinfo_env.observation_space}")
+print(f"reset obs = {obs}")
+
+obs, _, _, _, info = appinfo_env.step(appinfo_env.action_space.sample())
+print(f"step obs = {obs}")
+
+print("\n  info -> info")
+appinfo_env = CopyObsInfoItem(
+    rand_env,
+    copy_from="info",
+    copy_to="info",
+    from_key="b",
+    to_key="b_copy",
+)
+obs, info = appinfo_env.reset()
+print(f"reset info = {info}")
+
+obs, _, _, _, info = appinfo_env.step(appinfo_env.action_space.sample())
+print(f"reset info = {info}")
 
 # %% Done
 print("done")
