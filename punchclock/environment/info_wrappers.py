@@ -415,7 +415,7 @@ class ActionTypeCounter(InfoWrapper):
         return info
 
 
-# %% Mask Reward
+# %% MaskViolationCounter
 class MaskViolationCounter(InfoWrapper):
     """Count sensors assigned to valid (or invalid) action.
 
@@ -540,7 +540,7 @@ class MaskViolationCounter(InfoWrapper):
         return info
 
 
-# %% Threshold Reward
+# %% ThresholdReward
 class ThresholdReward(InfoWrapper):
     """Outputs a binary if value in info meets an inequality operation.
 
@@ -554,7 +554,8 @@ class ThresholdReward(InfoWrapper):
     def __init__(
         self,
         env: Env,
-        key: str,
+        info_key: str,
+        new_key: str,
         threshold: float | int,
         threshold_reward: float | None = None,
         inequality: str = "<=",
@@ -563,8 +564,9 @@ class ThresholdReward(InfoWrapper):
 
         Args:
             env (Env): A Gymnasium environment.
-            key (str): Key to item in info to check against threshold.
-            threshold (float | int): Threshold to evaluate info[key] against.
+            info_key (str): Key to item in info to check against threshold.
+
+            threshold (float | int): Threshold to evaluate info[info_key] against.
             threshold_reward (float | None, optional): Reward generated per step
                 that threshold evaluates to True. If not set (or set to None),
                 output of updateInfo is a bool. Defaults to None.
@@ -573,8 +575,14 @@ class ThresholdReward(InfoWrapper):
                 Defaults to "<=".
         """
         super().__init__(env)
+        info = getInfo(env)
+        assert info[info_key].shape in [
+            (),
+            (1,),
+        ], f"info[{info_key}] must be a singleton dimension."
 
-        self.key = key
+        self.info_key = info_key
+        self.new_key = new_key
         self.threshold_reward = threshold_reward
         # getInequalityFunc checks arg type
         self.inequalityFunc = getInequalityFunc(inequality)
@@ -602,7 +610,13 @@ class ThresholdReward(InfoWrapper):
         Returns:
             dict: _description_
         """
-        inbounds = self.inequalityFunc(infos[self.key], self.threshold)
+        if infos[self.info_key].ndim > 0:
+            assert len(infos[self.info_key]) == 1
+            val_noarray = infos[self.info_key][0]
+        else:
+            val_noarray = infos[self.info_key]
+
+        inbounds = self.inequalityFunc(val_noarray, self.threshold)
 
         if self.threshold_reward is not None:
             # inequalityFunc returns numpy bool, which needs to be compared with "=="
