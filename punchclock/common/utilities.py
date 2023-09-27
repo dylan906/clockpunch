@@ -7,6 +7,7 @@ import json
 import os
 import os.path
 from ast import literal_eval
+from copy import deepcopy
 from itertools import groupby
 from operator import ge, gt, le, lt
 
