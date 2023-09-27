@@ -15,6 +15,7 @@ I'm trying to get better about that.
 - New `InfoWrapper` base class and module for info wrappers (#60).
 - New wrapper `NumWindows(InfoWrapper)` dynamically updates number of sensor-target access windows left (#38).
 - Added reverse-nest option to `NestObsItems` wrapper (#65).
+- Added `LogisticTransformInfo` wrapper (#51).
 
 ### Changed
 - Made null actions optionally ignorable in `MaskReward` wrapper (#48).
@@ -22,6 +23,7 @@ I'm trying to get better about that.
 - Changed behavior of `RewardBase` to sum unwrapped reward with new (wrapped) reward (#48).
 - Cleaned up `test/analysis_utils` (#54).
 - `RewardBase` no longer sums unwrapped with wrapped reward (#66).
+- Changed the following wrappers from `RewardWrapper` to `InfoWrapper`: `MaskReward`->`MaskViolationCounter`, `NullActionReward`->`ActionTypeCounter`, `ThresholdReward`->`ThresholdInfo` (#51).
 
 ### Deprecated
 
@@ -34,6 +36,7 @@ I'm trying to get better about that.
 ### Removed
 - Removed old `ActionMask` wrapper in favor of more modular wrappers.
 - Removed number of access windows left tracking from base environment (#62).
+- Removed reward function settings from base environment and associated reward function class (#27).
 
 ## [0.7.0] - 2023-09-06
 
