@@ -540,15 +540,15 @@ class MaskViolationCounter(InfoWrapper):
         return info
 
 
-# %% ThresholdReward
-class ThresholdReward(InfoWrapper):
-    """Outputs a binary if value in info meets an inequality operation.
+# %% ThresholdInfo
+class ThresholdInfo(InfoWrapper):
+    """Outputs a bool or binary float if item in info satisfies an inequality.
 
     If specified value is <= (by default) the threshold, then True is output.
     Otherwise, False is returned. The inequality is set on instantiation (can be
     <=, >=, <, or >) and does not change.
 
-    If threshold_reward is set, then updateInfo returns a value instead of a bool.
+    If threshold_reward is set, then updateInfo returns a float instead of a bool.
     """
 
     def __init__(
@@ -560,12 +560,12 @@ class ThresholdReward(InfoWrapper):
         threshold_reward: float | None = None,
         inequality: str = "<=",
     ):
-        """Wrap environment with ThresholdReward.
+        """Wrap environment with ThresholdInfo.
 
         Args:
             env (Env): A Gymnasium environment.
             info_key (str): Key to item in info to check against threshold.
-
+            new_key (str): Key to append to info with updateInfo return.
             threshold (float | int): Threshold to evaluate info[info_key] against.
             threshold_reward (float | None, optional): Reward generated per step
                 that threshold evaluates to True. If not set (or set to None),
@@ -576,6 +576,7 @@ class ThresholdReward(InfoWrapper):
         """
         super().__init__(env)
         info = getInfo(env)
+        assert info_key in info, f"{info_key} not in info"
         assert info[info_key].shape in [
             (),
             (1,),
@@ -600,15 +601,14 @@ class ThresholdReward(InfoWrapper):
         """Append threshold item to info.
 
         Args:
-            observations (_type_): _description_
-            rewards (_type_): _description_
-            terminations (_type_): _description_
-            truncations (_type_): _description_
-            infos (_type_): _description_
-            action (_type_): _description_
+            observations, rewards, terminations, truncations, action: Not used
+            infos (dict): Must have self.info_key in it.
 
         Returns:
-            dict: _description_
+            dict: Single entry dict with value dependent on self.threshold_reward.
+            {
+                self.new_key: bool | float
+            }
         """
         if infos[self.info_key].ndim > 0:
             assert len(infos[self.info_key]) == 1
