@@ -726,3 +726,46 @@ class TransformInfoWithNumpy(InfoWrapper):
         new_info[self.key] = val_trans
 
         return new_info
+
+
+# %% CombineInfoItems
+class CombineInfoItems(InfoWrapper):
+    """Combine multiple items in info into a single item with a new key.
+
+    New entry in info will be a list, where each entry is the value associated
+    with info[keys].
+
+    Overwrites value of new_key, if it already exists.
+
+    Doesn't do type/shape checking, just combined entries into a list.
+    """
+
+    def __init__(self, env: Env, keys: list[str], new_key: str):
+        """Wrap environment with CombineInfoItems.
+
+        Args:
+            env (Env): See InfoWrapper for requirements.
+            keys (list[str]): Keys to combine in new item. Must be in info.
+            new_key (str): Name of new item.
+        """
+        super().__init__(env)
+        info = getInfo(env)
+        assert all(
+            [k in info for k in keys]
+        ), "All entries of keys must be in info."
+
+        self.keys = keys
+        self.new_key = new_key
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ):
+        """Update info."""
+        new_info = deepcopy(infos)
+        new_val = []
+        for k in self.keys:
+            new_val.append(new_info[k])
+        new_item = {self.new_key: new_val}
+        new_info.update(new_item)
+
+        return new_info

@@ -13,6 +13,7 @@ from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
+    CombineInfoItems,
     LogisticTransformInfo,
     MaskViolationCounter,
     NumWindows,
@@ -291,5 +292,23 @@ np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="sum", key="a")
 (_, _, _, _, info) = np_env.step(np_env.action_space.sample())
 print(f"info (via step) = {info}")
 
+# %% Test CombineInfoItems
+print("\nTest CombineInfoItems...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict(
+        {
+            "a": Box(low=0, high=2, shape=(2, 2)),
+            "b": MultiBinary((2, 2)),
+            "c": Box(low=-1, high=4, shape=(2, 2), dtype=int),
+        }
+    ),
+)
+
+cat_env = CombineInfoItems(rand_env, keys=["a", "b", "c"], new_key="new")
+(_, _, _, _, info) = cat_env.step(cat_env.action_space.sample())
+print(f"info (via step) = {info}")
 # %% done
 print("done")
