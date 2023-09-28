@@ -130,7 +130,6 @@ agent_params = {
     "init_last_time_tasked": None,
 }
 
-reward_params = None
 
 # assign build params as a dict for easier env recreation/changing
 # ActionMask wrapper required for SimRunner
@@ -140,7 +139,6 @@ config = OrderedDict(
         "horizon": horizon,
         "agent_params": agent_params,
         "filter_params": filter_params,
-        "reward_params": reward_params,
         "constructor_params": {
             "wrappers": [
                 {
@@ -149,26 +147,24 @@ config = OrderedDict(
                         "filter_keys": [
                             "eci_state",
                             "est_cov",
-                            "num_tasked",
                             "obs_staleness",
                             "vis_map_est",
                         ]
                     },
                 },
                 {
-                    "wrapper": "CopyObsItem",
+                    "wrapper": "CopyObsInfoItem",
                     "wrapper_config": {
-                        "key": "vis_map_est",
-                        "new_key": "action_mask",
+                        "copy_from": "obs",
+                        "copy_to": "obs",
+                        "from_key": "vis_map_est",
+                        "to_key": "action_mask",
                     },
                 },
                 {
                     "wrapper": "VisMap2ActionMask",
                     "wrapper_config": {"vis_map_key": "action_mask"},
                 },
-                # {
-                #     "wrapper": "NumWindows",
-                # },
                 {
                     "wrapper": "NestObsItems",
                     "wrapper_config": {
@@ -176,7 +172,6 @@ config = OrderedDict(
                         "keys_to_nest": [
                             "eci_state",
                             "est_cov",
-                            "num_tasked",
                             "obs_staleness",
                             "vis_map_est",
                         ],
@@ -249,8 +244,13 @@ config_wrap["constructor_params"] = {
             "wrapper_config": {"filter_keys": ["est_cov", "vis_map_est"]},
         },
         {
-            "wrapper": "CopyObsItem",
-            "wrapper_config": {"key": "vis_map_est", "new_key": "action_mask"},
+            "wrapper": "CopyObsInfoItem",
+            "wrapper_config": {
+                "copy_from": "obs",
+                "copy_to": "obs",
+                "from_key": "vis_map_est",
+                "to_key": "action_mask",
+            },
         },
         {
             "wrapper": "VisMap2ActionMask",

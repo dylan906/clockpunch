@@ -52,16 +52,6 @@ filter_params = {
     "p_init": 10 * temp_matrix,
 }
 
-reward_params = {
-    "reward_func": "Threshold",
-    "obs_or_info": "obs",
-    "metric": "num_tasked",
-    "preprocessors": ["min"],
-    "metric_value": 3,
-    "inequality": ">",
-    "penalty": 1,
-}
-
 # Set environment constructor params
 constructor_params = {
     "wrappers": [
@@ -70,8 +60,13 @@ constructor_params = {
             "wrapper_config": {"filter_keys": ["vis_map_est", "est_cov"]},
         },
         {
-            "wrapper": "CopyObsItem",
-            "wrapper_config": {"key": "vis_map_est", "new_key": "vm_copy"},
+            "wrapper": "CopyObsInfoItem",
+            "wrapper_config": {
+                "copy_from": "obs",
+                "copy_to": "obs",
+                "from_key": "vis_map_est",
+                "to_key": "vm_copy",
+            },
         },
         {
             "wrapper": "VisMap2ActionMask",
@@ -96,7 +91,6 @@ env_config = {
     "horizon": 10,
     "agent_params": agent_params,
     "filter_params": filter_params,
-    "reward_params": reward_params,
     "time_step": 100,
     "constructor_params": constructor_params,
 }

@@ -57,10 +57,12 @@ constructor_params = {
             "wrapper_config": {"filter_keys": ["vis_map_est", "est_cov"]},
         },
         {
-            "wrapper": "CopyObsItem",
+            "wrapper": "CopyObsInfoItem",
             "wrapper_config": {
-                "key": "vis_map_est",
-                "new_key": "vis_map_copy",
+                "copy_from": "obs",
+                "copy_to": "obs",
+                "from_key": "vis_map_est",
+                "to_key": "vis_map_copy",
             },
         },
         {

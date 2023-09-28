@@ -81,17 +81,18 @@ constructor_params = {
                     "eci_state",
                     "est_cov",
                     "num_tasked",
-                    "num_windows_left",
                     "obs_staleness",
                     "vis_map_est",
                 ]
             },
         },
         {
-            "wrapper": "CopyObsItem",
+            "wrapper": "CopyObsInfoItem",
             "wrapper_config": {
-                "key": "vis_map_est",
-                "new_key": "action_mask",
+                "copy_from": "obs",
+                "copy_to": "obs",
+                "from_key": "vis_map_est",
+                "to_key": "action_mask",
             },
         },
         {
@@ -106,7 +107,6 @@ constructor_params = {
                     "eci_state",
                     "est_cov",
                     "num_tasked",
-                    "num_windows_left",
                     "obs_staleness",
                     "vis_map_est",
                 ],
@@ -120,7 +120,6 @@ env_config = {
     "horizon": horizon,
     "agent_params": agent_params,
     "filter_params": filter_params,
-    "reward_params": reward_params,
     "time_step": time_step,
     "constructor_params": constructor_params,
 }
