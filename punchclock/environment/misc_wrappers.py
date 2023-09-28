@@ -1,9 +1,12 @@
 """Misc wrappers."""
 # %% Imports
 # Standard Library Imports
+import operator as op
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, Tuple
+from functools import partial
+from inspect import signature
+from typing import Any, Callable, Tuple
 from warnings import warn
 
 # Third Party Imports
@@ -280,3 +283,45 @@ class CopyObsInfoItem(Wrapper):
             obs.update(destination_item)
 
         return info, obs
+
+
+# %% OperatorWrapper
+class OperatorWrapper(Wrapper):
+    def __init__(
+        self,
+        env: Env,
+        func_str: str,
+        key: str,
+        copy_key: str = None,
+        **kwargs,
+    ):
+        super().__init__(env)
+        func = getattr(op, func_str, None)
+        sig = signature(func)
+        arg_names = [x for x in sig.parameters]
+        wrap_kwargs = {k: v for (k, v) in zip(arg_names, kwargs)}
+        wrap_kwargs["func"] = func
+
+        self.partialFunc = partial(self._wrapperFunc, **wrap_kwargs)
+        self.key = key
+        self.copy_key = copy_key
+
+    def _wrapperFunc(self, func: Callable, a, b):
+        return func(a, b)
+
+
+class GenericOperator:
+    def __init__(self, func_str: str, **kwargs):
+        func = getattr(op, func_str, None)
+        sig = signature(func)
+        arg_names = [x for x in sig.parameters]
+        wrap_kwargs = {k: v for (k, v) in zip(arg_names, kwargs)}
+        wrap_kwargs["func"] = func
+
+        self.partialFunc = partial(self._wrapperFunc, **wrap_kwargs)
+
+    def _wrapperFunc(self, func: Callable, a, b):
+        return func(a, b)
+
+    def doIt(self, *args):
+        return self.partialFunc(*args)
