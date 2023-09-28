@@ -8,7 +8,9 @@ from ray.rllib.examples.env.random_env import RandomEnv
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
     CopyObsInfoItem,
+    GenericOperator,
     IdentityWrapper,
+    OperatorWrapper,
     RandomInfo,
 )
 from punchclock.policies.policy_builder import buildSpace
@@ -135,5 +137,17 @@ print(f"reset info = {info}")
 obs, _, _, _, info = appinfo_env.step(appinfo_env.action_space.sample())
 print(f"reset info = {info}")
 
+# %% OperatorWrapper
+print("\nTest OperatorWrapper...")
+# rand_env = RandomInfo(
+#     RandomEnv(),
+#     info_space=Dict({"a": Box(low=0, high=2, shape=[3])}),
+# )
+# op_env = OperatorWrapper(
+#     rand_env, func_str="getitem", key="a", copy_key="b", a=1
+# )
+
+thing = GenericOperator("getitem", b=1)
+thing.doIt([1, 2, 3])
 # %% Done
 print("done")
