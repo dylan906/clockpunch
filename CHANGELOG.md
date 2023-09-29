@@ -17,7 +17,7 @@ I'm trying to get better about that.
 ### Deprecated
 
 ### Fixed
-
+- Fixed edge case bug where `InfoWrapper` would incorrectly pass in action=None to `self.updateInfo()` (#70).
 
 ### Removed
 
