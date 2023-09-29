@@ -1,12 +1,13 @@
 """Wrapper utilities."""
 # %% Imports
 # Standard Library Imports
+import operator as op
 from abc import ABC
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
 from functools import partial
-from typing import Tuple, final
+from typing import Any, Tuple, final
 
 # Third Party Imports
 import gymnasium as gym
@@ -513,3 +514,47 @@ def convertNumpyFuncStrToCallable(numpy_func_str: str, **kwargs):
 
     partial_func = partial(func, **kwargs)
     return partial_func
+
+
+# %% Operator Function builder
+class OperatorFuncBuilder:
+    """Creates a Callable from a str-representation of an operator function.
+
+    See https://docs.python.org/3/library/operator.html for functions.
+
+    Works with only 2-argument functions.
+        Examples: getitem, is_, concat, ior # noqa
+        Counter-examples: setitem (3 args), attrgetter (1 arg)
+
+    Can fix arg(s) on instantiation, similar to using partial().
+    """
+
+    def __init__(self, func_str: str, a: Any = None, b: Any = None):
+        """Create a function from the operator package.
+
+        Args:
+            func_str (str): A function from operator. Is called via
+                getattr(operator, func_str).
+            a (Any, optional): Fixed arg to func_str. Defaults to None.
+            b (Any, optional): Fixed arg to func_str. Defaults to None.
+
+        If values are provided for a and b, calling the returned function will
+        always return same result.
+        """
+        self.func = getattr(op, func_str)
+        self.a = a
+        self.b = b
+
+    def __call__(self, arg=None):
+        """Call function specified at instantiation."""
+        if self.a is None:
+            a = arg
+        else:
+            a = self.a
+
+        if self.b is None:
+            b = arg
+        else:
+            b = self.b
+
+        return self.func(a, b)

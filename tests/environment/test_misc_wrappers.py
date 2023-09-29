@@ -8,7 +8,6 @@ from ray.rllib.examples.env.random_env import RandomEnv
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
     CopyObsInfoItem,
-    GenericOperator,
     IdentityWrapper,
     OperatorWrapper,
     RandomInfo,
@@ -147,7 +146,6 @@ print("\nTest OperatorWrapper...")
 #     rand_env, func_str="getitem", key="a", copy_key="b", a=1
 # )
 
-thing = GenericOperator("getitem", b=1)
-thing.doIt([1, 2, 3])
+
 # %% Done
 print("done")

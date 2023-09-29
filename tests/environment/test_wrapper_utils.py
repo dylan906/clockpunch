@@ -15,6 +15,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import IdentityWrapper
 from punchclock.environment.wrapper_utils import (
+    OperatorFuncBuilder,
     SelectiveDictObsWrapper,
     SelectiveDictProcessor,
     checkDictSpaceContains,
@@ -217,5 +218,36 @@ print(Np_partial([1, 2, 3]))
 
 Np_partial = convertNumpyFuncStrToCallable("sum", axis=1)
 print(Np_partial(ones((2, 2))))
+
+# %% Test OperatorFuncBuilder
+print("\nTest OperatorFuncBuilder...")
+
+thing = OperatorFuncBuilder("getitem", b=1)
+thingin = [1, 2, 3]
+print(f"in = {thingin}")
+print(f"out = {thing(thingin)}")
+
+thing = OperatorFuncBuilder("ior", a=1)
+thingin = 2
+print(f"in = {thingin}")
+print(f"out = {thing(thingin)}")
+
+thing = OperatorFuncBuilder("not_")
+thingin = True
+print(f"in = {thingin}")
+try:
+    thing(thingin)
+except Exception as e:
+    print(e)
+
+try:
+    # misspelled input
+    thing = OperatorFuncBuilder("not")
+except Exception as e:
+    print(e)
+
+# Fix both args
+thing = OperatorFuncBuilder("lt", a=1, b=2)
+print(f"output from fixed args: {thing()}")
 # %% done
 print("done")

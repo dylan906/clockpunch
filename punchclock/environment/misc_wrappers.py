@@ -308,20 +308,3 @@ class OperatorWrapper(Wrapper):
 
     def _wrapperFunc(self, func: Callable, a, b):
         return func(a, b)
-
-
-class GenericOperator:
-    def __init__(self, func_str: str, **kwargs):
-        func = getattr(op, func_str, None)
-        sig = signature(func)
-        arg_names = [x for x in sig.parameters]
-        wrap_kwargs = {k: v for (k, v) in zip(arg_names, kwargs)}
-        wrap_kwargs["func"] = func
-
-        self.partialFunc = partial(self._wrapperFunc, **wrap_kwargs)
-
-    def _wrapperFunc(self, func: Callable, a, b):
-        return func(a, b)
-
-    def doIt(self, *args):
-        return self.partialFunc(*args)
