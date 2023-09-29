@@ -85,7 +85,16 @@ class IdentityWrapper(Wrapper):
 
 # %% Base class: ModifyObsOrInfo
 class ModifyObsOrInfo(Wrapper):
+    """Base wrapper used for wrapper that modify either info or obs."""
+
     def __init__(self, env: Env, obs_info: str):
+        """Initialize wrapper.
+
+        Args:
+            env (Env): Must have Dict observation space.
+            obs_info (str): ["obs" | "info"] The wrapper modifies either the
+                observation or the info (not both).
+        """
         super().__init__(env)
         assert isinstance(
             env.observation_space, Dict
@@ -101,26 +110,33 @@ class ModifyObsOrInfo(Wrapper):
     def modifyOI(
         self, obs: OrderedDict, info: dict
     ) -> Tuple[OrderedDict, dict]:
+        """Child classes require this function.
+
+        Args:
+            obs (OrderedDict): Unwrapped observation.
+            info (dict): Unwrapped info.
+
+        Returns:
+            new_obs (OrderedDict): If self.obs_info == "obs", this is the modified
+                observation. Otherwise, same as input.
+            new_info (dict): If self.obs_info == "info", this is the modified
+                info. Otherwise, same as input.
+        """
         return new_obs, new_info  # noqa
 
     def reset(
         self, seed: int | None = None, options=None
     ) -> Tuple[OrderedDict, dict]:
+        """Reset env."""
         obs, info = super().reset(seed=seed, options=options)
-        new_obs, new_info = self.modifyOI(obs=obs, info=info)
+        new_obs, new_info = self.modifyOI(
+            obs=deepcopy(obs), info=deepcopy(info)
+        )
         self.info = deepcopy(info)
         return new_obs, new_info
 
-    def observation(self, observation: OrderedDict) -> OrderedDict:
-        if self.obs_info == "obs":
-            info = deepcopy(self.info)
-            new_obs, _ = self.modifyOI(obs=observation, info=info)
-        else:
-            new_obs = observation
-
-        return new_obs
-
     def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
+        """Step environment."""
         (
             observations,
             rewards,
@@ -129,8 +145,19 @@ class ModifyObsOrInfo(Wrapper):
             infos,
         ) = self.env.step(action)
 
-        new_obs, new_info = self.modifyOI(obs=obs, info=info)
-        self.info = deepcopy(infos)
+        new_obs, new_info = self.modifyOI(obs=observations, info=infos)
+        self.info = deepcopy(new_info)
+        return (new_obs, rewards, terminations, truncations, new_info)
+
+    def observation(self, observation: OrderedDict) -> OrderedDict:
+        """Modify observation only if obs_info == "obs"."""
+        if self.obs_info == "obs":
+            info = deepcopy(self.info)
+            new_obs, _ = self.modifyOI(obs=observation, info=info)
+        else:
+            new_obs = observation
+
+        return new_obs
 
 
 # %% CopyObsInfoItem

@@ -3,16 +3,37 @@
 # Third Party Imports
 from gymnasium.spaces import Box, Dict
 from gymnasium.utils.env_checker import check_env
+from gymnasium.wrappers import FilterObservation
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
     CopyObsInfoItem,
     IdentityWrapper,
+    ModifyObsOrInfo,
     OperatorWrapper,
     RandomInfo,
+    getIdentityWrapperEnv,
 )
 from punchclock.policies.policy_builder import buildSpace
+
+# %% RandomInfo
+print("\nTest RandomInfo...")
+rand_env = RandomEnv()
+_, info_unwrapped = rand_env.reset()
+randinfo_env = RandomInfo(rand_env)
+_, _, _, _, info_wrapped = randinfo_env.step(randinfo_env.action_space.sample())
+print(f"unwrapped info = {info_unwrapped}")
+print(f"wrapped info = {info_wrapped}")
+
+randinfo_env = RandomInfo(rand_env, info_space=Dict({"a": Box(0, 1)}))
+_, _, _, _, info_wrapped = randinfo_env.step(randinfo_env.action_space.sample())
+print(f"wrapped info = {info_wrapped}")
+
+try:
+    check_env(randinfo_env)
+except Exception as ex:
+    print(ex)
 
 # %% Test IdentityWrapper
 print("\nTest IdentityWrapper...")
@@ -38,24 +59,32 @@ try:
 except Exception as ex:
     print(ex)
 
-# %% RandomInfo
-print("\nTest RandomInfo...")
-rand_env = RandomEnv()
-_, info_unwrapped = rand_env.reset()
-randinfo_env = RandomInfo(rand_env)
-_, _, _, _, info_wrapped = randinfo_env.step(randinfo_env.action_space.sample())
-print(f"unwrapped info = {info_unwrapped}")
-print(f"wrapped info = {info_wrapped}")
 
-randinfo_env = RandomInfo(rand_env, info_space=Dict({"a": Box(0, 1)}))
-_, _, _, _, info_wrapped = randinfo_env.step(randinfo_env.action_space.sample())
-print(f"wrapped info = {info_wrapped}")
+# %% ModifyObsOrInfo
+class TestMOI(ModifyObsOrInfo):
+    def __init__(self, env, obs_info: str):
+        super().__init__(env=env, obs_info=obs_info)
 
-try:
-    check_env(randinfo_env)
-except Exception as ex:
-    print(ex)
+    def modifyOI(self, obs, info):
+        info.update({"der": 0})
 
+        return obs, info
+
+
+rand_env = RandomInfo(
+    RandomEnv({"observation_space": Dict({"a": Box(0, 1)})}),
+    info_space=Dict({"b": Box(low=0, high=1)}),
+)
+
+moi_env = TestMOI(rand_env, obs_info="info")
+obs, info = moi_env.reset()
+print(f"info = {info}")
+obs, _, _, _, info = moi_env.step(moi_env.action_space.sample())
+print(f"info = {info}")
+unwrapped_obs = moi_env.unwrapped.observation_space.sample()
+obs = moi_env.observation(unwrapped_obs)
+print(f"obs unwrapped= {unwrapped_obs}")
+print(f"obs wrapped= {obs}")
 # %% CopyObsInfoItem
 print("\nTest CopyObsInfoItem...")
 info_space_config = {"space": "Box", "low": 0, "high": 3}
