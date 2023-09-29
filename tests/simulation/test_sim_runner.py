@@ -18,7 +18,7 @@ from ray.rllib.algorithms import ppo
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
-from punchclock.environment.wrapper_utils import getIdentityWrapperEnv
+from punchclock.environment.misc_wrappers import getIdentityWrapperEnv
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
 from punchclock.policies.random_policy import RandomPolicy
 from punchclock.ray.build_env import buildEnv

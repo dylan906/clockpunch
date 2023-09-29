@@ -21,7 +21,6 @@ from punchclock.environment.wrapper_utils import (
     checkDictSpaceContains,
     convertBinaryBoxToMultiBinary,
     convertNumpyFuncStrToCallable,
-    getIdentityWrapperEnv,
     getNumWrappers,
     getSpaceClosestCommonDtype,
     getSpacesRange,
@@ -179,29 +178,29 @@ space = Box(0, 1, shape=(2, 3))
 new_space = convertBinaryBoxToMultiBinary(space)
 print(f"new space = {new_space}")
 
-# %% Test getIdentityWrapperEnv
-print("\nTest getIdentityWrapperEnv...")
-rand_env = RandomEnv(
-    {
-        "observation_space": Dict(
-            {
-                "a": Box(0, 1, shape=[2, 3]),
-            }
-        )
-    }
-)
-wrapped_env = FilterObservation(
-    IdentityWrapper(FilterObservation(rand_env, ["a"])),
-    ["a"],
-)
+# # %% Test getIdentityWrapperEnv
+# print("\nTest getIdentityWrapperEnv...")
+# rand_env = RandomEnv(
+#     {
+#         "observation_space": Dict(
+#             {
+#                 "a": Box(0, 1, shape=[2, 3]),
+#             }
+#         )
+#     }
+# )
+# wrapped_env = FilterObservation(
+#     IdentityWrapper(FilterObservation(rand_env, ["a"])),
+#     ["a"],
+# )
 
-ienv = getIdentityWrapperEnv(wrapped_env)
-print(ienv)
+# ienv = getIdentityWrapperEnv(wrapped_env)
+# print(ienv)
 
-try:
-    getIdentityWrapperEnv(rand_env)
-except Exception as e:
-    print(e)
+# try:
+#     getIdentityWrapperEnv(rand_env)
+# except Exception as e:
+#     print(e)
 
 # %% Test getXLevelWrapper
 print("\nTest getXLevelWrapper...")
