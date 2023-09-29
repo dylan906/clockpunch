@@ -53,7 +53,18 @@ class InfoWrapper(ABC, Wrapper):
     ) -> tuple:
         """Reset environment."""
         obs, info = super().reset(seed=seed, options=options)
-        new_info = self.updateInfo(obs, 0, False, False, info, None)
+
+        # hard-set initial action to assumed inaction (max values in MD space)
+        initial_action = self.action_space.nvec - 1
+
+        new_info = self.updateInfo(
+            observations=obs,
+            rewards=0,
+            terminations=False,
+            truncations=False,
+            infos=info,
+            action=initial_action,
+        )
         info.update(new_info)
         self.info = deepcopy(info)
 
@@ -391,11 +402,11 @@ class ActionTypeCounter(InfoWrapper):
 
     def updateInfo(
         self,
-        obs: Any,
-        reward: Any,
-        termination: Any,
-        truncationAny: Any,
-        info: Any,
+        observations: Any,
+        rewards: Any,
+        terminations: Any,
+        truncations: Any,
+        infos: Any,
         action: ndarray[int],
     ) -> dict:
         """Count actions.
@@ -510,18 +521,18 @@ class MaskViolationCounter(InfoWrapper):
 
     def updateInfo(
         self,
-        obs: OrderedDict,
-        reward: Any,
-        termination: Any,
-        truncation: Any,
-        info: Any,
+        observations: OrderedDict,
+        rewards: Any,
+        terminations: Any,
+        truncations: Any,
+        infos: Any,
         action: ndarray[int],
     ) -> float:
         """Count invalid/valid actions.
 
         Args:
-            obs (OrderedDict): Must have action_mask_key in it.
-            reward, termination, truncation, info: Unused.
+            observations (OrderedDict): Must have action_mask_key in it.
+            rewards, terminations, truncations, infos: Unused.
             action (ndarray[int]): A (N,) array of ints where the i-th value is
                 the i-th sensor and the value denotes the target number (0 to N-1);
                 a value of N denotes null action.
@@ -532,7 +543,7 @@ class MaskViolationCounter(InfoWrapper):
             }
         """
         action_2d = self.action_converter(action)
-        action_mask = obs[self.action_mask_key]
+        action_mask = observations[self.action_mask_key]
 
         tot = countMaskViolations(
             action=action_2d,
