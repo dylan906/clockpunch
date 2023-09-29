@@ -1,13 +1,10 @@
 """Misc wrappers."""
 # %% Imports
 # Standard Library Imports
-import operator as op
 from abc import abstractmethod
 from collections import OrderedDict
 from copy import deepcopy
-from functools import partial
-from inspect import signature
-from typing import Any, Callable, Tuple
+from typing import Any, Tuple
 from warnings import warn
 
 # Third Party Imports
@@ -161,7 +158,7 @@ class ModifyObsOrInfo(Wrapper):
 
 
 # %% CopyObsInfoItem
-class CopyObsInfoItem(Wrapper):
+class CopyObsInfoItem(ModifyObsOrInfo):
     """Copy an item from and obs/info to obs/info.
 
     Overwrites existing item, if it already exists.
@@ -196,12 +193,10 @@ class CopyObsInfoItem(Wrapper):
                         kwargs: kwargs used for the desired space,
                     }
         """
-        super().__init__(env)
-        assert isinstance(
-            env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.spaces.Dict."
         for k in [copy_from, copy_to]:
             assert k in ["info", "obs"]
+
+        super().__init__(env=env, obs_info=copy_to)
 
         if copy_from == "info":
             copy_source = getInfo(env)
@@ -249,20 +244,21 @@ class CopyObsInfoItem(Wrapper):
 
             self.observation_space = new_obs_space
 
-    def reset(
-        self, seed: int | None = None, options=None
+    def modifyOI(
+        self, obs: OrderedDict, info: dict
     ) -> Tuple[OrderedDict, dict]:
-        """Copy of info is stored on call (as self.info).
+        """Modify unwrapped obs/info, output wrapped obs/info.
 
         Args:
-            seed (int | None, optional): _description_. Defaults to None.
-            options (_type_, optional): _description_. Defaults to None.
-
-        Returns:
             obs (OrderedDict): Observation.
             info (dict): Info.
+
+        Returns:
+            new_obs (OrderedDict): If self.copy_to == "obs", this is the modified
+                observation. Otherwise, same as input.
+            new_info (dict): If self.copy_to == "info", this is the modified
+                info. Otherwise, same as input.
         """
-        obs, info = super().reset(seed=seed, options=options)
         new_item = self._getSourceItem(info=info, obs=obs)
         info_new, obs_new = self._copySourceToDestinationItem(
             info=info,
@@ -270,61 +266,7 @@ class CopyObsInfoItem(Wrapper):
             source_item=new_item,
         )
 
-        # store info for use in self.observation()
-        self.info = deepcopy(info_new)
-
         return obs_new, info_new
-
-    def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
-        """Copy entry from unwrapped info to wrapped observation.
-
-        self.info is updated on step.
-
-        Argument unused in this method.
-        """
-        (
-            observations,
-            rewards,
-            terminations,
-            truncations,
-            infos,
-        ) = self.env.step(action)
-
-        self.info = deepcopy(infos)
-
-        new_item = self._getSourceItem(info=infos, obs=observations)
-        info_new, obs_new = self._copySourceToDestinationItem(
-            info=infos,
-            obs=observations,
-            source_item=new_item,
-        )
-
-        return (obs_new, rewards, terminations, truncations, info_new)
-
-    def observation(self, observation: OrderedDict) -> OrderedDict:
-        """Append item to unwrapped observation.
-
-        Args:
-            observation (OrderedDict): Unwrapped observation.
-
-        Returns:
-            OrderedDict: Same as input, but with item from info, as saved at last
-                reset() or step() call.
-        """
-        if self.copy_to == "obs":
-            # only update observation if wrapper modified obs
-            info = deepcopy(self.info)
-            new_item = self._getSourceItem(info=info, obs=observation)
-            _, new_obs = self._copySourceToDestinationItem(
-                info=info,
-                obs=observation,
-                source_item=new_item,
-            )
-
-        else:
-            new_obs = observation
-
-        return new_obs
 
     def _getSourceItem(self, info: dict, obs: dict) -> dict:
         """Copy an item from obs or info."""
