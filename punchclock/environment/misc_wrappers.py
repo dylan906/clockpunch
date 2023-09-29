@@ -2,6 +2,7 @@
 # %% Imports
 # Standard Library Imports
 import operator as op
+from abc import abstractmethod
 from collections import OrderedDict
 from copy import deepcopy
 from functools import partial
@@ -15,6 +16,7 @@ from gymnasium.spaces import Box, Dict, Space
 
 # Punch Clock Imports
 from punchclock.common.utilities import getInfo
+from punchclock.environment.wrapper_utils import OperatorFuncBuilder
 from punchclock.policies.policy_builder import buildSpace
 
 
@@ -79,6 +81,56 @@ class IdentityWrapper(Wrapper):
     def observation(self, obs):
         """Pass-through observation."""
         return obs
+
+
+# %% Base class: ModifyObsOrInfo
+class ModifyObsOrInfo(Wrapper):
+    def __init__(self, env: Env, obs_info: str):
+        super().__init__(env)
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
+        assert obs_info in [
+            "info",
+            "obs",
+        ], "obs_info must be either 'obs' or 'info'."
+
+        self.obs_info = obs_info
+
+    @abstractmethod
+    def modifyOI(
+        self, obs: OrderedDict, info: dict
+    ) -> Tuple[OrderedDict, dict]:
+        return new_obs, new_info  # noqa
+
+    def reset(
+        self, seed: int | None = None, options=None
+    ) -> Tuple[OrderedDict, dict]:
+        obs, info = super().reset(seed=seed, options=options)
+        new_obs, new_info = self.modifyOI(obs=obs, info=info)
+        self.info = deepcopy(info)
+        return new_obs, new_info
+
+    def observation(self, observation: OrderedDict) -> OrderedDict:
+        if self.obs_info == "obs":
+            info = deepcopy(self.info)
+            new_obs, _ = self.modifyOI(obs=observation, info=info)
+        else:
+            new_obs = observation
+
+        return new_obs
+
+    def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
+        (
+            observations,
+            rewards,
+            terminations,
+            truncations,
+            infos,
+        ) = self.env.step(action)
+
+        new_obs, new_info = self.modifyOI(obs=obs, info=info)
+        self.info = deepcopy(infos)
 
 
 # %% CopyObsInfoItem
@@ -290,21 +342,27 @@ class OperatorWrapper(Wrapper):
     def __init__(
         self,
         env: Env,
+        obs_or_info: str,
         func_str: str,
         key: str,
         copy_key: str = None,
-        **kwargs,
+        a: Any = None,
+        b: Any = None,
     ):
         super().__init__(env)
-        func = getattr(op, func_str, None)
-        sig = signature(func)
-        arg_names = [x for x in sig.parameters]
-        wrap_kwargs = {k: v for (k, v) in zip(arg_names, kwargs)}
-        wrap_kwargs["func"] = func
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
 
-        self.partialFunc = partial(self._wrapperFunc, **wrap_kwargs)
+        self.func = OperatorFuncBuilder(func_str=func_str, a=a, b=b)
+
+        self.obs_or_info = obs_or_info
         self.key = key
         self.copy_key = copy_key
 
-    def _wrapperFunc(self, func: Callable, a, b):
-        return func(a, b)
+    def reset(
+        self, seed: int | None = None, options=None
+    ) -> Tuple[OrderedDict, dict]:
+        obs, info = super().reset(seed=seed, options=options)
+
+        return obs, info
