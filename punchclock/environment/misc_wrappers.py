@@ -365,7 +365,12 @@ class CopyObsInfoItem(Wrapper):
 
 
 # %% OperatorWrapper
-class OperatorWrapper(Wrapper):
+class OperatorWrapper(ModifyObsOrInfo):
+    """Apply a function from operator package to obs or info.
+
+    See OperatorFuncBuilder for details.
+    """
+
     def __init__(
         self,
         env: Env,
@@ -376,21 +381,64 @@ class OperatorWrapper(Wrapper):
         a: Any = None,
         b: Any = None,
     ):
-        super().__init__(env)
-        assert isinstance(
-            env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.spaces.Dict."
+        """Initialize wrapper with modifying function from operator package.
+
+        Args:
+            env (Env): Must have Dict observation space.
+            obs_or_info (str): ["obs" | "info"] Whether this wrapper modifies
+                observation or info.
+            func_str (str): Str representation of a function from the operator
+                package.
+            key (str): Key from observation or info (whichever is indicated by
+                obs_or_info).
+            copy_key (str, optional): New key to create (in obs or info) with
+                transformed value. If None, transformed value overwrites unwrapped
+                value. Defaults to None.
+            a (Any, optional): Provide only if fixing the first arg of func. Defaults
+                to None.
+            b (Any, optional): Provide only if fixing the second arg of func.
+                Defaults to None.
+        """
+        super().__init__(env=env, obs_info=obs_or_info)
 
         self.func = OperatorFuncBuilder(func_str=func_str, a=a, b=b)
 
         self.obs_or_info = obs_or_info
         self.key = key
+        if copy_key is None:
+            copy_key = key
+
         self.copy_key = copy_key
 
-    def reset(
-        self, seed: int | None = None, options=None
+    def modifyOI(
+        self, obs: OrderedDict, info: dict
     ) -> Tuple[OrderedDict, dict]:
-        obs, info = super().reset(seed=seed, options=options)
+        """Modify observation or info.
+
+        Args:
+            obs (OrderedDict): Unwrapped obs.
+            info (dict): Unwrapped info.
+
+        Returns:
+            new_obs (OrderedDict): If self.obs_info == "obs", this is the modified
+                observation. Otherwise, same as input.
+            new_info (dict): If self.obs_info == "info", this is the modified
+                info. Otherwise, same as input.
+        """
+        # Get the appropriate item from the appropriate dict.
+        # Then transform the item via the operation function defined on instantiation.
+        # Then update the appropriate dict and output obs and info.
+        if self.obs_info == "obs":
+            thing = obs[self.key]
+        elif self.obs_info == "info":
+            thing = info[self.key]
+
+        thing_trans = self.func(thing)
+
+        if self.obs_info == "obs":
+            obs.update({self.copy_key: thing_trans})
+        elif self.obs_info == "info":
+            info.update({self.copy_key: thing_trans})
 
         return obs, info
 

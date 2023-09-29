@@ -62,10 +62,12 @@ except Exception as ex:
 
 # %% ModifyObsOrInfo
 class TestMOI(ModifyObsOrInfo):
-    def __init__(self, env, obs_info: str):
+    """Test class."""
+
+    def __init__(self, env, obs_info: str):  # noqa
         super().__init__(env=env, obs_info=obs_info)
 
-    def modifyOI(self, obs, info):
+    def modifyOI(self, obs, info):  # noqa
         info.update({"der": 0})
 
         return obs, info
@@ -167,14 +169,21 @@ print(f"reset info = {info}")
 
 # %% OperatorWrapper
 print("\nTest OperatorWrapper...")
-# rand_env = RandomInfo(
-#     RandomEnv(),
-#     info_space=Dict({"a": Box(low=0, high=2, shape=[3])}),
-# )
-# op_env = OperatorWrapper(
-#     rand_env, func_str="getitem", key="a", copy_key="b", a=1
-# )
-
+rand_env = RandomInfo(
+    RandomEnv({"observation_space": Dict({"foo": Box(low=0, high=1)})}),
+    info_space=Dict({"a": Box(low=0, high=2, shape=[3])}),
+)
+op_env = OperatorWrapper(
+    rand_env,
+    obs_or_info="info",
+    func_str="getitem",
+    key="a",
+    copy_key="b",
+    b=1,
+)
+obs, info = op_env.reset()
+print(f"obs = {obs}")
+print(f"info = {info}")
 # %% Test getIdentityWrapperEnv
 print("\nTest getIdentityWrapperEnv...")
 rand_env = RandomEnv(
