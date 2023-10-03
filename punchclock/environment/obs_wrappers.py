@@ -24,6 +24,7 @@ from numpy import (
     append,
     array,
     asarray,
+    clip,
     concatenate,
     diag,
     diagonal,
@@ -1991,9 +1992,7 @@ class MakeObsSpaceMultiBinary(SelectiveDictObsWrapper):
         ), f"env.observation_space.spaces[{key}] must be a Box."
 
         new_obs_space = deepcopy(env.observation_space)
-        mb_space = convertBinaryBoxToMultiBinary(
-            env.observation_space.spaces[key]
-        )
+        mb_space = MultiBinary(env.observation_space.spaces[key].shape)
         new_obs_space[key] = mb_space
 
         func = self.toIntArray
@@ -2005,4 +2004,4 @@ class MakeObsSpaceMultiBinary(SelectiveDictObsWrapper):
 
     def toIntArray(self, x: ndarray) -> ndarray:
         """Wrapper around numpy .astype method."""
-        return x.astype(int)
+        return clip(x.astype(int), 0, 1)
