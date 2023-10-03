@@ -235,22 +235,23 @@ class MaskConverter:
         flat_mask = self.convertActionMaskFrom2dTo1d(vis_mask)
         return flat_mask
 
-    def convert2dVisMaskTo2dActionMask(
-        self, vis_mask: ndarray[int]
-    ) -> ndarray[int]:
+    def appendInactionRowToActionMask(self, mask: ndarray[int]) -> ndarray[int]:
         """Convert a 2d vis mask to a 2d action mask.
 
         Appends a row of 1s to bottom of vis mask, denoting inaction.
 
         Args:
-            vis_mask (ndarray[int]): (N, M) Binary array.
+            mask (ndarray[int]): (N, M) Binary array.
 
         Returns:
             ndarray[int]: (N+1, M) Binary array.
         """
+        assert (
+            mask.shape[0] == self.num_targets
+        ), f"mask.shape = {mask.shape}; number of rows must == num_targets."
         action_mask2d = vstack(
             (
-                vis_mask,
+                mask,
                 ones((1, self.num_sensors), dtype=int),
             )
         )

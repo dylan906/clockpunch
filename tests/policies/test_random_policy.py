@@ -98,7 +98,7 @@ print(f"action = {action}")
 mask_converter = MaskConverter(num_targets, num_sensors)
 for _ in range(10):
     obs = obs_space.sample()
-    obs["action_mask"] = mask_converter.convert2dVisMaskTo2dActionMask(
+    obs["action_mask"] = mask_converter.appendInactionRowToActionMask(
         obs["observations"]["vis_map_est"]
     )
     vis_map = obs["observations"]["vis_map_est"]
