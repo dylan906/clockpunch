@@ -192,8 +192,6 @@ def addPostProcessedCols(
 
     Columns:
         action_array (ndarray[int]): (N+1, M) Binary representation of df['action'].
-        action_mask_violations (int): Number of action mask violations at that
-            step.
         cov_tr (`ndarray`): (N, ) Trace of covariance matrices for all targets
             at that step.
         cov_mean (`float`): Mean of cov_tr.
@@ -208,10 +206,6 @@ def addPostProcessedCols(
         vel_cov_max (`float`): Max of vel_cov_tr.
         null_action (`int`): Number of null actions taken at that step.
         cum_null_action (`int`): Cumulative version of null_action.
-        wasted_action (`int`): Number of wasted actions taken at that step.
-        cum_wasted_action (`int`): Cumulative version of wasted_action.
-        num_opportunities (`int`): Number of opportunities to task a target (0<= x <=M).
-        cum_opportunities (`int`): Cumulative num_opportunities.
         seed (`int` | None): Seed used to generate agent initial conditions.
 
     """
@@ -235,22 +229,22 @@ def addPostProcessedCols(
     )
     df["cum_null_action"] = df["null_action"].cumsum()
 
-    mc = MaskConverter(df["num_targets"][0], df["num_sensors"][0])
-    df["wasted_action"] = df.apply(
-        lambda x: calcMissedOpportunities(
-            action=x["action"],
-            vis_map=x["vis_map_est"],
-            mask_converter=mc,
-        ),
-        axis=1,
-    )
-    df["cum_wasted_action"] = df["wasted_action"].cumsum()
+    # mc = MaskConverter(df["num_targets"][0], df["num_sensors"][0])
+    # df["wasted_action"] = df.apply(
+    #     lambda x: calcMissedOpportunities(
+    #         action=x["action"],
+    #         vis_map=x["vis_map_est"],
+    #         mask_converter=mc,
+    #     ),
+    #     axis=1,
+    # )
+    # df["cum_wasted_action"] = df["wasted_action"].cumsum()
 
-    df["num_opportunities"] = df.apply(
-        lambda x: countOpportunities(vis_map=x["vis_map_est"]),
-        axis=1,
-    )
-    df["cum_opportunities"] = df["num_opportunities"].cumsum()
+    # df["num_opportunities"] = df.apply(
+    #     lambda x: countOpportunities(vis_map=x["vis_map_est"]),
+    #     axis=1,
+    # )
+    # df["cum_opportunities"] = df["num_opportunities"].cumsum()
 
     df["action_array"] = df.apply(
         lambda x: actionSpace2Array(
