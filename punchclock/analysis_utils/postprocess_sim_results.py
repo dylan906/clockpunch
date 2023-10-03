@@ -90,21 +90,21 @@ def calcMissedOpportunities(
 ) -> int:
     """Calculate number of instances of inaction when active actions were available.
 
-    Inaction is defined as a value of `action` that is the max allowed valued.
+    Inaction is defined as a value of action that is the max allowed valued.
         Active actions are any other value. Valid actions correspond to a 1 in
-        `vis_map`; invalid actions correspond to a 0.
+        vis_map; invalid actions correspond to a 0.
 
     Does not account for mask violations.
 
     Args:
-        action (`ndarray[int] | list[int]`): MultiDiscrete action array. Can be
+        action (ndarray[int] | list[int]): MultiDiscrete action array. Can be
             input as list (needed for loading .csv files with actions).
-        vis_map (`ndarray[int]`): (num_targets, num_sensors) binary array of visibility
+        vis_map (ndarray[int]): (num_targets, num_sensors) binary array of visibility
             status.
-        mask_converter (`MaskConverter`): See MaskConverter for details.
+        mask_converter (MaskConverter): See MaskConverter for details.
 
     Returns:
-        `int`: Number of instances agent chose inaction while other actions were
+        int: Number of instances agent chose inaction while other actions were
             available.
     """
     assert mask_converter.action_space.contains(
@@ -135,13 +135,13 @@ def actionWasted(action: ndarray[int], mask: ndarray[int]) -> bool:
     """Check if inaction was chosen over valid active action.
 
     Args:
-        action (`ndarray[int]`): A single sensor's action array (1d array). Binary
+        action (ndarray[int]): A single sensor's action array (1d array). Binary
             values.
-        mask (`ndarray[int]`): A single sensor's action mask (1d array). Binary
+        mask (ndarray[int]): A single sensor's action mask (1d array). Binary
             values.
 
     Returns:
-        `bool`: True if inaction was chosen over valid active action, False otherwise.
+        bool: True if inaction was chosen over valid active action, False otherwise.
     """
     if action[-1] == 1:
         num_possible_actions = count_nonzero(mask)
@@ -186,27 +186,27 @@ def addPostProcessedCols(
     """Add columns to a SimResults DataFrame.
 
     Args:
-        df (`DataFrame`): Results from a simulation.
-        info (`dict`): Supplemental info. Used to generate data not available from
+        df (DataFrame): Results from a simulation.
+        info (dict): Supplemental info. Used to generate data not available from
             SimResults. Expected keys: "seed".
 
     Columns:
         action_array (ndarray[int]): (N+1, M) Binary representation of df['action'].
-        cov_tr (`ndarray`): (N, ) Trace of covariance matrices for all targets
+        cov_tr (ndarray): (N, ) Trace of covariance matrices for all targets
             at that step.
-        cov_mean (`float`): Mean of cov_tr.
-        cov_max (`float`): Max of cov_tr.
-        pos_cov_tr (`ndarray`): (N, ) Trace of positional covariance matrices
+        cov_mean (float): Mean of cov_tr.
+        cov_max (float): Max of cov_tr.
+        pos_cov_tr (ndarray): (N, ) Trace of positional covariance matrices
             for all targets at that step.
-        pos_cov_mean (`float`): Mean of pos_cov_tr.
-        pos_cov_max (`float`): Max of pos_cov_tr.
-        vel_cov_tr (`ndarray`): (N, ) Trace of velocity covariance matrices for
+        pos_cov_mean (float): Mean of pos_cov_tr.
+        pos_cov_max (float): Max of pos_cov_tr.
+        vel_cov_tr (ndarray): (N, ) Trace of velocity covariance matrices for
             all targets at that step.
-        vel_cov_mean (`float`): Mean of vel_cov_tr.
-        vel_cov_max (`float`): Max of vel_cov_tr.
-        null_action (`int`): Number of null actions taken at that step.
-        cum_null_action (`int`): Cumulative version of null_action.
-        seed (`int` | None): Seed used to generate agent initial conditions.
+        vel_cov_mean (float): Mean of vel_cov_tr.
+        vel_cov_max (float): Max of vel_cov_tr.
+        null_action (int): Number of null actions taken at that step.
+        cum_null_action (int): Cumulative version of null_action.
+        seed (int | None): Seed used to generate agent initial conditions.
 
     """
     # Convert nested lists to arrays (if needed)
