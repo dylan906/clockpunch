@@ -171,13 +171,13 @@ def checkSingleWastedAction(action: ndarray[int], mask: ndarray[int]) -> bool:
 def countMaskViolations(x: ndarray[int], mask: ndarray[int]) -> int:
     """Count number of instances of x violating mask.
 
-    Entires of mask == 1 are allowed, entries of mask == 0  are disallowed. Any
+    Entires of mask == 1 are valid, entries of mask == 0  are invalid. Any
     instance of a 1 in x where the same indexed value in mask == 0 counts as a
     violation.
 
     Args:
-        x (ndarray[int]): Binary array, same size as mask.
-        mask (ndarray[int]): Binary array, same size as x.
+        x (ndarray[int]): (A, B) Binary array, same size as mask.
+        mask (ndarray[int]): (A, B) Binary array, same size as x.
 
     Returns:
         int: Number of instances in which x(i, j) == 1 and mask(i, j) == 0.
