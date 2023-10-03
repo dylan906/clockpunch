@@ -1,5 +1,4 @@
-"""Generate a data file for analysis_utils tests."""
-# This script generates a simulation data file for use in analysis_utils tests.
+"""Generate a data file for test_postprocess_sim_results.py to ingest."""
 # %% Imports
 
 # Standard Library Imports
