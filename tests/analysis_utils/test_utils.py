@@ -110,3 +110,6 @@ vio = countMaskViolations(x, mask)
 print(f"x = \n{x}")
 print(f"mask = \n{mask}")
 print(f"violations = {vio}")
+
+# %% done
+print("done")

@@ -8,9 +8,7 @@ import os
 from pandas import read_pickle
 
 # Punch Clock Imports
-from punchclock.analysis_utils.postprocess_sim_results import (
-    addPostProcessedCols,
-)
+from punchclock.simulation.postprocess_sim_results import addPostProcessedCols
 
 # %% Load dataframe
 fpath = os.path.dirname(os.path.realpath(__file__))
