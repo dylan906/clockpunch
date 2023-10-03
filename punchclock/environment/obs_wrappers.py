@@ -1973,3 +1973,36 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
         )
 
         super().__init__(env, [partial_func], [key], new_obs_space)
+
+
+# %% convertBinaryBoxToMultiBinary
+class MakeObsSpaceMultiBinary(SelectiveDictObsWrapper):
+    """Convert an entry of the obs space from Box to MultiBinary."""
+
+    def __init__(self, env: Env, key: str):
+        """Wrap env.
+
+        Args:
+            env (Env): Must have a Dict observation space.
+            key (str): Key to an item in the obs space. Corresponds to a Box env.
+        """
+        assert isinstance(
+            env.observation_space.spaces[key], Box
+        ), f"env.observation_space.spaces[{key}] must be a Box."
+
+        new_obs_space = deepcopy(env.observation_space)
+        mb_space = convertBinaryBoxToMultiBinary(
+            env.observation_space.spaces[key]
+        )
+        new_obs_space[key] = mb_space
+
+        func = self.toIntArray
+        super().__init__(
+            env=env, funcs=[func], keys=[key], new_obs_space=new_obs_space
+        )
+
+        return
+
+    def toIntArray(self, x: ndarray) -> ndarray:
+        """Wrapper around numpy .astype method."""
+        return x.astype(int)

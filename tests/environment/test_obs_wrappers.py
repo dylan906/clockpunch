@@ -24,6 +24,7 @@ from punchclock.environment.obs_wrappers import (
     FloatObs,
     LinScaleDictObs,
     MakeDict,
+    MakeObsSpaceMultiBinary,
     MinMaxScaleDictObs,
     MultiplyObsItems,
     NestObsItems,
@@ -587,6 +588,20 @@ print(f"unwrapped obs  = \n{unwrapped_obs}")
 print(f"wrapped obs = \n{wrapped_obs}")
 assert tdo_env.observation_space.contains(wrapped_obs)
 
+# %% MakeObsSpaceMultiBinary
+print("\nTest MakeObsSpaceMultiBinary...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(low=0, high=1, shape=(3,), dtype=int),
+            }
+        ),
+    }
+)
+mb_env = MakeObsSpaceMultiBinary(rand_env, "a")
+print(f"unwrapped obs space = {rand_env.observation_space}")
+print(f"wrapped obs space = {mb_env.observation_space}")
 
 # %% Done
 print("done")
