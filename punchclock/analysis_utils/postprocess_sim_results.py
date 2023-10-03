@@ -138,20 +138,20 @@ def calcMissedOpportunities(
 
     missed_opps = 0
     for col_act, col_mask in zip(action_2d.T, action_mask2d.T):
-        action_status = actionWasted(col_act, col_mask)
+        action_status = checkSingleWastedAction(col_act, col_mask)
         missed_opps = missed_opps + int(action_status is True)
 
     return missed_opps
 
 
-def actionWasted(action: ndarray[int], mask: ndarray[int]) -> bool:
+def checkSingleWastedAction(action: ndarray[int], mask: ndarray[int]) -> bool:
     """Check if inaction was chosen over valid active action.
 
     Args:
-        action (ndarray[int]): A single sensor's action array (1d array). Binary
-            values.
-        mask (ndarray[int]): A single sensor's action mask (1d array). Binary
-            values.
+        action (ndarray[int]): (A, ) A single sensor's action array (1d array).
+            Binary values.
+        mask (ndarray[int]): (A, ) A single sensor's action mask (1d array).
+            Binary values.
 
     Returns:
         bool: True if inaction was chosen over valid active action, False otherwise.
