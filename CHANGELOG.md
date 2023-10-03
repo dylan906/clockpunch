@@ -13,11 +13,13 @@ I'm trying to get better about that.
 
 ### Changed
 - Replaced `CopyObsItem` with more flexible `CopyObsInfoItem` wrapper (#68).
+- `addPostProcessedCols` calculated fewer very specific use case metrics. Retained the most useful metrics (e.g. uncertainty measures). Moved the specific use case functions to separate module (#52).
 
 ### Deprecated
 
 ### Fixed
 - Fixed edge case bug where `InfoWrapper` would incorrectly pass in action=None to `self.updateInfo()` (#70).
+- Fixed various bugs and clarified type hints/doc strings in some analysis util functions (#52).
 
 ### Removed
 
