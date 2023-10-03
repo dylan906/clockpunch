@@ -80,27 +80,27 @@ mc = MaskConverter(
 # Set mask to all-visible in one column, all non-visible in other column
 action = mc.action_space.sample()
 action.fill(mc.action_space.nvec[0] - 1)
-vis_map = mc.vis_mask_space.sample()
-vis_map[:, 0].fill(1)
-vis_map[:, 1].fill(0)
+mask = mc.vis_mask_space.sample()
+mask[:, 0].fill(1)
+mask[:, 1].fill(0)
 missed_opps = calcMissedOpportunities(
     action=action,
-    vis_map=vis_map,
+    mask=mask,
     mask_converter=mc,
 )
 print(f"action = {action}")
-print(f"vis_map = \n{vis_map}")
+print(f"mask = \n{mask}")
 print(f"missed opportunities = {missed_opps}\n")
 
 # Try with active actions (missed_opps should be 0)
 action.fill(0)
 missed_opps = calcMissedOpportunities(
     action=action,
-    vis_map=vis_map,
+    mask=mask,
     mask_converter=mc,
 )
 print(f"action = {action}")
-print(f"vis_map = \n{vis_map}")
+print(f"mask = \n{mask}")
 print(f"missed opportunities = {missed_opps}")
 
 # Test with list-action
@@ -108,7 +108,7 @@ action.fill(mc.action_space.nvec[0] - 1)
 action = action.tolist()
 missed_opps = calcMissedOpportunities(
     action=action,
-    vis_map=vis_map,
+    mask=mask,
     mask_converter=mc,
 )
 print(f"action = {action}")
