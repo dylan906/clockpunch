@@ -91,41 +91,48 @@ def countOpportunities(mask: ndarray[int] | list) -> int:
 
 def calcMissedOpportunities(
     action: ndarray[int] | list[int],
-    vis_map: ndarray[int],
+    mask: ndarray[int],
     mask_converter: MaskConverter,
 ) -> int:
     """Calculate number of instances of inaction when active actions were available.
 
-    Inaction is defined as a value of action that is the max allowed valued.
-        Active actions are any other value. Valid actions correspond to a 1 in
-        vis_map; invalid actions correspond to a 0.
+    Inaction is defined as a value of `action` that is the max allowed valued. Active
+    actions are any other value. Valid `actions` correspond to a 1 in `mask`;
+    invalid actions correspond to a 0.
 
     Does not account for mask violations.
 
+    Notation:
+        N = number of targets
+        M = number of sensors
+
     Args:
-        action (ndarray[int] | list[int]): MultiDiscrete action array. Can be
-            input as list (needed for loading .csv files with actions).
-        vis_map (ndarray[int]): (num_targets, num_sensors) binary array of visibility
-            status.
+        action (ndarray[int] | list[int]): (M, ) array valued 0 to N. Values of
+            N = inaction. Can be input as list (needed for loading .csv files with
+            actions).
+        mask (ndarray[int]): [(N, M) | (N + 1, M)] binary array action mask. May
+            include inaction row.
         mask_converter (MaskConverter): See MaskConverter for details.
 
     Returns:
         int: Number of instances agent chose inaction while other actions were
-            available.
+            available (<=M).
     """
     assert mask_converter.action_space.contains(
         action
     ), "action not contained in mask_converter.action_space"
+    assert mask.ndim == 2, "mask must be 2d"
+    assert mask.shape in [
+        (mask_converter.num_targets, mask_converter.num_sensors),
+        (mask_converter.num_targets + 1, mask_converter.num_sensors),
+    ]
 
     # convert action to ndarray if passed in as list
     action = asarray(action)
 
-    action_mask2d = vstack(
-        [
-            vis_map,
-            ones((1, mask_converter.num_sensors), dtype=int),
-        ]
-    )
+    if mask.shape[0] == mask_converter.num_targets:
+        action_mask2d = mask_converter.appendInactionRowToActionMask(mask)
+
     action_flat = flatten(mask_converter.action_space, action)
     action_2d = mask_converter.convertActionMaskFrom1dTo2d(action_flat)
 
