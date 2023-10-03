@@ -124,6 +124,8 @@ def calcMissedOpportunities(
 
     if mask.shape[0] == mask_converter.num_targets:
         action_mask2d = mask_converter.appendInactionRowToActionMask(mask)
+    else:
+        action_mask2d = mask
 
     action_flat = flatten(mask_converter.action_space, action)
     action_2d = mask_converter.convertActionMaskFrom1dTo2d(action_flat)
