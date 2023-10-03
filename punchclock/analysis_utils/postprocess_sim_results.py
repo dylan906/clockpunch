@@ -64,23 +64,29 @@ def calc3dTr(x: ndarray, pos_or_vel: str = None):
     return trace(x, axis1=1, axis2=2)
 
 
-def countOpportunities(vis_map: ndarray[int] | list) -> int:
-    """Count number of times sensors had an opportunity to task target.
+def countOpportunities(mask: ndarray[int] | list) -> int:
+    """Count number of times agent had an opportunity to take an action.
+
+    No distinction made on type of mask (e.g. visibility) and no accounting for
+    inaction vs active action.
+
+    A sensor can have no more than one opportunity per call. If there are multiple
+    1s in a column, only 1 is counted.
 
     Args:
-        vis_map (ndarray[int] | list): (N, M) binary visibility map. Can be an
-            (N, M) array or N-long list of M-long lists.
+        mask (ndarray[int] | list): (A, M) binary action mask. Can be an
+            (A, M) array or A-long list of M-long lists.
 
     Returns:
-        int: Number sensors that had a tasking opportunity (<=M).
+        int: Number sensors that had an available action (<=M).
     """
     # convert to array if arg is list
-    vis_map = array(vis_map)
-    assert vis_map.ndim == 2, "vis_map must have ndims == 2"
+    mask = array(mask)
+    assert mask.ndim == 2, "mask must have ndims == 2"
 
-    any_vis = [1 for a in vis_map.T if 1 in a]
+    any_avail = [1 for a in mask.T if 1 in a]
 
-    return int(sum(sum(any_vis)))
+    return int(sum(sum(any_avail)))
 
 
 def calcMissedOpportunities(
