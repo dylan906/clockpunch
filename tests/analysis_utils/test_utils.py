@@ -1,12 +1,9 @@
 """Test analysis_utils/utils.py."""
 # %% Imports
-# Standard Library Imports
-import os
 
 # Third Party Imports
 from numpy import array
 from numpy.random import randint
-from pandas import read_pickle
 
 # Punch Clock Imports
 from punchclock.analysis_utils.utils import (
@@ -17,13 +14,6 @@ from punchclock.analysis_utils.utils import (
     countOpportunities,
 )
 from punchclock.common.utilities import MaskConverter
-
-# %% Load test sim results
-print("\nTest sim results...")
-
-fpath = os.path.dirname(os.path.realpath(__file__))
-df_path = fpath + "/simresults_df.pkl"
-df = read_pickle(df_path)
 
 # %% Count Null Actions
 print("\nTest countNullActions...")
@@ -70,8 +60,8 @@ print(f"opportunities = {opps}")
 # %% calcMissed Opportunities
 print("\nTest calcMissedOpportunities...")
 mc = MaskConverter(
-    num_targets=df["num_targets"][0],
-    num_sensors=df["num_sensors"][0],
+    num_targets=3,
+    num_sensors=2,
 )
 
 # Set actions to inaction
