@@ -12,7 +12,7 @@ from punchclock.simulation.postprocess_sim_results import addPostProcessedCols
 
 # %% Load dataframe
 fpath = os.path.dirname(os.path.realpath(__file__))
-df_path = fpath + "/simresults_df.pkl"
+df_path = fpath + "/data/simresults_df.pkl"
 df = read_pickle(df_path)
 
 # %% addPostProcessedCols
