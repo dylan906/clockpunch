@@ -11,6 +11,7 @@ I'm trying to get better about that.
 ### Added
 - New `InfoWrapper`s: `CombineInfoItems`, `TransformInfoWithNumpy` (#51).
 - New miscellaneous wrappers: `OperatorWrapper` (#69).
+- New `ObservationWrapper`: `MakeObsSpaceMultiBinary` (#74).
 
 ### Changed
 - Replaced `CopyObsItem` with more flexible `CopyObsInfoItem` wrapper (#68).
