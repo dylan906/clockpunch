@@ -18,12 +18,10 @@ from pandas import DataFrame, concat
 from ray.util.multiprocessing import Pool as RayPool
 
 # Punch Clock Imports
-from punchclock.analysis_utils.postprocess_sim_results import (
-    addPostProcessedCols,
-)
 from punchclock.common.utilities import saveJSONFile
 from punchclock.environment.env import SSAScheduler
 from punchclock.ray.build_env import buildEnv
+from punchclock.simulation.postprocess_sim_results import addPostProcessedCols
 from punchclock.simulation.sim_runner import SimRunner
 from punchclock.simulation.sim_utils import buildCustomOrRayPolicy
 
