@@ -137,6 +137,7 @@ class NumWindows(InfoWrapper):
         merge_windows: bool = True,
         fixed_horizon: bool = True,
         use_estimates: bool = True,
+        open_loop: bool = False,
         new_keys: list[str] = None,
     ):
         """Wrap environment with NumWindows InfoWrapper.
@@ -155,6 +156,11 @@ class NumWindows(InfoWrapper):
             use_estimates (bool, optional): If True, use estimated states of targets
                 to forecast access windows. Otherwise, use true states. True states
                 are always used for sensors. Defaults to True.
+            open_loop (bool, optional): If True, number of windows and schedule
+                will be calculated on instantiation only. Further calls to .updateInfo()
+                will return values from lookup table generated on instantiation.
+                Use this option to save time by skipping propagation step. Defaults
+                to False.
             new_keys (list[str], optional): Override default names to be appended
                 to info. The 0th value will override "num_windows_left"; the 1st
                 value will override "vis_forecast". Defaults to None, meaning
@@ -206,6 +212,7 @@ class NumWindows(InfoWrapper):
             "vis_forecast": new_keys[1],
         }
         self.use_estimates = use_estimates
+        self.open_loop = open_loop
 
         # Separate sensors from targets and dynamics
         sensors, targets = self._getAgents()
@@ -224,6 +231,8 @@ class NumWindows(InfoWrapper):
             fixed_horizon=fixed_horizon,
             merge_windows=merge_windows,
         )
+
+        # TODO: Calculate initial forecasted windows and store as attrs
 
     def _getStates(
         self,
@@ -293,19 +302,13 @@ class NumWindows(InfoWrapper):
                         access to target n at time step t.
                 }
         """
-        out = self._getCalcWindowInputs()
-
+        # TODO: Insert logic for open_loop handling. Should only call calcNumWindows if open_loop == False
         (
             self.num_windows_left,
             self.vis_forecast,
             self.vis_forecast_pertarget,
             self.time_vec,
-        ) = self.awc.calcNumWindows(
-            x_sensors=out["x_sensors"],
-            x_targets=out["x_targets"],
-            t=out["t0"],
-            return_vis_hist=True,
-        )
+        ) = self._forecastWindows()
 
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
@@ -313,6 +316,24 @@ class NumWindows(InfoWrapper):
         }
 
         return new_info
+
+    def _forecastWindows(self):
+        """Get number of windows left in horizon and associated data."""
+        out = self._getCalcWindowInputs()
+
+        (
+            num_windows_left,
+            vis_forecast,
+            vis_forecast_pertarget,
+            time_vec,
+        ) = self.awc.calcNumWindows(
+            x_sensors=out["x_sensors"],
+            x_targets=out["x_targets"],
+            t=out["t0"],
+            return_vis_hist=True,
+        )
+
+        return num_windows_left, vis_forecast, vis_forecast_pertarget, time_vec
 
     def _getCalcWindowInputs(self) -> dict:
         """Get sensor/target states and current time.
