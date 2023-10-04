@@ -295,7 +295,12 @@ class NumWindows(InfoWrapper):
         """
         out = self._getCalcWindowInputs()
 
-        self.num_windows_left, self.vis_forecast = self.awc.calcNumWindows(
+        (
+            self.num_windows_left,
+            self.vis_forecast,
+            self.vis_forecast_pertarget,
+            self.time_vec,
+        ) = self.awc.calcNumWindows(
             x_sensors=out["x_sensors"],
             x_targets=out["x_targets"],
             t=out["t0"],

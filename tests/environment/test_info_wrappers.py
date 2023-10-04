@@ -123,7 +123,7 @@ ssa_env.reset()
 for _ in range(10):
     obs, _, _, _, info = ssa_env.step(ssa_env.action_space.sample())
     print(f"num windows left = {info['num_windows_alt']}")
-    print(f"vis vorecast shape = {info['vis_forecast'].shape}")
+    print(f"vis forecast shape = {info['vis_forecast'].shape}")
 # %% Use gym checker
 # check_env(rand_env)
 # %% Test ActionTypeCounter
