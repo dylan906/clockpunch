@@ -1995,13 +1995,13 @@ class MakeObsSpaceMultiBinary(SelectiveDictObsWrapper):
         mb_space = MultiBinary(env.observation_space.spaces[key].shape)
         new_obs_space[key] = mb_space
 
-        func = self.toIntArray
+        func = self.clipIntArray
         super().__init__(
             env=env, funcs=[func], keys=[key], new_obs_space=new_obs_space
         )
 
         return
 
-    def toIntArray(self, x: ndarray) -> ndarray:
+    def clipIntArray(self, x: ndarray) -> ndarray:
         """Wrapper around numpy .astype method."""
         return clip(x.astype(int), 0, 1)
