@@ -1,6 +1,7 @@
 """Calculate access windows."""
 # %% Imports
 # Standard Library Imports
+from copy import deepcopy
 from typing import Tuple
 
 # Third Party Imports
@@ -190,8 +191,13 @@ class AccessWindowCalculator:
         x_targets: ndarray,
         t: float,
         return_vis_hist: bool = False,
-    ) -> ndarray[int] | Tuple[ndarray[int], ndarray[int]]:
+    ) -> (
+        ndarray[int]
+        | Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]
+    ):
         """Get number of visibility windows per target from current time to horizon.
+
+        Optionally return detailed data (time history of access windows).
 
         Args:
             x_sensors (ndarray): (6, M) ECI state vectors in columns.
@@ -204,23 +210,31 @@ class AccessWindowCalculator:
             num_windows (ndarray[int]): (N,) Number of windows per target.
             vis_hist (ndarray[int], optional): (T, N, M) Same as return from
                 self.calcVisHist(). Outputs if return_vis_hist == True on input.
+            vis_hist_targets (ndarray[int], optional): (T, N) Each row has the
+                number of windows left in time period for the n'th target. Outputs
+                if return_vis_hist == True on input.
+            time (ndarray[float], optional): (T, ) Time history (sec) corresponding
+                to 0th dimensions of vis_hist and vis_hist_targets. Outputs if
+                return_vis_hist == True on input.
         """
         vis_hist = self.calcVisHist(
             x_sensors=x_sensors,
             x_targets=x_targets,
             t=t,
         )
+        # merge multi-sensor windows and sum
+        vis_hist_targets = self._mergeWindows(vis_hist)  # returns (T, N)
+
         if self.merge_windows is False:
             num_windows = sum(sum(vis_hist, axis=2), axis=0)
         else:
-            # merge multi-sensor windows and sum
-            vis_hist_merge = self._mergeWindows(vis_hist)  # returns (T, N)
-            num_windows = sum(vis_hist_merge, axis=0)
+            num_windows = sum(vis_hist_targets, axis=0)
 
         if return_vis_hist is False:
             return num_windows
         else:
-            return num_windows, vis_hist
+            time_hist = deepcopy(self.time_vec)
+            return num_windows, vis_hist, vis_hist_targets, time_hist
 
     def _setup(
         self,
@@ -293,7 +307,7 @@ class AccessWindowCalculator:
         """Merge sensor elements of a (T, N, M) visibility history array.
 
         For every (N, M) frame in vis_hist, a N-long binary vector is created.
-        If there are any 1s in the i'th row of the t'th frame, the i'th value
+        If there are any 1s in the n'th row of the t'th frame, the n'th value
         of the binary vector is set to 1. Otherwise, the value is 0. The binary
         vectors are output as a (T, N) array.
 

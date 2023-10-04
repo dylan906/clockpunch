@@ -90,14 +90,16 @@ print(f"merged vis hist = \n{merged}")
 
 # %% Test calcNumWindows
 print("\nTest calcNumWindows...")
-num_windows, vis_hist = awc.calcNumWindows(
+num_windows, vis_hist, vis_hist_sensors, time = awc.calcNumWindows(
     x_sensors=x_sensors,
     x_targets=x_targets,
     t=0,
     return_vis_hist=True,
 )
-print(f"vis hist = \n{vis_hist}")
 print(f"num_windows = {num_windows}")
+print(f"vis hist = \n{vis_hist}")
+print(f"vis_hist_sensors = {vis_hist_sensors}")
+print(f"time = {time}")
 
 # %% Test with non-default args and merge_windows=False
 print("\nTest with merge_windows=False and non-default args")
@@ -111,7 +113,7 @@ awc = AccessWindowCalculator(
     merge_windows=False,
 )
 
-num_windows, vis_hist = awc.calcNumWindows(
+num_windows, vis_hist, vis_hist_targets, time_hist = awc.calcNumWindows(
     x_sensors=x_sensors,
     x_targets=x_targets,
     t=321.2,
@@ -123,7 +125,7 @@ print(f"num_windows = {num_windows}")
 print("\nTest with merge_windows=True and non-default args")
 
 awc.merge_windows = True
-num_windows, vis_hist = awc.calcNumWindows(
+num_windows, vis_hist, vis_hist_targets, time_hist = awc.calcNumWindows(
     x_sensors=x_sensors,
     x_targets=x_targets,
     t=321.2,
