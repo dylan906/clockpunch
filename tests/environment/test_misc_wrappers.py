@@ -1,15 +1,17 @@
 """Tests for misc_wrappers.py."""
 # %% Imports
 # Third Party Imports
-from gymnasium.spaces import Box, Dict
+from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
 from gymnasium.utils.env_checker import check_env
 from gymnasium.wrappers import FilterObservation
+from numpy import ones
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
     CopyObsInfoItem,
     IdentityWrapper,
+    MaskViolationChecker,
     ModifyObsOrInfo,
     OperatorWrapper,
     RandomInfo,
@@ -184,6 +186,35 @@ op_env = OperatorWrapper(
 obs, info = op_env.reset()
 print(f"obs = {obs}")
 print(f"info = {info}")
+
+# %% MaskViolationChecker
+print("\nTest MaskViolationChecker...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {
+            "action_space": MultiDiscrete([3, 3, 3]),
+        }
+    ),
+    info_space=Dict({"a": MultiBinary((3, 3))}),
+)
+mvc_env = MaskViolationChecker(rand_env, mask_key="a")
+
+# Test that action mask violation gets caught
+for _ in range(2):
+    try:
+        (obs, reward, termination, truncation, info) = mvc_env.step(
+            action=mvc_env.action_space.sample()
+        )
+    except Exception as e:
+        print(e)
+
+# Test with mask = ones (guaranteed pass)
+mvc_env.previous_mask = ones((3, 3))
+(obs, reward, termination, truncation, info) = mvc_env.step(
+    action=mvc_env.action_space.sample()
+)
+print("Test passed")
+
 # %% Test getIdentityWrapperEnv
 print("\nTest getIdentityWrapperEnv...")
 rand_env = RandomEnv(

@@ -9,10 +9,11 @@ from warnings import warn
 
 # Third Party Imports
 from gymnasium import Env, Wrapper
-from gymnasium.spaces import Box, Dict, Space
+from gymnasium.spaces import Box, Dict, MultiDiscrete, Space
 
 # Punch Clock Imports
-from punchclock.common.utilities import getInfo
+from punchclock.analysis_utils.utils import countMaskViolations
+from punchclock.common.utilities import actionSpace2Array, getInfo
 from punchclock.environment.wrapper_utils import OperatorFuncBuilder
 from punchclock.policies.policy_builder import buildSpace
 
@@ -383,6 +384,52 @@ class OperatorWrapper(ModifyObsOrInfo):
             info.update({self.copy_key: thing_trans})
 
         return obs, info
+
+
+# %% MaskViolationChecker
+class MaskViolationChecker(Wrapper):
+    """Check if action violates action mask and raise Exception if so."""
+
+    def __init__(self, env: Env, mask_key: str):
+        """Wrap environment.
+
+        Args:
+            env (Env): Must have MultiDiscrete action space of shape [N+1] * M.
+            mask_key (str): Key in info corresponding to action mask. Action mask
+                must be binary and shape (N+1, M).
+        """
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "env.action_space must be a MultiDiscrete."
+
+        super().__init__(env)
+        self.mask_key = mask_key
+        self.previous_mask = None
+        self.num_sensors = len(env.action_space.nvec)
+        # Assumes action space includes inaction
+        self.num_targets = env.action_space.nvec[0] - 1
+
+    def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
+        """Step environment."""
+        if self.previous_mask is not None:
+            action_2d = actionSpace2Array(
+                actions=action,
+                num_sensors=self.num_sensors,
+                num_targets=self.num_targets,
+            )
+            num_violations = countMaskViolations(
+                x=action_2d, mask=self.previous_mask
+            )
+            if num_violations > 0:
+                raise Exception(
+                    f"""Action mask violated.
+                     action = {action}
+                     action_mask = {self.previous_mask}"""
+                )
+
+        (obs, reward, termination, truncation, info) = self.env.step(action)
+        self.previous_mask = deepcopy(info[self.mask_key])
+        return obs, reward, termination, truncation, info
 
 
 # %% getIdentityWrapper
