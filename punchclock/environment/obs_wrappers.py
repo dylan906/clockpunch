@@ -2003,5 +2003,5 @@ class MakeObsSpaceMultiBinary(SelectiveDictObsWrapper):
         return
 
     def clipIntArray(self, x: ndarray) -> ndarray:
-        """Wrapper around numpy .astype method."""
+        """Clip to [0, 1] and convert to Int."""
         return clip(x.astype(int), 0, 1)
