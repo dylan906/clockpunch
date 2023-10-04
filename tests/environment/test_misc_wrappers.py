@@ -201,12 +201,10 @@ mvc_env = MaskViolationChecker(rand_env, mask_key="a")
 
 # Test that action mask violation gets caught
 for _ in range(2):
-    try:
-        (obs, reward, termination, truncation, info) = mvc_env.step(
-            action=mvc_env.action_space.sample()
-        )
-    except Exception as e:
-        print(e)
+    (obs, reward, termination, truncation, info) = mvc_env.step(
+        action=mvc_env.action_space.sample()
+    )
+
 
 # Test with mask = ones (guaranteed pass)
 mvc_env.previous_mask = ones((3, 3))
