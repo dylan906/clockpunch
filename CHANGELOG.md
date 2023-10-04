@@ -10,7 +10,7 @@ I'm trying to get better about that.
 
 ### Added
 - New `InfoWrapper`s: `CombineInfoItems`, `TransformInfoWithNumpy` (#51).
-- New miscellaneous wrappers: `OperatorWrapper` (#69).
+- New miscellaneous wrappers: `OperatorWrapper` (#69), `MaskViolationChecker` (#75).
 - New `ObservationWrapper`: `MakeObsSpaceMultiBinary` (#74).
 
 ### Changed
