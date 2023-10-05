@@ -29,10 +29,13 @@ from punchclock.ray.build_env import buildEnv
 
 # %% Build env for NumWindows wrapper
 print("\nBuild env for NumWindows test...")
+# Dummy environment that has agents and propagates dynamics when .step() is called
 
 
 class NumWindowsEnv(Env):
-    def __init__(self):
+    """Dummy environment for NumWindows tests."""
+
+    def __init__(self):  # noqa
         self.observation_space = Dict({"a": Box(low=0, high=1)})
         self.action_space = MultiDiscrete([1])
         agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
@@ -45,13 +48,13 @@ class NumWindowsEnv(Env):
         self.time_step = 1000
         self.t = 0
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=None, options=None):  # noqa
         super().reset(seed=seed)
         self.agents = deepcopy(self.agents_backup)
         self.t = 0
         return self.observation_space.sample(), {}
 
-    def step(self, action=None):
+    def step(self, action=None):  # noqa
         self.t += self.time_step
         for ag in self.agents:
             ag.propagate(self.t)
@@ -59,25 +62,12 @@ class NumWindowsEnv(Env):
         return self.observation_space.sample(), 0, False, False, {}
 
 
-der_env = NumWindowsEnv()
-
-
-rand_env = RandomEnv(
-    {
-        "observation_space": Dict({"a": Box(low=0, high=1)}),
-        "action_space": MultiDiscrete([1]),
-    }
-)
-agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
-agents.extend([buildRandomAgent(agent_type="target") for ag in range(3)])
-rand_env.agents = agents
-rand_env.horizon = 10
-rand_env.time_step = 100
-
+dummy_env = NumWindowsEnv()
 # %% Test NumWindows
 print("\nTest NumWindows...")
+print("  Case 1: Forecast every time step")
 # test in default mode (forecast every step)
-nw_env = NumWindows(env=deepcopy(der_env), use_estimates=False)
+nw_env = NumWindows(env=deepcopy(dummy_env), use_estimates=False)
 
 obs, info = nw_env.reset()
 print("reset")
@@ -96,7 +86,12 @@ print(f"num windows = {info['num_windows_left']}")
 print(f"vis_forcast.shape = {info['vis_forecast'].shape}")
 
 # Test with open_loop = True
-nwo_env = NumWindows(env=deepcopy(der_env), use_estimates=False, open_loop=True)
+print("\n")
+print("  Case 2: Use lookup table for forecasts after initialization")
+
+nwo_env = NumWindows(
+    env=deepcopy(dummy_env), use_estimates=False, open_loop=True
+)
 obs, info = nwo_env.reset()
 print("reset")
 print(f"num windows = {info['num_windows_left']}")
@@ -113,6 +108,7 @@ print(f"num windows = {info['num_windows_left']}")
 print(f"vis_forcast.shape = {info['vis_forecast'].shape}")
 
 # %% Test with SSAScheduler
+print("\nTest NumWindows with SSAScheduler environment")
 # Environment params
 RE = getConstants()["earth_radius"]
 
@@ -190,8 +186,7 @@ for _ in range(10):
     obs, _, _, _, info = ssa_env.step(ssa_env.action_space.sample())
     print(f"num windows left = {info['num_windows_alt']}")
     print(f"vis forecast shape = {info['vis_forecast'].shape}")
-# %% Use gym checker
-# check_env(rand_env)
+
 # %% Test ActionTypeCounter
 print("\nTest ActionTypeCounter...")
 rand_env = RandomEnv(

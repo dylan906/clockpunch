@@ -126,6 +126,14 @@ class NumWindows(InfoWrapper):
 
     The names of the new info items are overridable via the new_keys arg.
 
+    Has two modes: recalculate on step (default) and open loop forecast, setable
+    via the `open_loop` arg on instantiation. In recalculate on step mode, a new
+    forecast of visibility windows is generated on every call of updateInfo().
+    In open loop mode, visibility windows are calculated once, at instantiation;
+    calls to updateInfo() use the lookup table generated on instantiation to calculate
+    number of windows left on horizon. Recalculate on step mode is computationally
+    expensive because it propagates dynamics repeatedly.
+
     For details on access window definitions, see AccessWindowCalculator.
     """
 
@@ -242,18 +250,19 @@ class NumWindows(InfoWrapper):
             self.vis_forecast,
             self.vis_forecast_pertarget,
             self.time_vec,
-        ] = self._forecastWindows(
+        ] = self._propagateForecast(
             x_sensors=calc_window_inputs["x_sensors"],
             x_targets=calc_window_inputs["x_targets"],
             time_now=calc_window_inputs["t0"],
         )
+
+        # forecast_table used only for open loop mode
         # Prepend zeros to vis forecasts, to make indexing in open loop mode work
         # easily. Prepended values are not actually used in calculation.
         vis_forecast = self.prependZeros(self.vis_forecast)
         vis_forecast_pertarget = self.prependZeros(self.vis_forecast_pertarget)
         time_vec = self.prependZeros(self.time_vec)
 
-        # forecast_table used only for open loop mode
         self.forecast_table = {
             "vis_forecast": deepcopy(vis_forecast),
             "vis_forecast_pertarget": deepcopy(vis_forecast_pertarget),
@@ -337,7 +346,7 @@ class NumWindows(InfoWrapper):
                 self.vis_forecast,
                 self.vis_forecast_pertarget,
                 self.time_vec,
-            ] = self._forecastWindows(
+            ] = self._propagateForecast(
                 x_sensors=calc_window_inputs["x_sensors"],
                 x_targets=calc_window_inputs["x_targets"],
                 time_now=calc_window_inputs["t0"],
@@ -357,15 +366,31 @@ class NumWindows(InfoWrapper):
 
         return new_info
 
-    def _forecastWindows(
+    def _propagateForecast(
         self,
         x_sensors: ndarray[float],
         x_targets: ndarray[float],
         time_now: float,
     ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
-        """Get number of windows left in horizon and associated data."""
-        # out = self._getCalcWindowInputs()
+        """Get number of windows left in horizon and associated data.
 
+        Propagates motion of all agents.
+
+        Args:
+            x_sensors (ndarray[float]): (6, M) ECI states.
+            x_targets (ndarray[float]): (6, N) ECI states.
+            time_now (float): Current env time.
+
+        Returns:
+            num_windows_left (ndarray[int]): (N,) Number of windows per target.
+            vis_forecast (ndarray[int]): (T, N, M) Binary values. A 1 indicates
+                that the corresponding n-m target-sensor pair have access to each
+                other at time t. 0 otherwise.
+            vis_forecast_pertarget (ndarray[int]): (T, N) Each row has the
+                number of windows left in time period for the n'th target.
+            time_vec (ndarray[float]): (T, ) Time history (sec) corresponding
+                to 0th dimensions of vis_forecast and vis_forecast_pertarget.
+        """
         (
             num_windows_left,
             vis_forecast,
@@ -384,6 +409,23 @@ class NumWindows(InfoWrapper):
         self,
         time_now: float,
     ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
+        """Get number of windows left in horizon and associated data.
+
+        Uses lookup table to to calculate windows.
+
+        Args:
+            time_now (float): Current env time.
+
+        Returns:
+            num_windows_left (ndarray[int]): (N,) Number of windows per target.
+            vis_forecast (ndarray[int]): (T, N, M) Binary values. A 1 indicates
+                that the corresponding n-m target-sensor pair have access to each
+                other at time t. 0 otherwise.
+            vis_forecast_pertarget (ndarray[int]): (T, N) Each row has the
+                number of windows left in time period for the n'th target.
+            time_vec (ndarray[float]): (T, ) Time history (sec) corresponding
+                to 0th dimensions of vis_forecast and vis_forecast_pertarget.
+        """
         time_vec = self.forecast_table["time_vec"]
         vis_forecast = self.forecast_table["vis_forecast"]
         vis_forecast_pertarget = self.forecast_table["vis_forecast_pertarget"]
