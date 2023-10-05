@@ -225,16 +225,46 @@ class AccessWindowCalculator:
         # merge multi-sensor windows and sum
         vis_hist_targets = self._mergeWindows(vis_hist)  # returns (T, N)
 
-        if self.merge_windows is False:
-            num_windows = sum(sum(vis_hist, axis=2), axis=0)
-        else:
-            num_windows = sum(vis_hist_targets, axis=0)
+        num_windows = self.sumWindows(
+            vis_hist=vis_hist,
+            vis_hist_targets=vis_hist_targets,
+            merge_windows=self.merge_windows,
+        )
 
         if return_vis_hist is False:
             return num_windows
         else:
             time_hist = deepcopy(self.time_vec)
             return num_windows, vis_hist, vis_hist_targets, time_hist
+
+    def sumWindows(
+        self,
+        vis_hist: ndarray[int],
+        vis_hist_targets: ndarray[int],
+        merge_windows: bool,
+    ) -> ndarray[int]:
+        """Get total number of windows available per target.
+
+        Args:
+            vis_hist (ndarray[int]): (T, N, M) Binary array of sensor-target
+                accessibility, where T is the final time index.
+            vis_hist_targets (ndarray[int]): (T, N) Number of windows per n'th
+                target at t'th time step, regardless of how many sensors (beyond 1)
+                have access to the target.
+            merge_windows (bool): Whether or not to count multiple simultaneous
+                sensor accesses as multiple or one window.
+
+        Returns:
+            ndarray[int]: (N, ) Number of windows per target.
+        """
+        if merge_windows is False:
+            # sum unmerged windows
+            num_windows = sum(sum(vis_hist, axis=2), axis=0)
+        elif merge_windows is True:
+            # sum merged windows
+            num_windows = sum(vis_hist_targets, axis=0)
+
+        return num_windows
 
     def _setup(
         self,
