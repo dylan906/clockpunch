@@ -218,8 +218,8 @@ class NumWindows(InfoWrapper):
         sensors, targets = self._getAgents()
         self.num_sensors = len(sensors)
         self.num_targets = len(targets)
-        dyn_sensors = self._getDynamics(sensors)
-        dyn_targets = self._getDynamics(targets)
+        dyn_sensors = self.getDynamics(sensors)
+        dyn_targets = self.getDynamics(targets)
 
         self.awc = AccessWindowCalculator(
             num_sensors=self.num_sensors,
@@ -232,29 +232,34 @@ class NumWindows(InfoWrapper):
             merge_windows=merge_windows,
         )
 
+        # Get initial num_windows and associated data; store as static lookups
+        # for use in open-loop mode.
+        # self.vis_forecast, vis_forecast_pertarget, time_vec change sizes every
+        # update. the forecast_table versions of these variables do not change sizes.
         calc_window_inputs = self._getCalcWindowInputs()
-        self.t0 = calc_window_inputs["t0"]
         [
             self.num_windows_left,
-            vis_forecast,
-            vis_forecast_pertarget,
-            time_vec,
+            self.vis_forecast,
+            self.vis_forecast_pertarget,
+            self.time_vec,
         ] = self._forecastWindows(
             x_sensors=calc_window_inputs["x_sensors"],
             x_targets=calc_window_inputs["x_targets"],
             time_now=calc_window_inputs["t0"],
         )
-        self.vis_forecast = insert(
-            vis_forecast,
-            0,
-            zeros([1, self.num_targets, self.num_sensors]),
-            axis=0,
-        )
-        self.vis_forecast_pertarget = insert(
-            vis_forecast_pertarget, 0, zeros([1, self.num_targets]), axis=0
-        )
-        self.time_vec = insert(time_vec, 0, self.t0)
-        # self.time_vec = time_vec
+        # Prepend zeros to vis forecasts, to make indexing in open loop mode work
+        # easily. Prepended values are not actually used in calculation.
+        vis_forecast = self.prependZeros(self.vis_forecast)
+        vis_forecast_pertarget = self.prependZeros(self.vis_forecast_pertarget)
+        time_vec = self.prependZeros(self.time_vec)
+
+        # forecast_table used only for open loop mode
+        self.forecast_table = {
+            "vis_forecast": deepcopy(vis_forecast),
+            "vis_forecast_pertarget": deepcopy(vis_forecast_pertarget),
+            "time_vec": deepcopy(time_vec),
+        }
+
         return
 
     def _getStates(
@@ -265,7 +270,7 @@ class NumWindows(InfoWrapper):
     ) -> ndarray:
         """Get current state (truth or estimated) from all agents.
 
-        If self.use_estimates == False, then truth states are fetched. Otherwise,
+        If use_estimates == False, then truth states are fetched. Otherwise,
         truth states are fetched for sensors and estimated states are fetched for
         targets.
 
@@ -340,12 +345,9 @@ class NumWindows(InfoWrapper):
         elif self.open_loop is True:
             [
                 self.num_windows_left,
-                _,
-                _,
-                _,
-                # self.vis_forecast,
-                # self.vis_forecast_pertarget,
-                # self.time_vec,
+                self.vis_forecast,
+                self.vis_forecast_pertarget,
+                self.time_vec,
             ] = self._openLoopForecast(time_now=calc_window_inputs["t0"])
 
         new_info = {
@@ -382,17 +384,16 @@ class NumWindows(InfoWrapper):
         self,
         time_now: float,
     ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
-        # Check that current time is what was expected (no changing time steps allowed)
-        # assert time_now == self.time_vec[0]
-        # TODO: Make sure this class works when reset
-        # TODO: Make the returns from updateInfo be the appropriate size
+        time_vec = self.forecast_table["time_vec"]
+        vis_forecast = self.forecast_table["vis_forecast"]
+        vis_forecast_pertarget = self.forecast_table["vis_forecast_pertarget"]
 
         # Crop the schedule variables, then recalculate the total sum
-        t_index = where(self.time_vec == time_now)[0][0]
+        t_index = where(time_vec == time_now)[0][0]
 
-        time_vec = self.time_vec[t_index + 1 :]
-        vis_forecast_pertarget = self.vis_forecast_pertarget[t_index + 1 :, :]
-        vis_forecast = self.vis_forecast[t_index + 1 :, :, :]
+        time_vec = time_vec[t_index + 1 :]
+        vis_forecast_pertarget = vis_forecast_pertarget[t_index + 1 :, :]
+        vis_forecast = vis_forecast[t_index + 1 :, :, :]
 
         num_windows_left = self.awc.sumWindows(
             vis_hist=vis_forecast,
@@ -436,7 +437,7 @@ class NumWindows(InfoWrapper):
         targets = [ag for ag in agents if isinstance(ag, Target)]
         return sensors, targets
 
-    def _getDynamics(self, agents: list[Agent]) -> list[DynamicsModel]:
+    def getDynamics(self, agents: list[Agent]) -> list[DynamicsModel]:
         """Get dynamics from a list of Agents."""
         # This is its own separate method because later I may want to add more
         # dynamics models that may make fetching them more complicated. So just
@@ -444,6 +445,28 @@ class NumWindows(InfoWrapper):
         dynamics = [ag.dynamics for ag in agents]
 
         return dynamics
+
+    def prependZeros(self, x: ndarray) -> ndarray:
+        """Prepend an array of zeros of the matching size to an array.
+
+        Args:
+            x (ndarray): Can be any dimension.
+
+        Returns:
+            ndarray: The same size as x, but the 0th dimension is +1.
+
+        Examples:
+            prependZeros(array([1, 1]))
+            # array([0, 1, 1])
+
+            prependZeros(array([[1, 1]]))
+            # array([[0, 0], [1, 1]])
+        """
+        single_0dim_frame_shape = list(x.shape[1:])
+        prepend_shape = [1]
+        prepend_shape.extend(single_0dim_frame_shape)
+        new_x = insert(x, 0, zeros(prepend_shape), axis=0)
+        return new_x
 
 
 # %% ActionTypeCounter
