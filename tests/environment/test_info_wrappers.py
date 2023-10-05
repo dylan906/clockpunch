@@ -46,6 +46,15 @@ print(f"info = {info}")
 obs, info = nw_env.reset()
 print(f"info = {info}")
 
+# Test with open_loop = True
+nwo_env = NumWindows(env=rand_env, use_estimates=False, open_loop=True)
+obs, info = nwo_env.reset()
+obs, _, _, _, info = nwo_env.step(nwo_env.action_space.sample())
+print(f"info = {info}")
+
+obs, info = nwo_env.reset()
+print(f"info = {info}")
+
 # %% Test with SSAScheduler
 # Environment params
 RE = getConstants()["earth_radius"]

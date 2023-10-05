@@ -11,7 +11,7 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
-from numpy import asarray, ndarray
+from numpy import asarray, insert, ndarray, where, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
@@ -232,7 +232,30 @@ class NumWindows(InfoWrapper):
             merge_windows=merge_windows,
         )
 
-        # TODO: Calculate initial forecasted windows and store as attrs
+        calc_window_inputs = self._getCalcWindowInputs()
+        self.t0 = calc_window_inputs["t0"]
+        [
+            self.num_windows_left,
+            vis_forecast,
+            vis_forecast_pertarget,
+            time_vec,
+        ] = self._forecastWindows(
+            x_sensors=calc_window_inputs["x_sensors"],
+            x_targets=calc_window_inputs["x_targets"],
+            time_now=calc_window_inputs["t0"],
+        )
+        self.vis_forecast = insert(
+            vis_forecast,
+            0,
+            zeros([1, self.num_targets, self.num_sensors]),
+            axis=0,
+        )
+        self.vis_forecast_pertarget = insert(
+            vis_forecast_pertarget, 0, zeros([1, self.num_targets]), axis=0
+        )
+        self.time_vec = insert(time_vec, 0, self.t0)
+        # self.time_vec = time_vec
+        return
 
     def _getStates(
         self,
@@ -302,13 +325,28 @@ class NumWindows(InfoWrapper):
                         access to target n at time step t.
                 }
         """
-        # TODO: Insert logic for open_loop handling. Should only call calcNumWindows if open_loop == False
-        (
-            self.num_windows_left,
-            self.vis_forecast,
-            self.vis_forecast_pertarget,
-            self.time_vec,
-        ) = self._forecastWindows()
+        calc_window_inputs = self._getCalcWindowInputs()
+        if self.open_loop is False:
+            [
+                self.num_windows_left,
+                self.vis_forecast,
+                self.vis_forecast_pertarget,
+                self.time_vec,
+            ] = self._forecastWindows(
+                x_sensors=calc_window_inputs["x_sensors"],
+                x_targets=calc_window_inputs["x_targets"],
+                time_now=calc_window_inputs["t0"],
+            )
+        elif self.open_loop is True:
+            [
+                self.num_windows_left,
+                _,
+                _,
+                _,
+                # self.vis_forecast,
+                # self.vis_forecast_pertarget,
+                # self.time_vec,
+            ] = self._openLoopForecast(time_now=calc_window_inputs["t0"])
 
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
@@ -317,9 +355,14 @@ class NumWindows(InfoWrapper):
 
         return new_info
 
-    def _forecastWindows(self):
+    def _forecastWindows(
+        self,
+        x_sensors: ndarray[float],
+        x_targets: ndarray[float],
+        time_now: float,
+    ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
         """Get number of windows left in horizon and associated data."""
-        out = self._getCalcWindowInputs()
+        # out = self._getCalcWindowInputs()
 
         (
             num_windows_left,
@@ -327,10 +370,34 @@ class NumWindows(InfoWrapper):
             vis_forecast_pertarget,
             time_vec,
         ) = self.awc.calcNumWindows(
-            x_sensors=out["x_sensors"],
-            x_targets=out["x_targets"],
-            t=out["t0"],
+            x_sensors=x_sensors,
+            x_targets=x_targets,
+            t=time_now,
             return_vis_hist=True,
+        )
+
+        return num_windows_left, vis_forecast, vis_forecast_pertarget, time_vec
+
+    def _openLoopForecast(
+        self,
+        time_now: float,
+    ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
+        # Check that current time is what was expected (no changing time steps allowed)
+        # assert time_now == self.time_vec[0]
+        # TODO: Make sure this class works when reset
+        # TODO: Make the returns from updateInfo be the appropriate size
+
+        # Crop the schedule variables, then recalculate the total sum
+        t_index = where(self.time_vec == time_now)[0][0]
+
+        time_vec = self.time_vec[t_index + 1 :]
+        vis_forecast_pertarget = self.vis_forecast_pertarget[t_index + 1 :, :]
+        vis_forecast = self.vis_forecast[t_index + 1 :, :, :]
+
+        num_windows_left = self.awc.sumWindows(
+            vis_hist=vis_forecast,
+            vis_hist_targets=vis_forecast_pertarget,
+            merge_windows=True,
         )
 
         return num_windows_left, vis_forecast, vis_forecast_pertarget, time_vec
