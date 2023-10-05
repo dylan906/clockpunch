@@ -271,7 +271,7 @@ class NumWindows(InfoWrapper):
 
         return
 
-    def _getStates(
+    def getStates(
         self,
         sensors: list[Sensor],
         targets: list[Target],
@@ -300,17 +300,6 @@ class NumWindows(InfoWrapper):
         x_targets = asarray(x_targets).squeeze().transpose()
 
         return x_sensors, x_targets
-
-    def _getTime(self, agents: list[Agent]) -> float:
-        """Gets current simulation time (sec)."""
-        start_times = [ag.time for ag in agents]
-        assert all(
-            [start_times[0] == st for st in start_times]
-        ), "All agents must have same time stamp."
-
-        t0 = start_times[0]
-
-        return t0
 
     def updateInfo(
         self,
@@ -458,7 +447,7 @@ class NumWindows(InfoWrapper):
         # Separate sensors from targets and get relevant attrs
         sensors, targets = self._getAgents()
 
-        [x_sensors, x_targets] = self._getStates(
+        [x_sensors, x_targets] = self.getStates(
             sensors=sensors,
             targets=targets,
             use_estimates=self.use_estimates,
@@ -487,6 +476,17 @@ class NumWindows(InfoWrapper):
         dynamics = [ag.dynamics for ag in agents]
 
         return dynamics
+
+    def _getTime(self, agents: list[Agent]) -> float:
+        """Gets current simulation time (sec)."""
+        start_times = [ag.time for ag in agents]
+        assert all(
+            [start_times[0] == st for st in start_times]
+        ), "All agents must have same time stamp."
+
+        t0 = start_times[0]
+
+        return t0
 
     def prependZeros(self, x: ndarray) -> ndarray:
         """Prepend an array of zeros of the matching size to an array.
