@@ -83,9 +83,11 @@ rand_env = RandomInfo(
 
 moi_env = TestMOI(rand_env, obs_info="info")
 obs, info = moi_env.reset()
-print(f"info = {info}")
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
 obs, _, _, _, info = moi_env.step(moi_env.action_space.sample())
-print(f"info = {info}")
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
 unwrapped_obs = moi_env.unwrapped.observation_space.sample()
 obs = moi_env.observation(unwrapped_obs)
 print(f"obs unwrapped= {unwrapped_obs}")

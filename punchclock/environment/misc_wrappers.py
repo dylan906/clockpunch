@@ -554,9 +554,9 @@ class CustodyWrapper(ModifyObsOrInfo):
                 is in custody.
         """
         if self.obs_info == "obs":
-            relevant_dict = deepcopy(obs)
+            relevant_dict = obs
         elif self.obs_info == "info":
-            relevant_dict = deepcopy(info)
+            relevant_dict = info
 
         custody_input = relevant_dict[self.key]
 
@@ -568,10 +568,12 @@ class CustodyWrapper(ModifyObsOrInfo):
         new_item = {"custody": custody}
 
         if self.obs_info == "obs":
-            new_obs = deepcopy(obs).update(new_item)
-            new_info = deepcopy(info)
-        elif self.obs_info == "info":
             new_obs = deepcopy(obs)
-            new_info = deepcopy(info).update(new_item)
+            new_obs.update(new_item)
+            new_info = info
+        elif self.obs_info == "info":
+            new_obs = obs
+            new_info = deepcopy(info)
+            new_info.update(new_item)
 
         return new_obs, new_info
