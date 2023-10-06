@@ -20,6 +20,7 @@ from punchclock.common.utilities import actionSpace2Array, getInfo
 from punchclock.environment.wrapper_utils import (
     OperatorFuncBuilder,
     SelectiveDictProcessor,
+    binary2ActionMask,
 )
 from punchclock.policies.policy_builder import buildSpace
 
@@ -636,6 +637,7 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
 
         wrapped_env.observation_space = Dict(
             {
+                "custody": MultiBinary(3),
                 "bar": Box(0, 1)
                 "foo": MultiBinary([4, 2]),  # new item is at end of Dict
             }
@@ -708,9 +710,7 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
 
         # convert num_targets from numpy dtype to Python int
         self.sdp = SelectiveDictProcessor(
-            funcs=[
-                partial(self.binary2ActionMask, num_sensors=self.num_sensors)
-            ],
+            funcs=[partial(binary2ActionMask, num_sensors=self.num_sensors)],
             keys=[new_key],
         )
 
@@ -763,39 +763,3 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
             new_info = transformed_dict
 
         return new_obs, new_info
-
-    def binary2ActionMask(
-        self, custody_array: ndarray, num_sensors: int
-    ) -> ndarray:
-        """Convert a 1d binary array to a 2d action mask.
-
-        Notation:
-            M: number of sensors
-            N: number of targets
-
-        Args:
-            custody_array (ndarray): (N, ) single-dimensional binary array.
-
-        Returns:
-            ndarray: (N+1, M) single-dimensional binary array. Every (N+1)th
-                entry corresponds to inaction, and always == 1.
-
-
-        Example:
-            custody = [1, 0, 1]
-            action_mask = binary2ActionMask(custody, num_sensors = 2)
-            # action_mask = array([[1, 1],
-            #                      [0, 0],
-            #                      [1, 1],
-            #                      [1, 1]])  <- inaction always 1 (valid)
-
-        """
-        custody_copies = [custody_array for _ in range(num_sensors)]
-        partial_action_mask_2d = stack(custody_copies, axis=1)
-        full_action_mask_2d = concatenate(
-            [partial_action_mask_2d, ones((1, num_sensors), dtype=int)], axis=0
-        )
-
-        assert self.mask2d_space.contains(full_action_mask_2d)
-
-        return full_action_mask_2d

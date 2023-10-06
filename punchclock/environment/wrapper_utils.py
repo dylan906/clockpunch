@@ -21,7 +21,20 @@ from gymnasium.spaces import (
     MultiDiscrete,
     Space,
 )
-from numpy import all, int8, int64, max, min, multiply, ndarray, ravel, sum
+from numpy import (
+    all,
+    concatenate,
+    int8,
+    int64,
+    max,
+    min,
+    multiply,
+    ndarray,
+    ones,
+    ravel,
+    stack,
+    sum,
+)
 
 
 # %% Classes
@@ -531,3 +544,39 @@ class OperatorFuncBuilder:
             b = self.b
 
         return self.func(a, b)
+
+
+# %% binary2ActionMask
+
+
+def binary2ActionMask(custody_array: ndarray, num_sensors: int) -> ndarray:
+    """Convert a 1d binary array to a 2d action mask.
+
+    Notation:
+        M: number of sensors
+        N: number of targets
+
+    Args:
+        custody_array (ndarray): (N, ) single-dimensional binary array.
+
+    Returns:
+        ndarray: (N+1, M) single-dimensional binary array. Every (N+1)th
+            entry corresponds to inaction, and always == 1.
+
+
+    Example:
+        custody = [1, 0, 1]
+        action_mask = binary2ActionMask(custody, num_sensors = 2)
+        # action_mask = array([[1, 1],
+        #                      [0, 0],
+        #                      [1, 1],
+        #                      [1, 1]])  <- inaction always 1 (valid)
+
+    """
+    custody_copies = [custody_array for _ in range(num_sensors)]
+    partial_action_mask_2d = stack(custody_copies, axis=1)
+    full_action_mask_2d = concatenate(
+        [partial_action_mask_2d, ones((1, num_sensors), dtype=int)], axis=0
+    )
+
+    return full_action_mask_2d
