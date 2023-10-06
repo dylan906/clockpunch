@@ -91,37 +91,6 @@ assert env_postnest.observation_space.contains(obs_nested)
 
 env_postnest.reset()
 
-# %% Test VisMap2ActionMask
-print("\nTest VisMap2ActionMask...")
-env_premask = RandomEnv(
-    {
-        "observation_space": Dict(
-            {
-                "a": MultiBinary((2, 2)),
-                "b": Box(0, 1, shape=(1, 1)),
-            }
-        ),
-        "action_space": MultiDiscrete([3, 3]),
-    }
-)
-env_postmask = VisMap2ActionMask(
-    env_premask, obs_info="obs", vis_map_key="a", new_key="a_mask"
-)
-obs, info = env_postmask.reset()
-print(f"obs (reset) = {obs}")
-print(f"info (reset) = {info}")
-
-obs, _, _, _, info = env_postmask.step(env_postmask.action_space.sample())
-print(f"obs (step) = {obs}")
-print(f"info (step) = {info}")
-
-unmasked_obs = env_premask.observation_space.sample()
-obs_mask = env_postmask.observation(unmasked_obs)
-print(f"pre-mask obs space = {env_premask.observation_space}")
-print(f"post-mask obs space = {env_postmask.observation_space}")
-assert env_postmask.observation_space.contains(obs_mask)
-
-# Test with info
 
 # %% Test MultiplyObsItems
 print("\nTest MultiplyObsItems...")

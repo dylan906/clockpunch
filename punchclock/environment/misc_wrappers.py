@@ -11,7 +11,7 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete, Space
-from numpy import array, int8
+from numpy import append, array, int8, int64, ones
 
 # Punch Clock Imports
 from punchclock.analysis_utils.utils import countMaskViolations
@@ -761,5 +761,174 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
         elif self.obs_info == "info":
             new_obs = obs
             new_info = transformed_dict
+
+        return new_obs, new_info
+
+
+# %% VisMap2ActionMask
+class VisMap2ActionMask(ModifyObsOrInfo):
+    """Convert visibility map into a 2d action mask.
+
+    Append a row of 1's to the bottom of a visibility map.
+
+    Set action_mask_on == False to make the modified observation space item always
+    an array of 1s.
+
+    Example (B = 2):
+        env.observation_space = {
+            "vis_map": MultiBinary((A, B))
+        }
+
+        env.action_space = MultiDiscrete([A+1, A+1])
+
+        wrapped_env = VisMap2ActionMask(env,
+            vis_map_key="vis_map",
+            new_key="action_mask")
+
+        wrapped_env.observation_space = {
+            "action_mask": MultiBinary((A+1, B))
+        }
+
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        obs_info: str,
+        vis_map_key: str,
+        new_key: str = None,
+        action_mask_on: bool = True,
+    ):
+        """Wrap environment with VisMap2ActionMask.
+
+        Args:
+            env (Env): Must have:
+                - Dict observation space
+                - MultiDiscrete action space
+                - vis_map_key must be in observation space or info (depending on
+                    value of `obs_info`)
+                - value associated with vis_map_key must be a 2d MultiBinary
+                - Number of columns in value associated with vis_map_key must
+                    be same as length of action space.
+            obs_info (str): ["obs" | "info"] The wrapper modifies either the
+                observation or the info (not both).
+            vis_map_key (str): An item in observation space or info.
+            new_key (str, optional): Name of key to be appended to obs or info.
+                If None, value of `key` will be used, and associated values will
+                be overwritten. Defaults to None.
+            action_mask_on (bool, optional): If False, value associated with `new_key`
+                will be an array of 1s. Otherwise, will be same as value from
+                vis_map_key with row of 1s appended. Defaults to True.
+        """
+        super().__init__(env=env, obs_info=obs_info)
+
+        assert isinstance(
+            env.action_space, MultiDiscrete
+        ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
+
+        info_sample = getInfo(env)
+        if obs_info == "obs":
+            relevant_dict = env.observation_space.spaces
+        elif obs_info == "info":
+            relevant_dict = info_sample
+
+        assert (
+            vis_map_key in relevant_dict
+        ), f"""vis_map_key must be in observation space or info (obs_info =
+        {obs_info})."""
+
+        vis_map_sample = relevant_dict[vis_map_key]
+
+        if obs_info == "obs":
+            # vis_map_sample is a Space
+            assert isinstance(
+                vis_map_sample, MultiBinary
+            ), f"observation_space[{vis_map_key}] must be a gym.spaces.MultiBinary."
+            assert (
+                len(vis_map_sample.shape) == 2
+            ), f"observation_space[{vis_map_key}] must be 2d."
+        elif obs_info == "info":
+            # vis_map_sample is a ndarray
+            assert vis_map_sample.ndim == 2, f"info[{vis_map_key}] must be 2d."
+
+        assert vis_map_sample.shape[1] == len(
+            env.action_space.nvec
+        ), """Shape mismatch between action space and selected item in observation
+        space. The number of columns in observation_space[vis_map_key] must be equal
+        to length of action_space.nvec."""
+
+        if new_key is None:
+            new_key = vis_map_key
+
+        self.vis_map_key = vis_map_key
+        self.new_key = new_key
+        self.action_mask_on = action_mask_on
+
+        num_rows, num_cols = vis_map_sample.shape
+        self.mask_space = MultiBinary((num_rows + 1, num_cols))
+
+        if obs_info == "obs":
+            # redefine obs space if necessary
+            self.observation_space = deepcopy(env.observation_space)
+            self.observation_space[new_key] = self.mask_space
+
+        # Maintain same order of obs dict
+        # new_obs_space = OrderedDict({})
+        # for k, space in env.observation_space.items():
+        #     if k == vis_map_key:
+        #         new_obs_space[new_key] = self.mask_space
+        #     else:
+        #         new_obs_space[k] = space
+        # self.observation_space = Dict(new_obs_space)
+
+    def modifyOI(
+        self, obs: OrderedDict, info: dict
+    ) -> Tuple[OrderedDict, dict]:
+        """Generate wrapped observation.
+
+        Either obs or info (depending on value of self.obs_info) must contain
+            `vis_map_key` as a key.
+
+        Args:
+            obs (OrderedDict): Unwrapped observation.
+            info (dict): Unwrapped info.
+
+        Returns:
+            new_obs (OrderedDict): If self.obs_info == "obs", same as input obs
+                but with `self.new_key` item appended. Otherwise, same as input obs.
+            new_info (dict): If self.obs_info == "info", same as input info but
+                with `self.new_key` item appended. Otherwise, same as input info.
+
+        Example (num_sensors = 2, num_targets = 3):
+            obs = OrderedDict({"vis_map": array([[1, 0],
+                                                 [0, 0],
+                                                 [0, 0]])})
+            action_mask = VisMap2ActionMask.observation(obs)
+            # action_mask = array([[1, 0],
+            #                      [0, 0],
+            #                      [0, 0],
+            #                      [1, 1]])  <- inaction always 1 (valid)
+        """
+        if self.obs_info == "obs":
+            relevant_dict = deepcopy(obs)
+        elif self.obs_info == "info":
+            relevant_dict = deepcopy(info)
+
+        mask = relevant_dict[self.vis_map_key]
+        m = mask.shape[1]
+        mask = append(mask, ones(shape=(1, m), dtype=int64), axis=0)
+
+        if self.action_mask_on is False:
+            # Get pass-thru action mask (no actions are masked)
+            mask = ones(shape=mask.shape, dtype=int64)
+
+        relevant_dict.update({self.new_key: mask})
+
+        if self.obs_info == "obs":
+            new_obs = relevant_dict
+            new_info = info
+        elif self.obs_info == "info":
+            new_obs = obs
+            new_info = relevant_dict
 
         return new_obs, new_info
