@@ -539,8 +539,13 @@ class CustodyWrapper(ModifyObsOrInfo):
             new_space["custody"] = MultiBinary(num_targets)
             self.observation_space = Dict(new_space)
 
-    def modifyOI(self, obs: OrderedDict, info: dict) -> OrderedDict:
+    def modifyOI(
+        self, obs: OrderedDict, info: dict
+    ) -> Tuple[OrderedDict, dict]:
         """Append custody entry to observation or info dict.
+
+        Custody is a (N,) binary array where 1 indicates the n-th target is in
+        custody.
 
         Args:
             obs (OrderedDict): Unwrapped observation. If `self.obs_info` ==
@@ -549,9 +554,10 @@ class CustodyWrapper(ModifyObsOrInfo):
                 contain self.key.
 
         Returns:
-            OrderedDict: Same as input dict, but with "custody" item appended.
-                Custody is a (N,) binary array where 1 indicates the n-th target
-                is in custody.
+            new_obs (OrderedDict): If self.obs_info == "obs", same as input obs
+                but with "custody" item appended. Otherwise, same as input obs.
+            new_info (dict): If self.obs_info == "info", same as input info but
+                with "custody" item appended. Otherwise, same as input info.
         """
         if self.obs_info == "obs":
             relevant_dict = obs
