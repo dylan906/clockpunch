@@ -9,6 +9,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
+    ConvertCustody2ActionMask,
     CopyObsInfoItem,
     CustodyWrapper,
     IdentityWrapper,
@@ -271,6 +272,52 @@ obs = cw.unwrapped.observation_space.sample()
 # obs["est_cov"] = abs(obs["est_cov"])
 print(f"wrapped obs = {cw.observation(obs)}")
 
+# %% Test ConvertCustody2ActionMask
+print("\nTest ConvertCustody2ActionMask...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {
+            "observation_space": Dict({"custody": MultiBinary(3)}),
+            "action_space": MultiDiscrete([4, 4]),
+        },
+    ),
+    info_space=Dict({"custody_alt": MultiBinary(3)}),
+)
+
+env_custody2am = ConvertCustody2ActionMask(
+    rand_env,
+    obs_info="obs",
+    key="custody",
+    new_key="mask",
+)
+obs, info = env_custody2am.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+obs, _, _, _, info = env_custody2am.step(env_custody2am.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
+
+obs_nomask = rand_env.observation_space.sample()
+obs_mask = env_custody2am.observation(obs_nomask)
+print(f"unwrapped obs  = \n{obs_nomask}")
+print(f"wrapped obs = \n{obs_mask}")
+assert env_custody2am.observation_space.contains(obs_mask)
+
+# Test with info
+env_custody2am = ConvertCustody2ActionMask(
+    rand_env,
+    obs_info="info",
+    key="custody_alt",
+    new_key="mask",
+)
+obs, info = env_custody2am.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+obs, _, _, _, info = env_custody2am.step(env_custody2am.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
 
 # %% Done
 print("done")
