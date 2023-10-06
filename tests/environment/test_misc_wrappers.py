@@ -323,36 +323,52 @@ print(f"info (step) = {info}")
 
 # %% Test VisMap2ActionMask
 print("\nTest VisMap2ActionMask...")
-env_premask = RandomEnv(
-    {
-        "observation_space": Dict(
-            {
-                "a": MultiBinary((2, 2)),
-                "b": Box(0, 1, shape=(1, 1)),
-            }
-        ),
-        "action_space": MultiDiscrete([3, 3]),
-    }
+rand_env = RandomInfo(
+    RandomEnv(
+        {
+            "observation_space": Dict(
+                {"a": MultiBinary((2, 2)), "b": Box(0, 1, shape=(1, 1))}
+            ),
+            "action_space": MultiDiscrete([3, 3]),
+        }
+    ),
+    info_space=Dict({"a": MultiBinary((2, 2))}),
 )
-env_postmask = VisMap2ActionMask(
-    env_premask, obs_info="obs", vis_map_key="a", new_key="a_mask"
+am_env = VisMap2ActionMask(
+    rand_env, obs_info="obs", vis_map_key="a", new_key="a_mask"
 )
-obs, info = env_postmask.reset()
+obs, info = am_env.reset()
 print(f"obs (reset) = {obs}")
 print(f"info (reset) = {info}")
 
-obs, _, _, _, info = env_postmask.step(env_postmask.action_space.sample())
+obs, _, _, _, info = am_env.step(am_env.action_space.sample())
 print(f"obs (step) = {obs}")
 print(f"info (step) = {info}")
 
-unmasked_obs = env_premask.observation_space.sample()
-obs_mask = env_postmask.observation(unmasked_obs)
-print(f"pre-mask obs space = {env_premask.observation_space}")
-print(f"post-mask obs space = {env_postmask.observation_space}")
-assert env_postmask.observation_space.contains(obs_mask)
+unmasked_obs = rand_env.observation_space.sample()
+obs_mask = am_env.observation(unmasked_obs)
+print(f"pre-mask obs space = {rand_env.observation_space}")
+print(f"post-mask obs space = {am_env.observation_space}")
+assert am_env.observation_space.contains(obs_mask)
 
 # Test with info
+print("  Test with info")
+am_env = VisMap2ActionMask(
+    rand_env, obs_info="info", vis_map_key="a", new_key="a_mask"
+)
+obs, info = am_env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
 
+obs, _, _, _, info = am_env.step(am_env.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
+
+unmasked_obs = rand_env.observation_space.sample()
+obs_mask = am_env.observation(unmasked_obs)
+print(f"pre-mask obs space = {rand_env.observation_space}")
+print(f"post-mask obs space = {am_env.observation_space}")
+assert am_env.observation_space.contains(obs_mask)
 
 # %% Done
 print("done")

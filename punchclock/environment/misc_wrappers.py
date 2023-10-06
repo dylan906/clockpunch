@@ -782,10 +782,12 @@ class VisMap2ActionMask(ModifyObsOrInfo):
         env.action_space = MultiDiscrete([A+1, A+1])
 
         wrapped_env = VisMap2ActionMask(env,
+            obs_info="obs",
             vis_map_key="vis_map",
             new_key="action_mask")
 
         wrapped_env.observation_space = {
+            "vis_map": MultiBinary((A, B))
             "action_mask": MultiBinary((A+1, B))
         }
 
@@ -824,7 +826,7 @@ class VisMap2ActionMask(ModifyObsOrInfo):
 
         assert isinstance(
             env.action_space, MultiDiscrete
-        ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
+        ), "env.action_space must be a MultiDiscrete."
 
         info_sample = getInfo(env)
         if obs_info == "obs":
@@ -864,6 +866,7 @@ class VisMap2ActionMask(ModifyObsOrInfo):
         self.new_key = new_key
         self.action_mask_on = action_mask_on
 
+        # mask space used for dev/debugging
         num_rows, num_cols = vis_map_sample.shape
         self.mask_space = MultiBinary((num_rows + 1, num_cols))
 
@@ -871,15 +874,6 @@ class VisMap2ActionMask(ModifyObsOrInfo):
             # redefine obs space if necessary
             self.observation_space = deepcopy(env.observation_space)
             self.observation_space[new_key] = self.mask_space
-
-        # Maintain same order of obs dict
-        # new_obs_space = OrderedDict({})
-        # for k, space in env.observation_space.items():
-        #     if k == vis_map_key:
-        #         new_obs_space[new_key] = self.mask_space
-        #     else:
-        #         new_obs_space[k] = space
-        # self.observation_space = Dict(new_obs_space)
 
     def modifyOI(
         self, obs: OrderedDict, info: dict
@@ -899,15 +893,15 @@ class VisMap2ActionMask(ModifyObsOrInfo):
             new_info (dict): If self.obs_info == "info", same as input info but
                 with `self.new_key` item appended. Otherwise, same as input info.
 
-        Example (num_sensors = 2, num_targets = 3):
-            obs = OrderedDict({"vis_map": array([[1, 0],
-                                                 [0, 0],
-                                                 [0, 0]])})
-            action_mask = VisMap2ActionMask.observation(obs)
-            # action_mask = array([[1, 0],
-            #                      [0, 0],
-            #                      [0, 0],
-            #                      [1, 1]])  <- inaction always 1 (valid)
+        Example:
+           vis_map = array([[1, 0],
+                            [0, 0],
+                            [0, 0]])
+
+            action_mask = array([[1, 0],
+                                 [0, 0],
+                                 [0, 0],
+                                 [1, 1]])  <- inaction always 1 (valid)
         """
         if self.obs_info == "obs":
             relevant_dict = deepcopy(obs)
