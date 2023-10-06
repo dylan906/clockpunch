@@ -20,7 +20,7 @@ I'm trying to get better about that.
 
 - Replaced `CopyObsItem` with more flexible `CopyObsInfoItem` wrapper (#68).
 - `addPostProcessedCols` calculated fewer very specific use case metrics. Retained the most useful metrics (e.g. uncertainty measures). Moved the specific use case functions to separate module (#52).
-- Changed the base class of teh following wrappers from `ObservationWrapper` to `ModifyObsOrInfo`: `CustodyWrapper` (#71),`ConvertCustody2ActionMask` (#72), `VisMap2ActionMask` (#77)
+- Changed the base class of the following wrappers from `ObservationWrapper` to `ModifyObsOrInfo`: `CustodyWrapper` (#71),`ConvertCustody2ActionMask` (#72), `VisMap2ActionMask` (#77) (#78).
 
 ### Deprecated
 
