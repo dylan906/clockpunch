@@ -303,6 +303,7 @@ obs_mask = env_custody2am.observation(obs_nomask)
 print(f"unwrapped obs  = \n{obs_nomask}")
 print(f"wrapped obs = \n{obs_mask}")
 assert env_custody2am.observation_space.contains(obs_mask)
+assert env_custody2am.mask2d_space.contains(obs_mask["mask"])
 
 # Test with info
 env_custody2am = ConvertCustody2ActionMask(
