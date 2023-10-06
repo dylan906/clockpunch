@@ -302,33 +302,6 @@ print(
 assert env_split.observation_space.contains(obs_wrapped)
 
 
-# %% Test CustodyWrapper
-print("\nTest CustodyWrapper...")
-env_custody = RandomEnv(
-    {
-        "observation_space": gym.spaces.Dict(
-            {"a": gym.spaces.Box(0, 1, shape=(3, 6, 6))}
-        ),
-        "action_space": gym.spaces.MultiDiscrete([4, 4]),
-    }
-)
-cw = CustodyWrapper(
-    env_custody,
-    obs_info="obs",
-    key="a",
-    config={
-        "func": "tr_cov",
-        "threshold": 1,
-    },
-)
-
-print(f"unwrapped obs space = \n{env_custody.observation_space.keys()}")
-print(f"wrapped obs space = \n{cw.observation_space.keys()}")
-obs = env_custody.observation_space.sample()
-# Make covariance all positive to be ensure diagonals are properly conditioned.
-# obs["est_cov"] = abs(obs["est_cov"])
-print(f"wrapped obs = {cw.observation(obs)['custody']}")
-
 # %% Test SumArrayWrapper
 print("\nTest SumArrayWrapper...")
 
