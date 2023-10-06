@@ -466,14 +466,14 @@ def getIdentityWrapperEnv(env: Env) -> Env:
 
 # %% CustodyWrapper
 class CustodyWrapper(ModifyObsOrInfo):
-    """Add 'custody' as an item to a Dict observation space.
+    """Add 'custody' as an item to a Dict observation space or info.
 
-    Custody entry is a MultiBinary space with shape (N,), where N is the
-    number of targets. Does not modify other items in observation
-    space, just adds "custody" to end of (ordered) dict.
+    Custody entry is a MultiBinary space with shape (N,), where N is the number
+    of targets. Does not modify other items in observation/info, just adds "custody"
+    to end of (ordered) dict.
 
-    Unwrapped observation space is required to have `key` as an item, which
-    must be a 3d Box space.
+    Unwrapped env must have `key` in observation space or info (depending on value
+    of `obs_info`). Corresponding item must be a 3d Box space.
     """
 
     def __init__(
@@ -485,15 +485,15 @@ class CustodyWrapper(ModifyObsOrInfo):
         target_names: list = None,
         initial_status: list[bool] = None,
     ):
-        """Wrap environment with CustodyWrapper observation space wrapper.
+        """Wrap environment with CustodyWrapper.
 
         Args:
-            env (Env): Must have a Dict observation space with key in it.
+            env (Env): Must have a Dict observation space.
             obs_info (str): ["obs" | "info"] The wrapper modifies either the observation
                 or the info (not both).
-            key (Any): A key contained in the observation space. The value corresponding
-                to this key must conform to interface expected in CustodyTracker
-                and config.
+            key (Any): A key contained in the observation space or info (depending
+                on value of `obs_info`). The value corresponding to this key must
+                conform to interface expected in CustodyTracker via `config`.
             config (dict, optional): See CustodyTracker for details. Defaults to None.
             target_names (list, optional): Target names. Used for debugging. Must
                 have length == env.action_space.nvec[0]. Defaults to None.
@@ -554,12 +554,9 @@ class CustodyWrapper(ModifyObsOrInfo):
                 is in custody.
         """
         if self.obs_info == "obs":
-            # new_obs = OrderedDict(deepcopy(obs))
             relevant_dict = deepcopy(obs)
-            # custody_input = deepcopy(new_obs[self.key])
         elif self.obs_info == "info":
             relevant_dict = deepcopy(info)
-            # custody_input = deepcopy(info[self.key])
 
         custody_input = relevant_dict[self.key]
 
@@ -569,9 +566,6 @@ class CustodyWrapper(ModifyObsOrInfo):
         # observation.
         custody = array(self.custody_tracker.update(custody_input)).astype(int8)
         new_item = {"custody": custody}
-        # new_obs["custody"] = custody
-
-        # assert self.observation_space.contains(new_obs)
 
         if self.obs_info == "obs":
             new_obs = deepcopy(obs).update(new_item)

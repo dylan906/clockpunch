@@ -240,7 +240,7 @@ except Exception as e:
 
 # %% Test CustodyWrapper
 print("\nTest CustodyWrapper...")
-env_custody = RandomInfo(
+env_rand = RandomInfo(
     RandomEnv(
         {
             "observation_space": Dict({"a": Box(0, 1, shape=(3, 6, 6))}),
@@ -250,7 +250,7 @@ env_custody = RandomInfo(
     info_space=Dict({}),
 )
 cw = CustodyWrapper(
-    env_custody,
+    env_rand,
     obs_info="obs",
     key="a",
     config={
@@ -262,12 +262,12 @@ obs, info = cw.reset()
 print(f"obs (reset) = {obs}")
 print(f"info (reset) = {info}")
 
-print(f"unwrapped obs space = \n{env_custody.observation_space.keys()}")
+print(f"unwrapped obs space = \n{cw.unwrapped.observation_space.keys()}")
 print(f"wrapped obs space = \n{cw.observation_space.keys()}")
-obs = env_custody.observation_space.sample()
+obs = cw.unwrapped.observation_space.sample()
 # Make covariance all positive to be ensure diagonals are properly conditioned.
 # obs["est_cov"] = abs(obs["est_cov"])
-print(f"wrapped obs = {cw.observation(obs)['custody']}")
+print(f"wrapped obs = {cw.observation(obs)}")
 
 
 # %% Done
