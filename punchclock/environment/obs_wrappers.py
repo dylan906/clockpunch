@@ -5,6 +5,7 @@ from collections import OrderedDict
 from copy import deepcopy
 from functools import partial
 from typing import Any, Tuple
+from warnings import warn
 
 # Third Party Imports
 import gymnasium as gym
@@ -45,6 +46,8 @@ from numpy import (
 from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
+from punchclock.common.utilities import actionSpace2Array, getInfo
+from punchclock.environment.misc_wrappers import ModifyObsOrInfo
 from punchclock.environment.wrapper_utils import (
     SelectiveDictObsWrapper,
     SelectiveDictProcessor,
@@ -1363,7 +1366,7 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
 
 
 # %% ConvertCustody2ActionMask
-class ConvertCustody2ActionMask(gym.ObservationWrapper):
+class ConvertCustody2ActionMask(ModifyObsOrInfo):
     """Convert a MultiBinary custody array to a MultiBinary action mask.
 
     Assumes inaction is a valid action.
@@ -1394,7 +1397,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
             }
         )
 
-    Example (with rename_key) (M=2):
+    Example (with new_key) (M=2):
         env.observation_space = Dict(
             {
                 "custody": MultiBinary(3),
@@ -1404,7 +1407,7 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
         wrapped_env = ConvertCustody2ActionMask(
             env,
             key = "custody",
-            rename_key = "foo"
+            new_key = "foo"
             )
 
         wrapped_env.observation_space = Dict(
@@ -1420,91 +1423,122 @@ class ConvertCustody2ActionMask(gym.ObservationWrapper):
     def __init__(
         self,
         env: Env,
+        obs_info: str,
         key: str,
-        rename_key: str = None,
+        new_key: str = None,
     ):
         """Wrap environment.
 
         Args:
             env (Env): Must have a Dict observation_space.
-            key (str): Contained in env.observation_space. Must be a 1d MultiBinary
-                space.
-            rename_key (str, optional): Unwrapped observation space entry key will
-                be renamed to rename_key and put at end of Dict observation space.
-                If rename_key == None, then unwrapped key is unmodified and stays
-                in same place. Defaults to None.
+            obs_info (str): ["obs" | "info"] The wrapper modifies either the
+                observation or the info (not both).
+            key (str): Contained in env.observation_space or info, depending on
+                value of `obs_info`. Must be a 1d MultiBinary space.
+            new_key (str, optional): New key to be appended to observation or
+                info, depending on value of `obs_info`. Overwrites unwrapped key
+                if `new_key` already exists. If None, uses value of `key`. Defaults
+                to None.
         """
-        if rename_key is None:
-            rename_key = key
+        super().__init__(env=env, obs_info=obs_info)
+        if new_key is None:
+            new_key = key
 
-        assert isinstance(
-            env.observation_space, Dict
-        ), "env.observation_space must be a gymnasium.spaces.Dict."
-        assert (
-            key in env.observation_space.spaces
-        ), f"{key} is not in env.observation_space."
-        assert isinstance(
-            env.observation_space.spaces[key], MultiBinary
-        ), f"env.observation_space[{key}] must be a MultiBinary."
+        info_sample = getInfo(env)
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
 
-        super().__init__(env)
+        if obs_info == "obs":
+            assert (
+                key in env.observation_space.spaces
+            ), f"{key} must be in observation space."
+            assert isinstance(
+                env.observation_space.spaces[key], MultiBinary
+            ), f"env.observation_space[{key}] must be a MultiBinary."
+            if new_key in env.observation_space.spaces:
+                warn(
+                    f"""{new_key} is already in env.observation_space. Values will
+                be overwritten."""
+                )
+        elif obs_info == "info":
+            assert key in info_sample, f"{key} must be in info."
+            if new_key in info_sample:
+                warn(
+                    f"{new_key} is already in info. Values will be overwritten."
+                )
 
         self.key = key
+        self.new_key = new_key
+
         self.num_sensors = env.action_space.shape[0]
-        # convert num_targets from numpy dtype to Python int
-        self.num_targets = int(env.observation_space[key].n)
-        self.rename_key = rename_key
-        self.sdp = SelectiveDictProcessor(
-            funcs=[
-                partial(
-                    self.binary2ActionMask,
-                    num_sensors=self.num_sensors,
-                )
-            ],
-            keys=[rename_key],
-        )
-        self.observation_space = deepcopy(env.observation_space)
+        if obs_info == "obs":
+            self.num_targets = int(env.observation_space[key].n)
+        elif obs_info == "info":
+            self.num_targets = len(info_sample[key])
+
+        # mask space used for debugging/development
         self.mask2d_space = MultiBinary(
             [self.num_targets + 1, self.num_sensors]
         )
 
-        # If original key's value is being overwritten, then maintain the item's
-        # position in the OrderedDict. But if the original key is being replaced
-        # with a new key, delete the original item and append the new item to end
-        # of OrderedDict.
-        if rename_key != key:
-            del self.observation_space.spaces[key]
+        # convert num_targets from numpy dtype to Python int
+        self.sdp = SelectiveDictProcessor(
+            funcs=[
+                partial(self.binary2ActionMask, num_sensors=self.num_sensors)
+            ],
+            keys=[new_key],
+        )
 
-        self.observation_space[rename_key] = self.mask2d_space
+        if obs_info == "obs":
+            # update obs space if necessary
+            self.observation_space = deepcopy(env.observation_space)
+            self.observation_space[new_key] = self.mask2d_space
 
-    def observation(self, obs: OrderedDict) -> OrderedDict:
+    def modifyOI(
+        self, obs: OrderedDict, info: dict
+    ) -> Tuple[OrderedDict, dict]:
         """Convert custody observation to action mask.
+
+        Value is converted from custody array to action mask.
+            See class description for details. Returned OrderedDict/dict has same
+            keys as obs, unless self.new_key was set on instantiation. If
+            self.new_key != self.key, then returned OrderedDict will not
+            have self.key, but will have self.new_key. Order of returned
+            OrderedDict is same as obs. "new_key", if used, is appended
+            to end of OrderedDict.
 
         Args:
             obs (OrderedDict): Must have self.key in keys.
 
         Returns:
-            OrderedDict: Value is converted from custody array to action mask.
-                See class description for details. Returned OrderedDict has same
-                keys as obs, unless self.rename_key was set on instantiation. If
-                self.rename_key != self.key, then returned OrderedDict will not
-                have self.key, but will have self.rename_key. Order of returned
-                OrderedDict is same as obs. "rename_key", if used, is appended
-                to end of OrderedDict.
+            new_obs (OrderedDict): If self.obs_info == "obs", same as input obs
+                but with `self.new_key` item appended. Otherwise, same as input obs.
+            new_info (dict): If self.obs_info == "info", same as input info but
+                with `self.new_key` item appended. Otherwise, same as input info.
         """
-        new_obs = deepcopy(obs)
-        # Copy item to new item (no effect if key == rename_key). Delete original
-        # key if key != rename_key
-        new_obs[self.rename_key] = new_obs[self.key]
-        if self.rename_key != self.key:
-            del new_obs[self.key]
+        if self.obs_info == "obs":
+            relevant_dict = deepcopy(obs)
+        elif self.obs_info == "info":
+            relevant_dict = deepcopy(info)
 
-        # sdp.applyFunc overwrites new_obs[rename_key], leaves other keys untouched
-        new_obs = self.sdp.applyFunc(new_obs)
-        return new_obs
+        # SDP overwrites a value of a dict. Copy unwrapped value to new key-value
+        # pair (while keeping unwrapped kv pair). Copied value will be overwritten
+        # when SDP applyies transformation function.
+        relevant_dict.update({self.new_key: relevant_dict[self.key]})
+
+        # sdp.applyFunc overwrites new_obs[new_key], leaves other keys untouched
+        # new_obs = self.sdp.applyFunc(new_obs)
+        transformed_dict = self.sdp.applyFunc(relevant_dict)
+
+        if self.obs_info == "obs":
+            new_obs = transformed_dict
+            new_info = info
+        elif self.obs_info == "info":
+            new_obs = obs
+            new_info = transformed_dict
+
+        return new_obs, new_info
 
     def binary2ActionMask(
         self, custody_array: ndarray, num_sensors: int
