@@ -314,6 +314,7 @@ env_custody = RandomEnv(
 )
 cw = CustodyWrapper(
     env_custody,
+    obs_info="obs",
     key="a",
     config={
         "func": "tr_cov",

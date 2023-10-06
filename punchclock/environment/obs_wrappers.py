@@ -47,6 +47,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 # Punch Clock Imports
 from punchclock.common.custody_tracker import CustodyTracker
+from punchclock.common.utilities import getInfo
+from punchclock.environment.misc_wrappers import ModifyObsOrInfo
 from punchclock.environment.wrapper_utils import (
     SelectiveDictObsWrapper,
     SelectiveDictProcessor,
@@ -1145,7 +1147,7 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
 
 
 # %% CustodyWrapper
-class CustodyWrapper(gym.ObservationWrapper):
+class CustodyWrapper(ModifyObsOrInfo):
     """Add 'custody' as an item to a Dict observation space.
 
     Custody entry is a MultiBinary space with shape (N,), where N is the
@@ -1159,6 +1161,7 @@ class CustodyWrapper(gym.ObservationWrapper):
     def __init__(
         self,
         env: Env,
+        obs_info: str,
         key: Any,
         config: dict = None,
         target_names: list = None,
@@ -1168,6 +1171,8 @@ class CustodyWrapper(gym.ObservationWrapper):
 
         Args:
             env (Env): Must have a Dict observation space with key in it.
+            obs_info (str): ["obs" | "info"] The wrapper modifies either the observation
+                or the info (not both).
             key (Any): A key contained in the observation space. The value corresponding
                 to this key must conform to interface expected in CustodyTracker
                 and config.
@@ -1177,12 +1182,19 @@ class CustodyWrapper(gym.ObservationWrapper):
             initial_status (list[bool], optional): See CustodyTracker for details.
                 Defaults to None.
         """
+        super().__init__(env=env, obs_info=obs_info)
+
         assert (
             key in env.observation_space.spaces
         ), f"{key} must be in env.observation_space."
-        assert (
-            "custody" not in env.observation_space.spaces
-        ), "'custody' is already in env.observation_space."
+        if obs_info == "obs":
+            assert (
+                "custody" not in env.observation_space.spaces
+            ), "'custody' is already in env.observation_space."
+        elif obs_info == "info":
+            info_test = getInfo(env)
+            assert "custody" not in info_test, "'custody' is already in info."
+
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "Action space must be MultiDiscrete."
@@ -1195,7 +1207,6 @@ class CustodyWrapper(gym.ObservationWrapper):
             ), "num_targets must equal len(target_names) (if target_names is not None)."
 
         # make wrapper
-        super().__init__(env)
         self.key = key
 
         self.custody_tracker = CustodyTracker(
@@ -1204,35 +1215,54 @@ class CustodyWrapper(gym.ObservationWrapper):
             target_names=target_names,
         )
 
-        # Update observation space, maintain order, append "custody" to end.
-        new_space = OrderedDict({**env.observation_space})
-        new_space["custody"] = MultiBinary(num_targets)
-        self.observation_space = Dict(new_space)
+        if obs_info == "obs":
+            # Update observation space, maintain order, append "custody" to end.
+            new_space = OrderedDict({**env.observation_space})
+            new_space["custody"] = MultiBinary(num_targets)
+            self.observation_space = Dict(new_space)
 
-    def observation(self, obs: OrderedDict) -> OrderedDict:
-        """Convert unwrapped observation to wrapped observation.
+    def modifyOI(self, obs: OrderedDict, info: dict) -> OrderedDict:
+        """Append custody entry to observation or info dict.
 
         Args:
-            obs (OrderedDict): Must have self.key as item.
+            obs (OrderedDict): Unwrapped observation. If `self.obs_info` ==
+                "obs", must contain self.key.
+            info (dict): Unwrapped info. If `self.obs_info` == "info", must
+                contain self.key.
 
         Returns:
             OrderedDict: Same as input dict, but with "custody" item appended.
                 Custody is a (N,) binary array where 1 indicates the n-th target
                 is in custody.
         """
-        new_obs = OrderedDict(deepcopy(obs))
+        if self.obs_info == "obs":
+            # new_obs = OrderedDict(deepcopy(obs))
+            relevant_dict = deepcopy(obs)
+            # custody_input = deepcopy(new_obs[self.key])
+        elif self.obs_info == "info":
+            relevant_dict = deepcopy(info)
+            # custody_input = deepcopy(info[self.key])
 
-        custody_input = deepcopy(obs[self.key])
+        custody_input = relevant_dict[self.key]
 
         # custody_tracker outputs custody status as a list of bools; convert to
         # a 1d array of ints. Use int8 for dtype-> this is the default dtype of
         # MultiBinary space. Make sure "custody" is added at end of OrderedDict
         # observation.
         custody = array(self.custody_tracker.update(custody_input)).astype(int8)
-        new_obs["custody"] = custody
+        new_item = {"custody": custody}
+        # new_obs["custody"] = custody
 
-        assert self.observation_space.contains(new_obs)
-        return new_obs
+        # assert self.observation_space.contains(new_obs)
+
+        if self.obs_info == "obs":
+            new_obs = deepcopy(obs).update(new_item)
+            new_info = deepcopy(info)
+        elif self.obs_info == "info":
+            new_obs = deepcopy(obs)
+            new_info = deepcopy(info).update(new_item)
+
+        return new_obs, new_info
 
 
 # %% Convert2dTo3dObsItems
