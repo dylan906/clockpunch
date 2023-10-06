@@ -10,6 +10,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import (
     CopyObsInfoItem,
+    CustodyWrapper,
     IdentityWrapper,
     MaskViolationChecker,
     ModifyObsOrInfo,
@@ -236,6 +237,38 @@ try:
     getIdentityWrapperEnv(rand_env)
 except Exception as e:
     print(e)
+
+# %% Test CustodyWrapper
+print("\nTest CustodyWrapper...")
+env_custody = RandomInfo(
+    RandomEnv(
+        {
+            "observation_space": Dict({"a": Box(0, 1, shape=(3, 6, 6))}),
+            "action_space": MultiDiscrete([4, 4]),
+        }
+    ),
+    info_space=Dict({}),
+)
+cw = CustodyWrapper(
+    env_custody,
+    obs_info="obs",
+    key="a",
+    config={
+        "func": "tr_cov",
+        "threshold": 1,
+    },
+)
+obs, info = cw.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+print(f"unwrapped obs space = \n{env_custody.observation_space.keys()}")
+print(f"wrapped obs space = \n{cw.observation_space.keys()}")
+obs = env_custody.observation_space.sample()
+# Make covariance all positive to be ensure diagonals are properly conditioned.
+# obs["est_cov"] = abs(obs["est_cov"])
+print(f"wrapped obs = {cw.observation(obs)['custody']}")
+
 
 # %% Done
 print("done")
