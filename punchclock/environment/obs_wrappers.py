@@ -1412,46 +1412,55 @@ class WastedActionsMask(gym.ObservationWrapper):
     mask.
     """
 
-    def __init__(self, env: Env, vis_map_key: ndarray, mask_key: str = None):
+    def __init__(
+        self,
+        env: Env,
+        avail_map_key: ndarray,
+        mask_key: str = None,
+        obs_info: str = None,
+    ):
+        # TODO: Make the base class ModifyObsOrInfo
         """Wrap environment with WastedActionsMask.
 
         Args:
             env (Env): Must have a Dict observation space.
-            vis_map_key (ndarray): Corresponds to item in observation space.
+            avail_map_key (ndarray): Corresponds to item in observation space.
                 Corresponding value must be a (N, M) or (N+1, M) binary array.
             mask_key (str, optional): The key of the new action mask entry in the
                 wrapped observation space. Defaults to 'mask'.
+            obs_info (str, optional): In here for future class conversion to
+                ModifyObsOrInfo (#79).
         """
         assert isinstance(
             env.observation_space, Dict
         ), "env.observation_space must be a gymnasium.spaces.Dict."
         assert (
-            vis_map_key in env.observation_space.spaces
-        ), f"{vis_map_key} must be in observation space."
+            avail_map_key in env.observation_space.spaces
+        ), f"{avail_map_key} must be in observation space."
         assert isinstance(
-            env.observation_space.spaces[vis_map_key], MultiBinary
-        ), f"env.observation_space[{vis_map_key}] must be a MultiBinary."
-        num_sensors = env.observation_space.spaces[vis_map_key].shape[1]
+            env.observation_space.spaces[avail_map_key], MultiBinary
+        ), f"env.observation_space[{avail_map_key}] must be a MultiBinary."
+        num_sensors = env.observation_space.spaces[avail_map_key].shape[1]
         assert isinstance(
             env.action_space, MultiDiscrete
         ), "env.action_space must be a gymnasium.spaces.MultiDiscrete."
         assert (
             len(env.action_space.nvec) == num_sensors
         ), f"""Length of action space must match number of columns in
-        observation_space[{vis_map_key}]."""
+        observation_space[{avail_map_key}]."""
         assert all(
             env.action_space.nvec == env.action_space.nvec[0]
         ), "All values in action_space.nvec must be identical."
-        # num_targets = env.observation_space.spaces[vis_map_key].shape[0]
+        # num_targets = env.observation_space.spaces[avail_map_key].shape[0]
         num_targets = env.action_space.nvec[0] - 1
-        assert env.observation_space.spaces[vis_map_key].shape[0] in [
+        assert env.observation_space.spaces[avail_map_key].shape[0] in [
             num_targets,
             num_targets + 1,
         ], f"""Observation and action spaces disagree on number of targets. The
         observation space should have N or N+1 rows where `N+1` is the value of
         all entries in the action space.
         Action space value = {env.action_space[0]},
-        Observation space shape = {env.observation_space.spaces[vis_map_key].shape[0]}.
+        Observation space shape = {env.observation_space.spaces[avail_map_key].shape[0]}.
         """
 
         if mask_key is None:
@@ -1465,13 +1474,13 @@ class WastedActionsMask(gym.ObservationWrapper):
 
         super().__init__(env)
 
-        if env.observation_space.spaces[vis_map_key].shape[0] == num_targets:
+        if env.observation_space.spaces[avail_map_key].shape[0] == num_targets:
             # So we know whether or not to remove the bottom row in checking visibility
             self.nullaction_included = False
         else:
             self.nullaction_included = True
 
-        self.vis_map_key = vis_map_key
+        self.avail_map_key = avail_map_key
         self.mask_key = mask_key
         self.num_sensors = num_sensors
         self.num_targets = num_targets
@@ -1488,7 +1497,7 @@ class WastedActionsMask(gym.ObservationWrapper):
         """
         mask = ones((self.num_targets + 1, self.num_sensors), dtype=int)
 
-        vis_map = obs[self.vis_map_key]
+        vis_map = obs[self.avail_map_key]
         if self.nullaction_included is True:
             # crop if null action row is included
             vis_map = vis_map[:-1, :]
