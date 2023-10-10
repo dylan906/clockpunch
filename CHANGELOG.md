@@ -11,7 +11,7 @@ I'm trying to get better about that.
 
 ### Added
 
-- New `InfoWrapper`s: `CombineInfoItems`, `TransformInfoWithNumpy` (#51).
+- New `InfoWrapper`s: `CombineInfoItems`, `TransformInfoWithNumpy` (#51), `GetNonZeroElements` (#80).
 - New miscellaneous wrappers: `OperatorWrapper` (#69), `MaskViolationChecker` (#75).
 - New `ObservationWrapper`: `MakeObsSpaceMultiBinary` (#74).
 - `NumWindows` wrapper can now be configured to run in open-loop mode (#76).
