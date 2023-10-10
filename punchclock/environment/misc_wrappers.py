@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from copy import deepcopy
 from functools import partial
-from typing import Any, Tuple
+from typing import Any, Tuple, final
 from warnings import warn
 
 # Third Party Imports
@@ -129,6 +129,7 @@ class ModifyObsOrInfo(Wrapper):
         """
         return new_obs, new_info  # noqa
 
+    @final
     def reset(
         self, seed: int | None = None, options=None
     ) -> Tuple[OrderedDict, dict]:
@@ -140,6 +141,7 @@ class ModifyObsOrInfo(Wrapper):
         self.info = deepcopy(info)
         return new_obs, new_info
 
+    @final
     def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
         """Step environment."""
         (
@@ -154,6 +156,7 @@ class ModifyObsOrInfo(Wrapper):
         self.info = deepcopy(new_info)
         return (new_obs, rewards, terminations, truncations, new_info)
 
+    @final
     def observation(self, observation: OrderedDict) -> OrderedDict:
         """Modify observation only if obs_info == "obs"."""
         if self.obs_info == "obs":
