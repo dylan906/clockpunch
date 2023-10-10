@@ -18,6 +18,7 @@ from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     CombineInfoItems,
+    GetNonZeroElements,
     LogisticTransformInfo,
     MaskViolationCounter,
     NumWindows,
@@ -371,5 +372,24 @@ rand_env = RandomInfo(
 cat_env = CombineInfoItems(rand_env, keys=["a", "b", "c"], new_key="new")
 (_, _, _, _, info) = cat_env.step(cat_env.action_space.sample())
 print(f"info (via step) = {info}")
+
+# %% Test GetNonZeroElements
+print("\nTest GetNonZeroElements...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict(
+        {
+            "a": Box(low=0, high=2, shape=(2, 2)),
+            "b": MultiBinary((2, 2)),
+            "c": Box(low=0, high=3, shape=(2,), dtype=int),
+        }
+    ),
+)
+for k in ["a", "b", "c"]:
+    nz_env = GetNonZeroElements(rand_env, key=k, new_key="nonzeros")
+    (_, _, _, _, info) = nz_env.step(nz_env.action_space.sample())
+    print(f"info (via step) = {info}")
 # %% done
 print("done")

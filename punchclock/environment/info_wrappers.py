@@ -938,3 +938,51 @@ class CombineInfoItems(InfoWrapper):
         new_info.update(new_item)
 
         return new_info
+
+
+# %% GetNonZeroElements
+class GetNonZeroElements(InfoWrapper):
+    """Get all non-zero elements of an entry in info.
+
+    Returns a 1d array.
+
+    """
+
+    def __init__(self, env: Env, key: str, new_key: str = None):
+        """Wrap environment.
+
+        Args:
+            env (Env): _description_
+            key (str): Key to check for non-zeros.
+            new_key (str, optional): Key to assign non-zero values to. If None,
+                overwrites `key`. Defaults to None.
+        """
+        super().__init__(env=env)
+
+        if new_key is None:
+            new_key = key
+
+        self.key = key
+        self.new_key = new_key
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ) -> dict:
+        """Get all non-zero values from an item in `info`.
+
+        Args:
+            observations, rewards, terminations, truncations, actions: Unused.
+            infos (dict): Must contain self.key.
+
+        Returns:
+            dict: Same as `infos`, but with non-zeros item (either as self.new_key
+                or self.key, depending on instantiation).
+        """
+        new_info = deepcopy(infos)
+        val = new_info[self.key]
+
+        val_nozeros = val[val != 0]
+        new_item = {self.new_key: val_nozeros}
+        new_info.update(new_item)
+
+        return new_info
