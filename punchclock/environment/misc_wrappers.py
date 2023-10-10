@@ -333,6 +333,7 @@ class OperatorWrapper(ModifyObsOrInfo):
         copy_key: str = None,
         a: Any = None,
         b: Any = None,
+        b_key: str = None,
     ):
         """Initialize wrapper with modifying function from operator package.
 
@@ -351,6 +352,8 @@ class OperatorWrapper(ModifyObsOrInfo):
                 to None.
             b (Any, optional): Provide only if fixing the second arg of func.
                 Defaults to None.
+            b_key (str, optional): Use if the second arg of function is another
+                item in info/obs. Defaults to None.
         """
         super().__init__(env=env, obs_info=obs_or_info)
 
@@ -358,10 +361,14 @@ class OperatorWrapper(ModifyObsOrInfo):
 
         self.obs_or_info = obs_or_info
         self.key = key
+
         if copy_key is None:
             copy_key = key
-
         self.copy_key = copy_key
+
+        if b_key is None:
+            b_key = ""
+        self.b_key = b_key
 
     def modifyOI(
         self, obs: OrderedDict, info: dict
@@ -383,10 +390,15 @@ class OperatorWrapper(ModifyObsOrInfo):
         # Then update the appropriate dict and output obs and info.
         if self.obs_info == "obs":
             thing = obs[self.key]
+            secondary = obs.get(self.b_key)
         elif self.obs_info == "info":
             thing = info[self.key]
+            secondary = info.get(self.b_key)
 
-        thing_trans = self.func(thing)
+        if secondary is None:
+            thing_trans = self.func(thing)
+        else:
+            thing_trans = self.func(thing, secondary)
 
         if self.obs_info == "obs":
             obs.update({self.copy_key: thing_trans})

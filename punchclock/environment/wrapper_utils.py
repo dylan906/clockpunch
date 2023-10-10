@@ -531,15 +531,15 @@ class OperatorFuncBuilder:
         self.a = a
         self.b = b
 
-    def __call__(self, arg=None):
+    def __call__(self, *arg):
         """Call function specified at instantiation."""
         if self.a is None:
-            a = arg
+            a = arg[0]
         else:
             a = self.a
 
         if self.b is None:
-            b = arg
+            b = arg[1]
         else:
             b = self.b
 

@@ -196,6 +196,28 @@ obs, info = op_env.reset()
 print(f"obs = {obs}")
 print(f"info = {info}")
 
+# test with item from info as second arg
+rand_env = RandomInfo(
+    RandomEnv({"observation_space": Dict({"foo": Box(low=0, high=1)})}),
+    info_space=Dict(
+        {
+            "a": Box(low=0, high=2, shape=[3]),
+            "b": MultiBinary([1]),
+        }
+    ),
+)
+op_env = OperatorWrapper(
+    rand_env,
+    obs_or_info="info",
+    func_str="getitem",
+    key="a",
+    copy_key="copy_key",
+    b_key="b",
+)
+obs, info = op_env.reset()
+print(f"obs = {obs}")
+print(f"info = {info}")
+
 # %% MaskViolationChecker
 print("\nTest MaskViolationChecker...")
 rand_env = RandomInfo(

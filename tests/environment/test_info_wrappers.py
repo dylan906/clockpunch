@@ -354,6 +354,10 @@ np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="sum", key="a")
 (_, _, _, _, info) = np_env.step(np_env.action_space.sample())
 print(f"info (via step) = {info}")
 
+np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="nonzero", key="a")
+(_, _, _, _, info) = np_env.step(np_env.action_space.sample())
+print(f"info (via step) = {info}")
+
 # %% Test CombineInfoItems
 print("\nTest CombineInfoItems...")
 rand_env = RandomInfo(
