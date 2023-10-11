@@ -3,6 +3,7 @@
 # Standard Library Imports
 import argparse
 import os
+from typing import Dict, List, Tuple, Union
 
 # Third Party Imports
 import gymnasium as gym
@@ -19,9 +20,12 @@ from ray.rllib.models.modelv2 import ModelV2
 from ray.rllib.models.preprocessors import get_preprocessor
 from ray.rllib.models.tf.recurrent_net import RecurrentNetwork
 from ray.rllib.models.torch.recurrent_net import RecurrentNetwork as TorchRNN
+from ray.rllib.policy.rnn_sequencing import add_time_dimension
 from ray.rllib.utils.annotations import override
 from ray.rllib.utils.framework import try_import_tf, try_import_torch
 from ray.rllib.utils.test_utils import check_learning_achieved
+from ray.rllib.utils.torch_utils import FLOAT_MIN
+from ray.rllib.utils.typing import ModelConfigDict, TensorType
 from ray.tune.registry import get_trainable_cls, register_env
 from torch import tensor
 
@@ -46,6 +50,11 @@ class DerModel(TorchRNN, nn.Module):
         )
 
         # Size of observations must include only "observations", not "action_mask"
+        assert "observations" in obs_space.spaces
+        assert "action_mask" in obs_space.spaces
+        assert len(obs_space["action_mask"].shape) == 1
+        assert obs_space["action_mask"].shape[0] == num_outputs
+
         # self.obs_size = get_preprocessor(obs_space)(obs_space).size
         self.obs_size = obs_space["observations"].shape[0]
         self.fc_size = fc_size
@@ -77,6 +86,45 @@ class DerModel(TorchRNN, nn.Module):
         assert self._features is not None, "must call forward() first"
         return torch.reshape(self.value_branch(self._features), [-1])
 
+    # Override forward() to add an action mask step
+    @override(TorchRNN)
+    def forward(
+        self,
+        input_dict: Dict[str, TensorType],
+        state: List[TensorType],
+        seq_lens: TensorType,
+    ) -> Tuple[TensorType, List[TensorType]]:
+        """Adds time dimension to batch before sending inputs to forward_rnn().
+
+        You should implement forward_rnn() in your subclass.
+        """
+        # Get observations from obs; not observations+action_mask
+        # flat_inputs = input_dict["obs_flat"].float()
+        flat_inputs = input_dict["observations"].float()
+        action_mask = input_dict["action_mask"]
+
+        # Note that max_seq_len != input_dict.max_seq_len != seq_lens.max()
+        # as input_dict may have extra zero-padding beyond seq_lens.max().
+        # Use add_time_dimension to handle this
+        self.time_major = self.model_config.get("_time_major", False)
+        inputs = add_time_dimension(
+            flat_inputs,
+            seq_lens=seq_lens,
+            framework="torch",
+            time_major=self.time_major,
+        )
+        output, new_state = self.forward_rnn(inputs, state, seq_lens)
+        output = torch.reshape(output, [-1, self.num_outputs])
+        # Mask raw logits here! Then return masked values
+        output = self.maskLogits(logits=output, mask=action_mask)
+        return output, new_state
+
+    def maskLogits(self, logits: TensorType, mask: TensorType):
+        """Apply mask over raw logits."""
+        inf_mask = torch.clamp(torch.log(mask), min=FLOAT_MIN)
+        masked_logits = logits + inf_mask
+        return masked_logits
+
     @override(TorchRNN)
     def forward_rnn(self, inputs, state, seq_lens):
         """Feeds `inputs` (B x T x ..) through the Gru Unit.
@@ -103,7 +151,7 @@ env = RandomEnv(
         "observation_space": gym.spaces.Dict(
             {
                 "observations": gym.spaces.Box(0, 1, shape=[4]),
-                "action_mask": gym.spaces.MultiBinary([2, 2]),
+                "action_mask": gym.spaces.MultiBinary([2]),
             }
         ),
         "action_space": gym.spaces.MultiBinary([2]),
@@ -113,9 +161,9 @@ env = RandomEnv(
 
 # %% Preprocess function for obs
 def preprocessObs(obs: dict) -> dict:
+    """Conert components of observation to Tensors."""
     for k, v in obs.items():
         obs[k] = tensor(v)
-    obs["obs_flat"] = obs["observations"]
     return obs
 
 
@@ -130,6 +178,9 @@ model = DerModel(
 
 # %% Test model
 obs = env.observation_space.sample()
+# override action mask to make sure we don't have all same values
+obs["action_mask"][0] = 0
+obs["action_mask"][1] = 1
 obs = preprocessObs(obs)
 seq_lens = tensor(array([0]))
 init_state = model.get_initial_state()
