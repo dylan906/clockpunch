@@ -1,62 +1,51 @@
 """Custom LSTM + Action Mask model."""
 # %% Imports
 # Standard Library Imports
-import argparse
-import os
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple
 
 # Third Party Imports
 import gymnasium as gym
-import numpy as np
-import ray
+import ray.rllib.algorithms.ppo as ppo
 from numpy import array
-from ray import air, tune
 from ray.rllib.examples.env.random_env import RandomEnv
-from ray.rllib.examples.env.repeat_after_me_env import RepeatAfterMeEnv
-from ray.rllib.examples.env.repeat_initial_obs_env import RepeatInitialObsEnv
-from ray.rllib.examples.models.rnn_model import RNNModel, TorchRNNModel
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
-from ray.rllib.models.preprocessors import get_preprocessor
-from ray.rllib.models.tf.recurrent_net import RecurrentNetwork
 from ray.rllib.models.torch.recurrent_net import RecurrentNetwork as TorchRNN
 from ray.rllib.policy.rnn_sequencing import add_time_dimension
 from ray.rllib.utils.annotations import override
-from ray.rllib.utils.framework import try_import_tf, try_import_torch
-from ray.rllib.utils.test_utils import check_learning_achieved
+from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_utils import FLOAT_MIN
-from ray.rllib.utils.typing import ModelConfigDict, TensorType
-from ray.tune.registry import get_trainable_cls, register_env
+from ray.rllib.utils.typing import TensorType
 from torch import tensor
 
 torch, nn = try_import_torch()
 
 
 # %% Class
-class DerModel(TorchRNN, nn.Module):
+class MaskedLSTM(TorchRNN, nn.Module):
     def __init__(
         self,
         obs_space,
         action_space,
         num_outputs,
-        model_config,
+        model_config: dict,
         name,
-        fc_size=64,
-        lstm_state_size=256,
+        fc_size: int = 64,
+        lstm_state_size: int = 256,
     ):
         nn.Module.__init__(self)
         super().__init__(
             obs_space, action_space, num_outputs, model_config, name
         )
-
+        # Convert space to proper gym space if handed is as a different type
+        orig_space = getattr(obs_space, "original_space", obs_space)
         # Size of observations must include only "observations", not "action_mask"
-        assert "observations" in obs_space.spaces
-        assert "action_mask" in obs_space.spaces
-        assert len(obs_space["action_mask"].shape) == 1
-        assert obs_space["action_mask"].shape[0] == num_outputs
+        assert "observations" in orig_space.spaces
+        assert "action_mask" in orig_space.spaces
+        assert len(orig_space["action_mask"].shape) == 1
+        assert orig_space["action_mask"].shape[0] == num_outputs
 
-        # self.obs_size = get_preprocessor(obs_space)(obs_space).size
-        self.obs_size = obs_space["observations"].shape[0]
+        self.obs_size = orig_space["observations"].shape[0]
         self.fc_size = fc_size
         self.lstm_state_size = lstm_state_size
 
@@ -98,10 +87,11 @@ class DerModel(TorchRNN, nn.Module):
 
         You should implement forward_rnn() in your subclass.
         """
+        # When training, input_dict is handed in with an extra nested level from
+        # the environment (input_dict["obs"]).
         # Get observations from obs; not observations+action_mask
-        # flat_inputs = input_dict["obs_flat"].float()
-        flat_inputs = input_dict["observations"].float()
-        action_mask = input_dict["action_mask"]
+        flat_inputs = input_dict["obs"]["observations"].float()
+        action_mask = input_dict["obs"]["action_mask"]
 
         # Note that max_seq_len != input_dict.max_seq_len != seq_lens.max()
         # as input_dict may have extra zero-padding beyond seq_lens.max().
@@ -146,47 +136,83 @@ class DerModel(TorchRNN, nn.Module):
 
 
 # %% Env
-env = RandomEnv(
-    {
-        "observation_space": gym.spaces.Dict(
-            {
-                "observations": gym.spaces.Box(0, 1, shape=[4]),
-                "action_mask": gym.spaces.MultiBinary([2]),
-            }
-        ),
-        "action_space": gym.spaces.MultiBinary([2]),
-    }
-)
+env_config = {
+    "observation_space": gym.spaces.Dict(
+        {
+            "observations": gym.spaces.Box(0, 1, shape=[4]),
+            "action_mask": gym.spaces.Box(0, 1, shape=[2], dtype=int),
+        }
+    ),
+    "action_space": gym.spaces.MultiDiscrete([2]),
+}
+
+env = RandomEnv(env_config)
+print(f"observation_space = {env.observation_space}")
+print(f"action_space = {env.action_space}")
 
 
 # %% Preprocess function for obs
 def preprocessObs(obs: dict) -> dict:
-    """Conert components of observation to Tensors."""
+    """Convert components of observation to Tensors."""
+    # Obs into .forward() are expected in a slightly different format than the
+    # raw env's observation space at instantiation.
     for k, v in obs.items():
         obs[k] = tensor(v)
+    obs = {"obs": obs}
     return obs
 
 
 # %% Build model
-model = DerModel(
+model = MaskedLSTM(
     obs_space=env.observation_space,
     action_space=env.action_space,
     num_outputs=2,
-    model_config={},
+    model_config={
+        # "fcnet_hiddens": (5, 4),
+        # "fcnet_activation": "relu",
+    },
+    fc_size=5,
+    lstm_state_size=10,
     name=None,
 )
 
-# %% Test model
+# %% Test model (basic)
 obs = env.observation_space.sample()
 # override action mask to make sure we don't have all same values
 obs["action_mask"][0] = 0
 obs["action_mask"][1] = 1
+print(f"obs (raw) = {obs}")
 obs = preprocessObs(obs)
+print(f"obs (preprocessed) = {obs}")
+
 seq_lens = tensor(array([0]))
 init_state = model.get_initial_state()
 [logits, state] = model.forward(
     input_dict=obs, state=init_state, seq_lens=seq_lens
 )
+print(f"logits = {logits}")
+print(f"state = {state}")
 
+# %% Test training
+ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+
+config = (
+    ppo.PPOConfig()
+    .environment(RandomEnv, env_config=env_config)
+    .framework("torch")
+    .training(
+        model={
+            # Specify our custom model from above.
+            "custom_model": "MaskedLSTM",
+            # Extra kwargs to be passed to your model's c'tor.
+            # "custom_model_config": {},
+            # "fcnet_hiddens": [10],
+            # "num_outputs": num_outputs,
+        }
+    )
+)
+algo = config.build()
+algo.train()
+algo.stop()
 
 print("done")
