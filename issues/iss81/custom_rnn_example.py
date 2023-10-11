@@ -1,4 +1,4 @@
-"""Action Mask + LSTM Model."""
+"""Custom RNN example from Ray."""
 # Custom RNN Example: https://github.com/ray-project/ray/blob/master/rllib/examples/models/rnn_model.py
 # %% Imports
 # Standard Library Imports
