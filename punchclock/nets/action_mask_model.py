@@ -90,6 +90,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         )
 
         last_layer_size = model_config["fcnet_hiddens"][-1]
+        print(f"last_layer_size = {last_layer_size}")
+        print(f"num_outputs = {num_outputs}")
         self.action_head = nn.Linear(last_layer_size, num_outputs)
         self.value_head = nn.Linear(last_layer_size, 1)
 
