@@ -1,5 +1,7 @@
 """Demonstration of LSTM wrapped around action mask model."""
-# https://github.com/ray-project/ray/blob/efc23677a2dcfebb08b919ab37bdf319d50ce6b1/rllib/examples/lstm_auto_wrapping.py
+# LSTM example: https://github.com/ray-project/ray/blob/efc23677a2dcfebb08b919ab37bdf319d50ce6b1/rllib/examples/lstm_auto_wrapping.py
+# Action mask example: https://github.com/ray-project/ray/blob/master/rllib/examples/models/action_mask_model.py
+
 # %% Imports
 # Third Party Imports
 import gymnasium as gym
@@ -22,6 +24,7 @@ torch, _ = try_import_torch()
 
 # %% Custom Model
 class MyCustomModel(TorchModelV2):
+    # Copied from Ray example, see link above
     def __init__(
         self, obs_space, action_space, num_outputs, model_config, name
     ):
@@ -46,7 +49,9 @@ class MyCustomModel(TorchModelV2):
         return torch.from_numpy(np.zeros(shape=(self._last_batch_size,)))
 
 
-# %% Random Environment
+# %% Random Environment with action mask
+# Action mask models require an env with a Dict observation space that has
+# "action_mask" as an item.
 env_config = {
     "observation_space": gym.spaces.Dict(
         {
