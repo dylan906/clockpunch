@@ -4,8 +4,6 @@
 # https://github.com/ray-project/ray/blob/3e1cdeb117c945ba42df93d629f9a70189e38db9/rllib/examples/action_masking.py
 # https://github.com/ray-project/ray/blob/3e1cdeb117c945ba42df93d629f9a70189e38db9/rllib/examples/env/action_mask_env.py
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 from copy import deepcopy
 
