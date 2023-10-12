@@ -75,8 +75,9 @@ constructor_params = {
         {
             "wrapper": "VisMap2ActionMask",
             "wrapper_config": {
+                "obs_info": "obs",
                 "vis_map_key": "vm_copy",
-                "rename_key": "action_mask",
+                "new_key": "action_mask",
             },
         },
         {
