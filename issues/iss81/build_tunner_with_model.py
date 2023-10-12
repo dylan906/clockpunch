@@ -1,11 +1,16 @@
 """Build a tuner with LSTM Mask model."""
 # %5 Imports
+# Standard Library Imports
+from typing import Any
+
 # Third Party Imports
+import gymnasium as gym
 import ray
 import ray.rllib.algorithms.ppo as ppo
 from lstm_mask import MaskedLSTM  # NOTE: Relative import is brittle
-from numpy import array, diag, pi
+from numpy import array, diag, float32, int64, ndarray, pi
 from ray import air, tune
+from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 from ray.tune.stopper import MaximumIterationStopper
@@ -21,6 +26,45 @@ from punchclock.ray.build_tuner import (
     _getExperimentName,
     buildTuner,
 )
+
+
+# %% util function
+def recursivelyConvertDictToPrimitive(in_dict: dict) -> dict:
+    """Recursively convert dict entries into primitives."""
+    out = {}
+    # Loop through key-value pairs of in_dict. If a value is a dict, then recurse.
+    # Otherwise, convert value to a JSON-able type. Special handling if the
+    # value is a `list`. Lists of dicts are recursed; lists of non-dicts and
+    # empty lists are converted to JSON-able as normal.
+    for k, v in in_dict.items():
+        if isinstance(v, dict):
+            out[k] = recursivelyConvertDictToPrimitive(v)
+        elif isinstance(v, list):
+            if len(v) == 0:
+                out[k] = [convertToPrimitive(a) for a in v]
+            elif isinstance(v[0], dict):
+                out[k] = [recursivelyConvertDictToPrimitive(a) for a in v]
+            else:
+                out[k] = [convertToPrimitive(a) for a in v]
+        else:
+            out[k] = convertToPrimitive(v)
+    return out
+
+
+def convertToPrimitive(entry: Any) -> list:
+    """Convert a non-serializable object into a JSON-able type."""
+    if isinstance(entry, ndarray):
+        # numpy arrays need their own tolist() method to convert properly.
+        out = entry.tolist()
+    elif isinstance(entry, set):
+        out = list(entry)
+    elif isinstance(entry, (float32, int64)):
+        out = entry.item()
+    else:
+        out = entry
+
+    return out
+
 
 # %% Env params
 print("\nSet env params...")
@@ -105,15 +149,31 @@ env_config = {
     "time_step": 100,
     "constructor_params": constructor_params,
 }
+
+env_config = recursivelyConvertDictToPrimitive(env_config)
+# %% Make test Env
+rand_env_config = {
+    "observation_space": gym.spaces.Dict(
+        {
+            "observations": gym.spaces.Box(0, 1, shape=[4]),
+            "action_mask": gym.spaces.Box(0, 1, shape=[2], dtype=int),
+        }
+    ),
+    "action_space": gym.spaces.MultiDiscrete([2]),
+}
+
+rand_env = RandomEnv(env_config)
+
 # %% Register model and env
 print("\nRegister model and env...")
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 register_env("my_env", buildEnv)
+register_env("rand_env", RandomEnv)
 # %% Set tuner config
 print("\nSet tuner config...")
 param_space = {
     "framework": "torch",
-    "env": "ssa_env",
+    "env": "my_env",
     "horizon": None,  # environment has its own horizon
     "env_config": env_config,
     "model": {
@@ -126,7 +186,7 @@ param_space = {
             "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
             "fc_size": 5,
-            "lstm_state_size": 10,
+            "lstm_state_size": 20,
         },
     },
 }
@@ -135,12 +195,14 @@ run_config = air.config.RunConfig(stop=MaximumIterationStopper(max_iter=1))
 # %% Build tuner
 print("\nBuild tuner...")
 ray.init()
+
 tuner = tune.Tuner(
     trainable="PPO",
     param_space=param_space,
     run_config=run_config,
     tune_config={},
 )
+print("run fit")
 tuner.fit()
 
 
