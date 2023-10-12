@@ -254,7 +254,7 @@ if __name__ == "__main__":
         action_space=env.action_space,
         num_outputs=2,
         model_config={
-            "fcnet_hiddens": [5, 4],
+            "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
         },
         fc_size=5,
@@ -291,8 +291,13 @@ if __name__ == "__main__":
                 "custom_model": "MaskedLSTM",
                 # Extra kwargs to be passed to your model's c'tor.
                 # "custom_model_config": {},
-                # "fcnet_hiddens": [10],
-                # "num_outputs": num_outputs,
+                "custom_model_config": {
+                    # "num_outputs": 2,
+                    "fcnet_hiddens": [6, 6],
+                    "fcnet_activation": "relu",
+                    "fc_size": 5,
+                    "lstm_state_size": 10,
+                },
             }
         )
     )
