@@ -31,6 +31,7 @@ from punchclock.ray.build_tuner import (
 )
 
 # %% Load json file
+print("\nLoad json file...")
 # path to the folder this script is contained
 dir_path = os.path.dirname(os.path.realpath(__file__))
 print(f"dir path: {dir_path}")
@@ -107,7 +108,7 @@ print(
 # config["param_space"]["model"]["_disable_preprocessor_api"] = True
 
 # Set algo configs (put all configs in dict for easier looping through tests)
-print("Build algo configs...")
+print("\nBuild algo configs...")
 algo_configs = {}
 algo_configs["custom_env"] = (
     ppo.PPOConfig()
@@ -148,8 +149,12 @@ algo_configs["full_custom"] = (
 )
 
 # build algos from algo configs
-print("Build algos...")
-algos = {k: v.build() for (k, v) in algo_configs.items()}
+print("\nBuild algos...")
+algos = {}
+for k, v in algo_configs.items():
+    print(f"\n    building {k}...")
+    algos[k] = v.build()
+    print(f"    ...{k} complete")
 
 # Check that observations flow through algo policies correctly. Use sample observation
 # from test environment as input to policies. The sample should be the same for
@@ -187,7 +192,7 @@ tuner = buildTuner(config, override_date=True)
 print(f"tuner = {tuner}")
 
 # %% Test fit
-print("Running fit...")
+print("\nRunning fit...")
 tuner.fit()
 print("...fit complete.")
 
