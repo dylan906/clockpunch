@@ -72,11 +72,14 @@ RE = getConstants()["earth_radius"]
 sensor_init_ecef = array([[RE, 0, 0, 0, 0, 0], [0, RE, 0, 0, 0, 0]])
 sensor_init_eci = ecef2eci(sensor_init_ecef.transpose(), 0).transpose()
 
+num_sensors = sensor_init_ecef.shape[0]
+num_targets = 4
+
 # Set parameters for agents. In this example, we are using 2 fixed sensors and
 # 4 targets with stochastic initial conditions.
 agent_params = {
-    "num_sensors": 2,
-    "num_targets": 4,
+    "num_sensors": num_sensors,
+    "num_targets": num_targets,
     "sensor_dynamics": "terrestrial",
     "target_dynamics": "satellite",
     "sensor_dist": None,
@@ -116,7 +119,7 @@ constructor_params = {
             "wrapper": "CopyObsInfoItem",
             "wrapper_config": {
                 "copy_from": "obs",
-                "copy_to": "obs",
+                "copy_to": "info",
                 "from_key": "vis_map_est",
                 "to_key": "vm_copy",
             },
@@ -124,9 +127,25 @@ constructor_params = {
         {
             "wrapper": "VisMap2ActionMask",
             "wrapper_config": {
-                "obs_info": "obs",
+                "obs_info": "info",
                 "vis_map_key": "vm_copy",
                 "new_key": "action_mask",
+            },
+        },
+        {
+            "wrapper": "CopyObsInfoItem",
+            "wrapper_config": {
+                "copy_from": "info",
+                "copy_to": "obs",
+                "from_key": "action_mask",
+                "to_key": "action_mask",
+                "info_space_config": {
+                    "space": "Box",
+                    "low": 0,
+                    "high": 1,
+                    "shape": [num_targets + 1, num_sensors],
+                    "dtype": "int",
+                },
             },
         },
         {
@@ -150,7 +169,9 @@ env_config = {
     "constructor_params": constructor_params,
 }
 
+
 env_config = recursivelyConvertDictToPrimitive(env_config)
+env = buildEnv(env_config)
 # %% Make test Env
 rand_env_config = {
     "observation_space": gym.spaces.Dict(
