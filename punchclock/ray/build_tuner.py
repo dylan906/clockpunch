@@ -30,31 +30,31 @@ def buildTuner(
     config: dict,
     override_date: bool = False,
 ) -> Tuner:
-    """Build a Ray `Tuner` with a `SSAScheduler` environment from primitives in a dict.
+    """Build a Ray Tuner with a SSAScheduler environment from primitives in a dict.
 
     Args:
-        config (`dict`):
+        config (dict):
         {
-            num_cpus (`int` | `None`): Number of CPUs to use in training run. If `None`,
+            num_cpus (int | None): Number of CPUs to use in training run. If None,
                 sets to maximum available CPUs on machine.
-            trainable (`str` | `Callable` | `ray.tune.trainable.trainable.Trainable`): The
+            trainable (str | Callable | ray.tune.trainable.trainable.Trainable): The
                 trainable to be tuned. See Ray Tuner documentation for details.
-            param_space (`dict`): Search space of the tuning job. See Ray Tuner documentation
+            param_space (dict): Search space of the tuning job. See Ray Tuner documentation
                 for details.
-            tune_config (`dict`): Parameters that create a `ray.tune.tune_config.TuneConfig`
+            tune_config (dict): Parameters that create a ray.tune.tune_config.TuneConfig
                 object. Tuning algorithm specific configs. See Ray Tuner documentation for
                 details.
-            run_config (`dict`): Parameters that create a `ray.air.config.RunConfig` object.
+            run_config (dict): Parameters that create a ray.air.config.RunConfig object.
                 Runtime configuration that is specific to individual trials. See Ray Tuner
                 documentation for details. At minimum, include a stop condition ("stop"),
                 an experiment name ("name"), and a local directory ("local_dir") to save
                 results.
         }
-        override_date (`bool`, optional): If False, date-time string is appended
+        override_date (bool, optional): If False, date-time string is appended
             to experiment name. Defaults to False.
 
     Returns:
-        `Tuner`: See Ray documentation for details.
+        Tuner: See Ray documentation for details.
 
     Example for run_config:
         run_config = {
@@ -169,12 +169,12 @@ def _getDefaults(
     """Get default values for some parameters to override Ray defaults.
 
     Args:
-        param_space (`dict`): Search space of the tuning job.
-        num_cpus (`int`): Number of CPUs requested.
+        param_space (dict): Search space of the tuning job.
+        num_cpus (int): Number of CPUs requested.
 
     Returns:
-        num_cpus (`int`): Number of CPUs requested.
-        param_space (`dict`): Same as input, but with some new/overridden entries.
+        num_cpus (int): Number of CPUs requested.
+        param_space (dict): Same as input, but with some new/overridden entries.
     """
     # %% Get number of CPUs available on machine
     # Set desired number of CPUs to max available on machine by default or to
@@ -190,7 +190,7 @@ def _getDefaults(
 
     # %% Get number of workers
     # Assign default number of workers if none specified. Need to account for "num_workers"
-    # not being in `param_space` because it is an optional input.
+    # not being in param_space because it is an optional input.
 
     if "num_workers" in param_space.keys():
         num_workers = param_space["num_workers"]
@@ -215,10 +215,10 @@ def _getExperimentName(
     """Append a date-time string to the end of the experiment name.
 
     Args:
-        run_params (`dict`): A dict that optionally contains "name" as a key.
+        run_params (dict): A dict that optionally contains "name" as a key.
 
     Returns:
-        `dict`: Contains "key" as a dict with a `str` value.
+        dict: Contains "key" as a dict with a str value.
     """
     new_run_params = deepcopy(run_params)
     datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
