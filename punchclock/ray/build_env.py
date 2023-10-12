@@ -100,16 +100,16 @@ def buildEnv(env_config: dict) -> gym.Env:
     wrapper_names = [
         a["wrapper"] for a in env_config["constructor_params"]["wrappers"]
     ]
-    if "filter_observation" in wrapper_names:
+    if "FilterObservation" in wrapper_names:
         filt_obs = [
             a
             for a in env_config["constructor_params"]["wrappers"]
-            if a["wrapper"] == "filter_observation"
+            if a["wrapper"] == "FilterObservation"
         ][0]
         if "vis_map_est" not in filt_obs["wrapper_config"]["filter_keys"]:
             filt_obs["wrapper_config"]["filter_keys"].append("vis_map_est")
             warnings.warn(
-                """'vis_map_est' not included in filter_observation config.
+                """'vis_map_est' not included in FilterObservation config.
             Appending to list of filters."""
             )
     # %% Build base environment

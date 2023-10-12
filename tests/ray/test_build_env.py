@@ -4,6 +4,7 @@
 # %% Imports
 
 # Standard Library Imports
+import warnings
 from copy import deepcopy
 
 # Third Party Imports
@@ -154,10 +155,20 @@ constructor_params4 = {
 }
 env_config4 = deepcopy(env_config)
 env_config4["constructor_params"] = constructor_params4
+
+# Treat warnings as errors to make sure warning happens. Reset afterwards to normal
+# behavior.
+warnings.filterwarnings("error")
+try:
+    env4 = buildEnv(deepcopy(env_config4))
+except Warning as w:
+    print(w)
+warnings.resetwarnings()
+
 env4 = buildEnv(deepcopy(env_config4))
 print("vis_map_est not included in obs target_filter:")
-print(f"env4 = {env4}")
-print(f"env4 observation space = {env4.observation_space.spaces}")
+print(f"    env4 = {env4}")
+print(f"    env4 observation space = {env4.observation_space.spaces}")
 # %% Test repeatability of buildEnv
 # Make sure that when building environment with randomly-distributed initial conditions,
 # that ICs are different from one function call to the next.
