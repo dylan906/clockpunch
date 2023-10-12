@@ -58,16 +58,17 @@ class MaskedLSTM(TorchRNN, nn.Module):
         self.fc_size = fc_size
         self.lstm_state_size = lstm_state_size
 
-        self.fc_model = self.makeFCLayers(
+        self.fc_layers = self.makeFCLayers(
             model_config, input_size=self.obs_size, output_size=self.fc_size
         )
-        # self.fc_model = TorchFC(
+        # self.fc_layers = TorchFC(
         #     obs_space=orig_space["observations"],
         #     action_space=action_space,
         #     num_outputs=self.fc_size,
         #     model_config=model_config,
         #     name=name + "_fc_internal",
         # )
+
         # ---From Ray Example---
         # # Build the Module from fc + LSTM + 2xfc (action + value outs).
         self.fc1 = nn.Linear(self.obs_size, self.fc_size)
@@ -85,12 +86,12 @@ class MaskedLSTM(TorchRNN, nn.Module):
     @override(ModelV2)
     def get_initial_state(self):
         h = [
-            self.fc_model[-1]
+            self.fc_layers[-1]
             ._model[0]
             .weight.new(1, self.lstm_state_size)
             .zero_()
             .squeeze(0),
-            self.fc_model[-1]
+            self.fc_layers[-1]
             ._model[0]
             .weight.new(1, self.lstm_state_size)
             .zero_()
@@ -162,7 +163,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
             The state batches as a List of two items (c- and h-states).
         """
         # x = nn.functional.relu(self.fc1(inputs))
-        x = nn.functional.relu(self.fc_model(inputs))
+        x = nn.functional.relu(self.fc_layers(inputs))
         self._features, [h, c] = self.lstm(
             x, [torch.unsqueeze(state[0], 0), torch.unsqueeze(state[1], 0)]
         )
@@ -204,7 +205,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         return fc_layers
 
 
-# %% Env
+# %% Make test Env
 env_config = {
     "observation_space": gym.spaces.Dict(
         {
