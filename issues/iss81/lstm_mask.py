@@ -10,6 +10,7 @@ from numpy import array
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
+from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.models.torch.recurrent_net import RecurrentNetwork as TorchRNN
 from ray.rllib.policy.rnn_sequencing import add_time_dimension
 from ray.rllib.utils.annotations import override
@@ -23,13 +24,15 @@ torch, nn = try_import_torch()
 
 # %% Class
 class MaskedLSTM(TorchRNN, nn.Module):
+    """Fully-connected layers feed into an LSTM layer."""
+
     def __init__(
         self,
-        obs_space,
-        action_space,
-        num_outputs,
+        obs_space: gym.spaces.Space,
+        action_space: gym.spaces.Space,
+        num_outputs: int,
         model_config: dict,
-        name,
+        name: str = None,
         fc_size: int = 64,
         lstm_state_size: int = 256,
     ):
@@ -173,7 +176,6 @@ model = MaskedLSTM(
     },
     fc_size=5,
     lstm_state_size=10,
-    name=None,
 )
 
 # %% Test model (basic)
