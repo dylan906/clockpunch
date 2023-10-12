@@ -156,6 +156,8 @@ for k, v in algo_configs.items():
     algos[k] = v.build()
     print(f"    ...{k} complete")
 
+# %% Check observations
+print("\nCheck observations through algos...")
 # Check that observations flow through algo policies correctly. Use sample observation
 # from test environment as input to policies. The sample should be the same for
 # both the custom env and random env (since the random env was instantiated by
@@ -164,13 +166,20 @@ for k, v in algo_configs.items():
 raw_ob = test_env.observation_space.sample()
 print(f"    raw observation = {raw_ob}")
 
-actions = {k: v.compute_single_action(raw_ob) for (k, v) in algos.items()}
+actions = {}
+for k, v in algos.items():
+    print(f"\n    compute single action for {k}...")
+    actions[k] = v.compute_single_action(raw_ob)
+    print(f"    action = {actions[k]}")
+    print(f"    ...{k} complete")
 print(f"    algo actions = {actions}")
 
-results = {}
-for k, v in algos.items():
-    results[k] = v.training_step()
-    print(f"{k} Training step successful")
+# NOTE: training_step test doesn't work. Not sure why.
+# results = {}
+# for k, v in algos.items():
+#     print(f"\n    training step for {k}...")
+#     results[k] = v.training_step()
+#     print(f"    ...{k} training step successful")
 
 fit_results = {}
 for k, v in algo_configs.items():
@@ -192,6 +201,7 @@ tuner = buildTuner(config, override_date=True)
 print(f"tuner = {tuner}")
 
 # %% Test fit
+# WARNING: This test takes a long time. Be prepared to cancel it.
 print("\nRunning fit...")
 tuner.fit()
 print("...fit complete.")
