@@ -172,7 +172,24 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
     def makeFCLayers(
         self, model_config: dict, input_size: int, output_size: int
-    ):
+    ) -> nn.Sequential:
+        """Make fully-connected layers.
+
+        See Ray SlimFC for details.
+
+        Args:
+            model_config (dict): {
+                "fcnet_hiddens": list[int] Numer of hidden layers is number of
+                    entries; size of hidden layers is values of entries,
+                "post_fcnet_hiddens": list[int],
+                "fcnet_activation": str
+            }
+            input_size (int): Input layer size.
+            output_size (int): Output layer size.
+
+        Returns:
+            nn.Sequential: Has N+1 layers, where N = len(model_config["fcnet_hiddens"]).
+        """
         hiddens = list(model_config.get("fcnet_hiddens", [])) + list(
             model_config.get("post_fcnet_hiddens", [])
         )
@@ -205,83 +222,83 @@ class MaskedLSTM(TorchRNN, nn.Module):
         return fc_layers
 
 
-# %% Make test Env
-env_config = {
-    "observation_space": gym.spaces.Dict(
-        {
-            "observations": gym.spaces.Box(0, 1, shape=[4]),
-            "action_mask": gym.spaces.Box(0, 1, shape=[2], dtype=int),
-        }
-    ),
-    "action_space": gym.spaces.MultiDiscrete([2]),
-}
+if __name__ == "__main__":
+    # %% Make test Env
+    env_config = {
+        "observation_space": gym.spaces.Dict(
+            {
+                "observations": gym.spaces.Box(0, 1, shape=[4]),
+                "action_mask": gym.spaces.Box(0, 1, shape=[2], dtype=int),
+            }
+        ),
+        "action_space": gym.spaces.MultiDiscrete([2]),
+    }
 
-env = RandomEnv(env_config)
-print(f"observation_space = {env.observation_space}")
-print(f"action_space = {env.action_space}")
+    env = RandomEnv(env_config)
+    print(f"observation_space = {env.observation_space}")
+    print(f"action_space = {env.action_space}")
 
+    # %% Preprocess function for obs
+    def preprocessObs(obs: dict) -> dict:
+        """Convert components of observation to Tensors."""
+        # Obs into .forward() are expected in a slightly different format than the
+        # raw env's observation space at instantiation.
+        for k, v in obs.items():
+            obs[k] = tensor(v)
+        obs = {"obs": obs}
+        return obs
 
-# %% Preprocess function for obs
-def preprocessObs(obs: dict) -> dict:
-    """Convert components of observation to Tensors."""
-    # Obs into .forward() are expected in a slightly different format than the
-    # raw env's observation space at instantiation.
-    for k, v in obs.items():
-        obs[k] = tensor(v)
-    obs = {"obs": obs}
-    return obs
-
-
-# %% Build model
-model = MaskedLSTM(
-    obs_space=env.observation_space,
-    action_space=env.action_space,
-    num_outputs=2,
-    model_config={
-        "fcnet_hiddens": [5, 4],
-        "fcnet_activation": "relu",
-    },
-    fc_size=5,
-    lstm_state_size=10,
-)
-
-# %% Test model (basic)
-obs = env.observation_space.sample()
-# override action mask to make sure we don't have all same values
-obs["action_mask"][0] = 0
-obs["action_mask"][1] = 1
-print(f"obs (raw) = {obs}")
-obs = preprocessObs(obs)
-print(f"obs (preprocessed) = {obs}")
-
-seq_lens = tensor(array([0]))
-init_state = model.get_initial_state()
-[logits, state] = model.forward(
-    input_dict=obs, state=init_state, seq_lens=seq_lens
-)
-print(f"logits = {logits}")
-print(f"state = {state}")
-
-# %% Test training
-ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
-
-config = (
-    ppo.PPOConfig()
-    .environment(RandomEnv, env_config=env_config)
-    .framework("torch")
-    .training(
-        model={
-            # Specify our custom model from above.
-            "custom_model": "MaskedLSTM",
-            # Extra kwargs to be passed to your model's c'tor.
-            # "custom_model_config": {},
-            # "fcnet_hiddens": [10],
-            # "num_outputs": num_outputs,
-        }
+    # %% Build model
+    model = MaskedLSTM(
+        obs_space=env.observation_space,
+        action_space=env.action_space,
+        num_outputs=2,
+        model_config={
+            "fcnet_hiddens": [5, 4],
+            "fcnet_activation": "relu",
+        },
+        fc_size=5,
+        lstm_state_size=10,
     )
-)
-algo = config.build()
-algo.train()
-algo.stop()
 
-print("done")
+    # %% Test model (basic)
+    obs = env.observation_space.sample()
+    # override action mask to make sure we don't have all same values
+    obs["action_mask"][0] = 0
+    obs["action_mask"][1] = 1
+    print(f"obs (raw) = {obs}")
+    obs = preprocessObs(obs)
+    print(f"obs (preprocessed) = {obs}")
+
+    seq_lens = tensor(array([0]))
+    init_state = model.get_initial_state()
+    [logits, state] = model.forward(
+        input_dict=obs, state=init_state, seq_lens=seq_lens
+    )
+    print(f"logits = {logits}")
+    print(f"state = {state}")
+
+    # %% Test training
+    ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+
+    config = (
+        ppo.PPOConfig()
+        .environment(RandomEnv, env_config=env_config)
+        .framework("torch")
+        .training(
+            model={
+                # Specify our custom model from above.
+                "custom_model": "MaskedLSTM",
+                # Extra kwargs to be passed to your model's c'tor.
+                # "custom_model_config": {},
+                # "fcnet_hiddens": [10],
+                # "num_outputs": num_outputs,
+            }
+        )
+    )
+    algo = config.build()
+    algo.train()
+    algo.stop()
+
+    # %% Done
+    print("done")
