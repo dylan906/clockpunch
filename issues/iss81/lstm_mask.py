@@ -11,6 +11,7 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
+from ray.rllib.models.torch.misc import SlimFC
 from ray.rllib.models.torch.recurrent_net import RecurrentNetwork as TorchRNN
 from ray.rllib.policy.rnn_sequencing import add_time_dimension
 from ray.rllib.utils.annotations import override
@@ -37,9 +38,14 @@ class MaskedLSTM(TorchRNN, nn.Module):
         lstm_state_size: int = 256,
     ):
         nn.Module.__init__(self)
+
+        if name is None:
+            name = "MaskedLSTM"
+
         super().__init__(
             obs_space, action_space, num_outputs, model_config, name
         )
+
         # Convert space to proper gym space if handed is as a different type
         orig_space = getattr(obs_space, "original_space", obs_space)
         # Size of observations must include only "observations", not "action_mask"
@@ -52,25 +58,50 @@ class MaskedLSTM(TorchRNN, nn.Module):
         self.fc_size = fc_size
         self.lstm_state_size = lstm_state_size
 
-        # Build the Module from fc + LSTM + 2xfc (action + value outs).
+        self.fc_model = self.makeFCLayers(
+            model_config, input_size=self.obs_size, output_size=self.fc_size
+        )
+        # self.fc_model = TorchFC(
+        #     obs_space=orig_space["observations"],
+        #     action_space=action_space,
+        #     num_outputs=self.fc_size,
+        #     model_config=model_config,
+        #     name=name + "_fc_internal",
+        # )
+        # ---From Ray Example---
+        # # Build the Module from fc + LSTM + 2xfc (action + value outs).
         self.fc1 = nn.Linear(self.obs_size, self.fc_size)
         self.lstm = nn.LSTM(
-            self.fc_size, self.lstm_state_size, batch_first=True
+            input_size=self.fc_size,
+            hidden_size=self.lstm_state_size,
+            batch_first=True,
         )
         self.action_branch = nn.Linear(self.lstm_state_size, num_outputs)
         self.value_branch = nn.Linear(self.lstm_state_size, 1)
         # Holds the current "base" output (before logits layer).
         self._features = None
+        # ---End Ray Example---
 
     @override(ModelV2)
     def get_initial_state(self):
-        # TODO: (sven): Get rid of `get_initial_state` once Trajectory
-        #  View API is supported across all of RLlib.
-        # Place hidden states on same device as model.
         h = [
-            self.fc1.weight.new(1, self.lstm_state_size).zero_().squeeze(0),
-            self.fc1.weight.new(1, self.lstm_state_size).zero_().squeeze(0),
+            self.fc_model[-1]
+            ._model[0]
+            .weight.new(1, self.lstm_state_size)
+            .zero_()
+            .squeeze(0),
+            self.fc_model[-1]
+            ._model[0]
+            .weight.new(1, self.lstm_state_size)
+            .zero_()
+            .squeeze(0),
         ]
+        # ---From Ray Example---
+        # h = [
+        #     self.fc1.weight.new(1, self.lstm_state_size).zero_().squeeze(0),
+        #     self.fc1.weight.new(1, self.lstm_state_size).zero_().squeeze(0),
+        # ]
+        # ---End Ray Example
         return h
 
     @override(ModelV2)
@@ -130,12 +161,47 @@ class MaskedLSTM(TorchRNN, nn.Module):
             NN Outputs (B x T x ...) as sequence.
             The state batches as a List of two items (c- and h-states).
         """
-        x = nn.functional.relu(self.fc1(inputs))
+        # x = nn.functional.relu(self.fc1(inputs))
+        x = nn.functional.relu(self.fc_model(inputs))
         self._features, [h, c] = self.lstm(
             x, [torch.unsqueeze(state[0], 0), torch.unsqueeze(state[1], 0)]
         )
         action_out = self.action_branch(self._features)
         return action_out, [torch.squeeze(h, 0), torch.squeeze(c, 0)]
+
+    def makeFCLayers(
+        self, model_config: dict, input_size: int, output_size: int
+    ):
+        hiddens = list(model_config.get("fcnet_hiddens", [])) + list(
+            model_config.get("post_fcnet_hiddens", [])
+        )
+        activation = model_config.get("fcnet_activation")
+        layers = []
+        prev_layer_size = input_size
+
+        # Create hidden layers.
+        for size in hiddens:
+            layers.append(
+                SlimFC(
+                    in_size=prev_layer_size,
+                    out_size=size,
+                    activation_fn=activation,
+                )
+            )
+            prev_layer_size = size
+
+        # Append output layer
+        layers.append(
+            SlimFC(
+                in_size=prev_layer_size,
+                out_size=output_size,
+                activation_fn=activation,
+            )
+        )
+
+        fc_layers = nn.Sequential(*layers)
+
+        return fc_layers
 
 
 # %% Env
@@ -171,8 +237,8 @@ model = MaskedLSTM(
     action_space=env.action_space,
     num_outputs=2,
     model_config={
-        # "fcnet_hiddens": (5, 4),
-        # "fcnet_activation": "relu",
+        "fcnet_hiddens": [5, 4],
+        "fcnet_activation": "relu",
     },
     fc_size=5,
     lstm_state_size=10,
