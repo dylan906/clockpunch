@@ -276,10 +276,9 @@ if __name__ == "__main__":
         obs_space=env.observation_space,
         action_space=env.action_space,
         num_outputs=2,
-        model_config={
-            "fcnet_hiddens": [6, 6],
-            "fcnet_activation": "relu",
-        },
+        # begin custom config kwargs
+        fcnet_hiddens=[6, 6],
+        fcnet_activation="relu",
         fc_size=5,
         lstm_state_size=10,
     )
