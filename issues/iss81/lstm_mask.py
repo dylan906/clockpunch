@@ -34,10 +34,30 @@ class MaskedLSTM(TorchRNN, nn.Module):
         num_outputs: int,
         model_config: dict,
         name: str = None,
-        fc_size: int = 64,
-        lstm_state_size: int = 256,
+        **custom_model_kwargs,
+        # fc_size: int = 64,
+        # lstm_state_size: int = 256,
     ):
+        """Expected items in custom_model_kwargs:
+        {
+            "fc_size": int,
+            "lstm_state_size: int,
+        }
+        """
         nn.Module.__init__(self)
+
+        # print(f"custom_model_kwargs = {custom_model_kwargs}")
+        print(f"obs_space = {obs_space}")
+        print(f"action_space = {action_space}")
+        print(f"num_outputs = {num_outputs}")
+        print(f"model_config = {model_config}")
+        print(f"name = {name}")
+        fc_size = custom_model_kwargs.get("fc_size")
+        lstm_state_size = custom_model_kwargs.get("lstm_state_size")
+        # fc_size = model_config["custom_model_config"]["fc_size"]
+        # lstm_state_size = model_config["custom_model_config"]["lstm_state_size"]
+        print(f"fc_size = {fc_size}")
+        print(f"lstm_state_size = {lstm_state_size}")
 
         if name is None:
             name = "MaskedLSTM"
@@ -58,8 +78,14 @@ class MaskedLSTM(TorchRNN, nn.Module):
         self.fc_size = fc_size
         self.lstm_state_size = lstm_state_size
 
+        print(f"self.fc_size = {self.fc_size}")
+        print(f"self.lstm_state_size = {self.lstm_state_size}")
+
         self.fc_layers = self.makeFCLayers(
-            model_config, input_size=self.obs_size, output_size=self.fc_size
+            model_config=custom_model_kwargs,
+            # model_config=model_config["custom_model_config"],
+            input_size=self.obs_size,
+            output_size=self.fc_size,
         )
         # self.fc_layers = TorchFC(
         #     obs_space=orig_space["observations"],
@@ -194,6 +220,13 @@ class MaskedLSTM(TorchRNN, nn.Module):
             model_config.get("post_fcnet_hiddens", [])
         )
         activation = model_config.get("fcnet_activation")
+
+        self.fc_hiddens = hiddens
+        self.fc_activation = activation
+
+        print(f"self.fc_hiddens = {self.fc_hiddens}")
+        print(f"self.fc_activation = {self.fc_activation}")
+
         layers = []
         prev_layer_size = input_size
 

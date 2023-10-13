@@ -169,7 +169,6 @@ env_config = {
     "constructor_params": constructor_params,
 }
 
-
 env_config = recursivelyConvertDictToPrimitive(env_config)
 env = buildEnv(env_config)
 # %% Make test Env
@@ -201,9 +200,7 @@ param_space = {
         # Specify our custom model from above.
         "custom_model": "MaskedLSTM",
         # Extra kwargs to be passed to your model's c'tor.
-        # "custom_model_config": {},
         "custom_model_config": {
-            # "num_outputs": 2,
             "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
             "fc_size": 5,
@@ -225,7 +222,6 @@ tuner = tune.Tuner(
 )
 print("run fit")
 tuner.fit()
-
 
 # %% done
 print("done")
