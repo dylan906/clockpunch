@@ -203,7 +203,7 @@ param_space = {
         "custom_model_config": {
             "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
-            "fc_size": 5,
+            # "fc_size": 5,
             "lstm_state_size": 20,
         },
     },
