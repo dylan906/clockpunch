@@ -10,7 +10,6 @@ from numpy import array
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
-from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.models.torch.misc import SlimFC
 from ray.rllib.models.torch.recurrent_net import RecurrentNetwork as TorchRNN
 from ray.rllib.policy.rnn_sequencing import add_time_dimension
@@ -32,11 +31,9 @@ class MaskedLSTM(TorchRNN, nn.Module):
         obs_space: gym.spaces.Space,
         action_space: gym.spaces.Space,
         num_outputs: int,
-        model_config: dict,
+        model_config: dict = None,
         name: str = None,
         **custom_model_kwargs,
-        # fc_size: int = 64,
-        # lstm_state_size: int = 256,
     ):
         """Expected items in custom_model_kwargs:
         {
@@ -44,60 +41,55 @@ class MaskedLSTM(TorchRNN, nn.Module):
             "lstm_state_size: int,
         }
         """
-        nn.Module.__init__(self)
+        # Convert space to proper gym space if handed is as a different type
+        orig_space = getattr(obs_space, "original_space", obs_space)
+        # Size of observations must include only "observations", not "action_mask".
+        # Action mask must be 1d and same len as num_outputs.
+        # custom_model_kwargs must include "fc_size" and "lstm_state_size"
+        assert "observations" in orig_space.spaces
+        assert "action_mask" in orig_space.spaces
+        assert len(orig_space.spaces) == 2
+        assert len(orig_space["action_mask"].shape) == 1
+        assert orig_space["action_mask"].shape[0] == num_outputs
+        assert "fc_size" in custom_model_kwargs
+        assert "lstm_state_size" in custom_model_kwargs
 
-        # print(f"custom_model_kwargs = {custom_model_kwargs}")
         print(f"obs_space = {obs_space}")
         print(f"action_space = {action_space}")
         print(f"num_outputs = {num_outputs}")
         print(f"model_config = {model_config}")
         print(f"name = {name}")
+        print(f"custom_model_kwargs = {custom_model_kwargs}")
         fc_size = custom_model_kwargs.get("fc_size")
         lstm_state_size = custom_model_kwargs.get("lstm_state_size")
-        # fc_size = model_config["custom_model_config"]["fc_size"]
-        # lstm_state_size = model_config["custom_model_config"]["lstm_state_size"]
         print(f"fc_size = {fc_size}")
         print(f"lstm_state_size = {lstm_state_size}")
 
+        # Defaults
+        if model_config is None:
+            model_config = {}
         if name is None:
             name = "MaskedLSTM"
 
+        # Inheritance
+        nn.Module.__init__(self)
         super().__init__(
             obs_space, action_space, num_outputs, model_config, name
         )
-
-        # Convert space to proper gym space if handed is as a different type
-        orig_space = getattr(obs_space, "original_space", obs_space)
-        # Size of observations must include only "observations", not "action_mask"
-        assert "observations" in orig_space.spaces
-        assert "action_mask" in orig_space.spaces
-        assert len(orig_space["action_mask"].shape) == 1
-        assert orig_space["action_mask"].shape[0] == num_outputs
 
         self.obs_size = orig_space["observations"].shape[0]
         self.fc_size = fc_size
         self.lstm_state_size = lstm_state_size
 
-        print(f"self.fc_size = {self.fc_size}")
-        print(f"self.lstm_state_size = {self.lstm_state_size}")
-
         self.fc_layers = self.makeFCLayers(
             model_config=custom_model_kwargs,
-            # model_config=model_config["custom_model_config"],
             input_size=self.obs_size,
             output_size=self.fc_size,
         )
-        # self.fc_layers = TorchFC(
-        #     obs_space=orig_space["observations"],
-        #     action_space=action_space,
-        #     num_outputs=self.fc_size,
-        #     model_config=model_config,
-        #     name=name + "_fc_internal",
-        # )
 
         # ---From Ray Example---
         # # Build the Module from fc + LSTM + 2xfc (action + value outs).
-        self.fc1 = nn.Linear(self.obs_size, self.fc_size)
+        # self.fc1 = nn.Linear(self.obs_size, self.fc_size)
         self.lstm = nn.LSTM(
             input_size=self.fc_size,
             hidden_size=self.lstm_state_size,
@@ -111,6 +103,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
     @override(ModelV2)
     def get_initial_state(self):
+        """Initial states of hidden layers are initial states of final FC layer."""
         h = [
             self.fc_layers[-1]
             ._model[0]
@@ -132,7 +125,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         return h
 
     @override(ModelV2)
-    def value_function(self):
+    def value_function(self):  # noqa
         assert self._features is not None, "must call forward() first"
         return torch.reshape(self.value_branch(self._features), [-1])
 
