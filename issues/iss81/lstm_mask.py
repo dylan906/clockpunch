@@ -200,7 +200,6 @@ class MaskedLSTM(TorchRNN, nn.Module):
             model_config (dict): {
                 "fcnet_hiddens": list[int] Numer of hidden layers is number of
                     entries; size of hidden layers is values of entries,
-                "post_fcnet_hiddens": list[int],
                 "fcnet_activation": str
             }
             input_size (int): Input layer size.
@@ -209,9 +208,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         Returns:
             nn.Sequential: Has N+1 layers, where N = len(model_config["fcnet_hiddens"]).
         """
-        hiddens = list(model_config.get("fcnet_hiddens", [])) + list(
-            model_config.get("post_fcnet_hiddens", [])
-        )
+        hiddens = list(model_config.get("fcnet_hiddens", []))
         activation = model_config.get("fcnet_activation")
 
         self.fc_hiddens = hiddens
