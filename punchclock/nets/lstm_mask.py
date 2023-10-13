@@ -62,14 +62,14 @@ class MaskedLSTM(TorchRNN, nn.Module):
         assert "fcnet_hiddens" in custom_model_kwargs
         assert "fcnet_activation" in custom_model_kwargs
 
-        print(f"obs_space = {obs_space}")
-        print(f"action_space = {action_space}")
-        print(f"num_outputs = {num_outputs}")
-        print(f"model_config = {model_config}")
-        print(f"name = {name}")
-        print(f"custom_model_kwargs = {custom_model_kwargs}")
+        # print(f"obs_space = {obs_space}")
+        # print(f"action_space = {action_space}")
+        # print(f"num_outputs = {num_outputs}")
+        # print(f"model_config = {model_config}")
+        # print(f"name = {name}")
+        # print(f"custom_model_kwargs = {custom_model_kwargs}")
         lstm_state_size = custom_model_kwargs.get("lstm_state_size")
-        print(f"lstm_state_size = {lstm_state_size}")
+        # print(f"lstm_state_size = {lstm_state_size}")
 
         # Defaults
         if model_config is None:
@@ -171,6 +171,8 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
     def maskLogits(self, logits: TensorType, mask: TensorType):
         """Apply mask over raw logits."""
+        # print(f"logits = {logits}")
+        # print(f"mask = {mask}")
         inf_mask = torch.clamp(torch.log(mask), min=FLOAT_MIN)
         masked_logits = logits + inf_mask
         return masked_logits
@@ -219,8 +221,8 @@ class MaskedLSTM(TorchRNN, nn.Module):
         self.fc_hiddens = hiddens
         self.fc_activation = activation
 
-        print(f"self.fc_hiddens = {self.fc_hiddens}")
-        print(f"self.fc_activation = {self.fc_activation}")
+        # print(f"self.fc_hiddens = {self.fc_hiddens}")
+        # print(f"self.fc_activation = {self.fc_activation}")
 
         layers = []
         prev_layer_size = input_size
