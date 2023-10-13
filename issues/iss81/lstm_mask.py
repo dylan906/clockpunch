@@ -45,13 +45,13 @@ class MaskedLSTM(TorchRNN, nn.Module):
         orig_space = getattr(obs_space, "original_space", obs_space)
         # Size of observations must include only "observations", not "action_mask".
         # Action mask must be 1d and same len as num_outputs.
-        # custom_model_kwargs must include "fc_size" and "lstm_state_size"
+        # custom_model_kwargs must include "lstm_state_size", "fcnet_hiddens",
+        # and "fcnet_activation".
         assert "observations" in orig_space.spaces
         assert "action_mask" in orig_space.spaces
         assert len(orig_space.spaces) == 2
         assert len(orig_space["action_mask"].shape) == 1
         assert orig_space["action_mask"].shape[0] == num_outputs
-        assert "fc_size" in custom_model_kwargs
         assert "lstm_state_size" in custom_model_kwargs
 
         print(f"obs_space = {obs_space}")
@@ -60,9 +60,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         print(f"model_config = {model_config}")
         print(f"name = {name}")
         print(f"custom_model_kwargs = {custom_model_kwargs}")
-        fc_size = custom_model_kwargs.get("fc_size")
         lstm_state_size = custom_model_kwargs.get("lstm_state_size")
-        print(f"fc_size = {fc_size}")
         print(f"lstm_state_size = {lstm_state_size}")
 
         # Defaults
@@ -78,20 +76,20 @@ class MaskedLSTM(TorchRNN, nn.Module):
         )
 
         self.obs_size = orig_space["observations"].shape[0]
-        self.fc_size = fc_size
+        # transition layer size: size of output of final hidden layer
+        self.trans_layer_size = custom_model_kwargs["fcnet_hiddens"][-1]
         self.lstm_state_size = lstm_state_size
 
         self.fc_layers = self.makeFCLayers(
             model_config=custom_model_kwargs,
             input_size=self.obs_size,
-            output_size=self.fc_size,
         )
 
         # ---From Ray Example---
         # # Build the Module from fc + LSTM + 2xfc (action + value outs).
         # self.fc1 = nn.Linear(self.obs_size, self.fc_size)
         self.lstm = nn.LSTM(
-            input_size=self.fc_size,
+            input_size=self.trans_layer_size,
             hidden_size=self.lstm_state_size,
             batch_first=True,
         )
@@ -190,7 +188,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         return action_out, [torch.squeeze(h, 0), torch.squeeze(c, 0)]
 
     def makeFCLayers(
-        self, model_config: dict, input_size: int, output_size: int
+        self, model_config: dict, input_size: int
     ) -> nn.Sequential:
         """Make fully-connected layers.
 
@@ -203,10 +201,9 @@ class MaskedLSTM(TorchRNN, nn.Module):
                 "fcnet_activation": str
             }
             input_size (int): Input layer size.
-            output_size (int): Output layer size.
 
         Returns:
-            nn.Sequential: Has N+1 layers, where N = len(model_config["fcnet_hiddens"]).
+            nn.Sequential: Has N layers, where N = len(model_config["fcnet_hiddens"]).
         """
         hiddens = list(model_config.get("fcnet_hiddens", []))
         activation = model_config.get("fcnet_activation")
@@ -230,15 +227,6 @@ class MaskedLSTM(TorchRNN, nn.Module):
                 )
             )
             prev_layer_size = size
-
-        # Append output layer
-        layers.append(
-            SlimFC(
-                in_size=prev_layer_size,
-                out_size=output_size,
-                activation_fn=activation,
-            )
-        )
 
         fc_layers = nn.Sequential(*layers)
 
@@ -279,7 +267,6 @@ if __name__ == "__main__":
         # begin custom config kwargs
         fcnet_hiddens=[6, 6],
         fcnet_activation="relu",
-        fc_size=5,
         lstm_state_size=10,
     )
 
@@ -312,12 +299,9 @@ if __name__ == "__main__":
                 # Specify our custom model from above.
                 "custom_model": "MaskedLSTM",
                 # Extra kwargs to be passed to your model's c'tor.
-                # "custom_model_config": {},
                 "custom_model_config": {
-                    # "num_outputs": 2,
                     "fcnet_hiddens": [6, 6],
                     "fcnet_activation": "relu",
-                    "fc_size": 5,
                     "lstm_state_size": 10,
                 },
             }
