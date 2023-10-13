@@ -122,6 +122,7 @@ def buildTuner(
     }
 
     param_space.update(config["param_space"])
+    print(f"Model: {param_space['model']}")
 
     # %% Tune config
     # algo_config = PPOConfig()

@@ -1,6 +1,7 @@
 """Build a tuner with LSTM Mask model."""
 # %5 Imports
 # Standard Library Imports
+import os
 from typing import Any
 
 # Third Party Imports
@@ -18,6 +19,7 @@ from ray.tune.stopper import MaximumIterationStopper
 from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci
 from punchclock.ray.build_env import buildEnv
+from punchclock.ray.build_tuner import buildTuner
 
 
 # %% util function
@@ -195,25 +197,42 @@ param_space = {
         "custom_model_config": {
             "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
-            # "fc_size": 5,
             "lstm_state_size": 20,
         },
     },
 }
 
 run_config = air.config.RunConfig(stop=MaximumIterationStopper(max_iter=1))
-# %% Build tuner
-print("\nBuild tuner...")
+# %% Build tuner manually
+print("\nBuild tuner manually...")
 ray.init()
 
 tuner = tune.Tuner(
     trainable="PPO",
     param_space=param_space,
-    run_config=run_config,
     tune_config={},
+    run_config=run_config,
 )
 print("run fit")
-tuner.fit()
+# tuner.fit()
 
+# %% Build tuner with function
+print("\nBuild tuner w/ function...")
+fpath = os.path.dirname(os.path.realpath(__file__))
+
+tuner = buildTuner(
+    config={
+        "num_cpus": None,
+        "trainable": "PPO",
+        "param_space": param_space,
+        "tune_config": {},
+        "run_config": {
+            "stop": {"training_iteration": 1},
+            "name": "test123",
+            "local_dir": fpath,
+        },
+    }
+)
+tuner.fit()
 # %% done
 print("done")
