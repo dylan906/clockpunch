@@ -35,11 +35,22 @@ class MaskedLSTM(TorchRNN, nn.Module):
         name: str = None,
         **custom_model_kwargs,
     ):
-        """Expected items in custom_model_kwargs:
-        {
-            "fc_size": int,
-            "lstm_state_size: int,
-        }
+        """Initialize MaskedLSTM model.
+
+        Args:
+            obs_space (gym.spaces.Space): Environment observation space.
+            action_space (gym.spaces.Space): Environment action space.
+            num_outputs (int): Number of outputs of model. Should be equal to size
+                of flattened action_space.
+            model_config (dict, optional): Used for Ray defaults. Defaults to {}.
+            name (str, optional): Used for inheritance. Defaults to "MaskedLSTM".
+            custom_model_kwargs: Configure size of FC net and LSTM layer. Required.
+
+        Expected items in custom_model_kwargs:
+            fcnet_hiddens (list[int]): Number and size of FC layers.
+            fcnet_activation (str): Activation function for FC layers. See Ray
+                SlimFC documentation for recognized args.
+            lstm_state_size (int): Size of LSTM layer.
         """
         # Convert space to proper gym space if handed is as a different type
         orig_space = getattr(obs_space, "original_space", obs_space)
@@ -53,6 +64,8 @@ class MaskedLSTM(TorchRNN, nn.Module):
         assert len(orig_space["action_mask"].shape) == 1
         assert orig_space["action_mask"].shape[0] == num_outputs
         assert "lstm_state_size" in custom_model_kwargs
+        assert "fcnet_hiddens" in custom_model_kwargs
+        assert "fcnet_activation" in custom_model_kwargs
 
         print(f"obs_space = {obs_space}")
         print(f"action_space = {action_space}")
@@ -196,9 +209,9 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
         Args:
             model_config (dict): {
-                "fcnet_hiddens": list[int] Numer of hidden layers is number of
+                "fcnet_hiddens": (list[int]) Numer of hidden layers is number of
                     entries; size of hidden layers is values of entries,
-                "fcnet_activation": str
+                "fcnet_activation": (str) Recognized activation function
             }
             input_size (int): Input layer size.
 
