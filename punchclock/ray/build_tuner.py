@@ -22,6 +22,7 @@ from ray.tune.registry import register_env
 # Punch Clock Imports
 from punchclock.common.utilities import printNestedDict
 from punchclock.nets.action_mask_model import MyActionMaskModel
+from punchclock.nets.lstm_mask import MaskedLSTM
 from punchclock.ray.build_env import buildEnv
 
 
@@ -82,6 +83,7 @@ def buildTuner(
     # %% Register environment builder (via Ray, not Gym) and action mask model
     register_env("ssa_env", buildEnv)
     ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
+    ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
     # %% Initialize ray
     print("Initializing Ray environment...")
