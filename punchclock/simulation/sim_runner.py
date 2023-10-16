@@ -21,7 +21,6 @@ from numpy import (
     fromstring,
     int64,
     ndarray,
-    zeros,
 )
 from pandas import DataFrame, concat, json_normalize
 from ray.rllib.policy.policy import Policy as RayPolicy
