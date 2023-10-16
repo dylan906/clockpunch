@@ -3,8 +3,9 @@
 
 # Third Party Imports
 import gymnasium as gym
+import ray
 import ray.rllib.algorithms.ppo as ppo
-from numpy import array
+from numpy import array, float32, zeros
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.framework import try_import_torch
@@ -16,6 +17,7 @@ from punchclock.nets.lstm_mask import MaskedLSTM
 torch, nn = try_import_torch()
 
 # %% Make test Env
+print("\nBuild test env...")
 env_config = {
     "observation_space": gym.spaces.Dict(
         {
@@ -29,6 +31,7 @@ env_config = {
 env = RandomEnv(env_config)
 print(f"observation_space = {env.observation_space}")
 print(f"action_space = {env.action_space}")
+env.reset()
 
 
 # %% Preprocess function for obs
@@ -43,6 +46,8 @@ def preprocessObs(obs: dict) -> dict:
 
 
 # %% Build model
+print("\nBuild MaskedLSTM model...")
+
 model = MaskedLSTM(
     obs_space=env.observation_space,
     action_space=env.action_space,
@@ -52,8 +57,9 @@ model = MaskedLSTM(
     fcnet_activation="relu",
     lstm_state_size=10,
 )
-
+print(f"model = {model}")
 # %% Test model (basic)
+print("\nTest model (basic)...")
 obs = env.observation_space.sample()
 # override action mask to make sure we don't have all same values
 obs["action_mask"][0] = 0
@@ -70,9 +76,36 @@ init_state = model.get_initial_state()
 print(f"logits = {logits}")
 print(f"state = {state}")
 
-# %% Test training
+# %% Test policy with model
+print("\nTest policy with model...")
+# See this Ray example: https://github.com/ray-project/ray/blob/c0ec20dc3a3f733fda85dcf9cc71f83d51132276/rllib/examples/custom_rnn_model.py#L101-L112
+# Specifically, these lines:
+# Example (use `config` from the above code):
+# >> import numpy as np
+# >> from ray.rllib.agents.ppo import PPOTrainer
+# >>
+# >> trainer = PPOTrainer(config)
+# >> lstm_cell_size = config["model"]["custom_model_config"]["cell_size"]
+# >> env = RepeatAfterMeEnv({})
+# >> obs = env.reset()
+# >>
+# >> # range(2) b/c h- and c-states of the LSTM.
+# >> init_state = state = [
+# ..     np.zeros([lstm_cell_size], np.float32) for _ in range(2)
+# .. ]
+# >>
+# >> while True:
+# >>     a, state_out, _ = trainer.compute_single_action(obs, state)
+# >>     obs, reward, done, _ = env.step(a)
+# >>     if done:
+# >>         obs = env.reset()
+# >>         state = init_state
+# >>     else:
+# >>         state = state_out
+
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
+lstm_state_size = 10
 config = (
     ppo.PPOConfig()
     .environment(RandomEnv, env_config=env_config)
@@ -85,14 +118,33 @@ config = (
             "custom_model_config": {
                 "fcnet_hiddens": [6, 6],
                 "fcnet_activation": "relu",
-                "lstm_state_size": 10,
+                "lstm_state_size": lstm_state_size,
             },
         }
     )
 )
 algo = config.build()
+policy = algo.get_policy()
+print(f"policy = {policy}")
+
+# 2 ways of getting initial state, both should give the same list of zeros.
+state = [zeros([lstm_state_size], float32) for _ in range(2)]
+# state = policy.get_initial_state()
+print(f"state = {state}")
+
+# for i in range(3):
+#     print(f"i = {i}")
+action, state_out, _ = policy.compute_single_action(
+    obs=policy.observation_space.sample(),
+    state=state,
+)
+# state = state_out
+# print(f"state = {state}")
+# %% Test training
+print("\nTest training...")
 algo.train()
 algo.stop()
+ray.shutdown()
 
 # %% Done
 print("done")
