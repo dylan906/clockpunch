@@ -171,9 +171,19 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
     def maskLogits(self, logits: TensorType, mask: TensorType):
         """Apply mask over raw logits."""
-        # print(f"logits = {logits}")
-        # print(f"mask = {mask}")
-        inf_mask = torch.clamp(torch.log(mask), min=FLOAT_MIN)
+        # Resolve edge case where Policy.build() can pass in mask values <0 and
+        # non-integers. Clamp values < 0  to 0, and values > 0 to 1.
+        mask_binary = torch.clamp(mask, min=0, max=1)
+        mask_binary[mask_binary > 0] = 1
+
+        # check for binary action mask so error doesn't happen in action distribution
+        # creation.
+        assert all(
+            [i in [0, 1] for i in mask_binary.detach().numpy().flatten()]
+        )
+
+        # Mask logits
+        inf_mask = torch.clamp(torch.log(mask_binary), min=FLOAT_MIN)
         masked_logits = logits + inf_mask
         return masked_logits
 

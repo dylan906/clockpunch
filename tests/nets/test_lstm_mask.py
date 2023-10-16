@@ -132,19 +132,21 @@ state = [zeros([lstm_state_size], float32) for _ in range(2)]
 # state = policy.get_initial_state()
 print(f"state = {state}")
 
-# for i in range(3):
-#     print(f"i = {i}")
-action, state_out, _ = policy.compute_single_action(
-    obs=policy.observation_space.sample(),
-    state=state,
-)
-# state = state_out
-# print(f"state = {state}")
+# obs = policy.observation_space.sample()
+obs = env.observation_space.sample()
+obs["action_mask"] = array([0, 1])
+for i in range(3):
+    print(f"i = {i}")
+    action, state_out, _ = policy.compute_single_action(
+        obs=policy.observation_space.sample(),
+        state=state,
+    )
+    state = state_out
+    print(f"state = {state}")
 # %% Test training
 print("\nTest training...")
 algo.train()
 algo.stop()
-ray.shutdown()
 
 # %% Done
 print("done")
