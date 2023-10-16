@@ -122,8 +122,7 @@ class SimRunner:
         if isinstance(self.policy, CustomPolicy):
             action = self.policy._computeSingleAction(obs=obs)
         else:
-            # Ray policies require a tensor obs to generate an action.
-            obs_tensor = self._convertObs2Tensor(obs)
+            # obs_tensor = self._convertObs2Tensor(obs)
             action = self.policy.compute_single_action(
                 obs=obs,
                 explore=False,
