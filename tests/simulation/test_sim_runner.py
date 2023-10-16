@@ -163,7 +163,10 @@ config = OrderedDict(
                 },
                 {
                     "wrapper": "VisMap2ActionMask",
-                    "wrapper_config": {"vis_map_key": "action_mask"},
+                    "wrapper_config": {
+                        "obs_info": "obs",
+                        "vis_map_key": "action_mask",
+                    },
                 },
                 {
                     "wrapper": "NestObsItems",
@@ -189,6 +192,7 @@ print(f"environment = {env}")
 # %% Build dummy policy for simRunner
 print("\nBuild Torch-based test policy...")
 register_env("my_env", buildEnv)
+
 algo_config = (
     ppo.PPOConfig()
     .training()
@@ -254,7 +258,10 @@ config_wrap["constructor_params"] = {
         },
         {
             "wrapper": "VisMap2ActionMask",
-            "wrapper_config": {"vis_map_key": "action_mask"},
+            "wrapper_config": {
+                "obs_info": "obs",
+                "vis_map_key": "action_mask",
+            },
         },
         {
             "wrapper": "NestObsItems",
