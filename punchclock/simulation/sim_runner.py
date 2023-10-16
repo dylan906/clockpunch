@@ -21,6 +21,7 @@ from numpy import (
     fromstring,
     int64,
     ndarray,
+    zeros,
 )
 from pandas import DataFrame, concat, json_normalize
 from ray.rllib.policy.policy import Policy as RayPolicy
@@ -117,15 +118,29 @@ class SimRunner:
         """Function used to wrap compute_single_action method.
 
         Used for Ray policies and custom policies.
+
+        Recurrent policies are handled differently from non-recurrent.
         """
         assert isinstance(obs, dict)
         if isinstance(self.policy, CustomPolicy):
             action = self.policy._computeSingleAction(obs=obs)
-        else:
-            # obs_tensor = self._convertObs2Tensor(obs)
-            action = self.policy.compute_single_action(
+        elif self.policy.is_recurrent():
+            # recurrent Ray policies
+            rnn_state = getattr(
+                self, "rnn_state", self.policy.get_initial_state()
+            )
+
+            action, rnn_state, _ = self.policy.compute_single_action(
                 obs=obs,
+                state=rnn_state,
                 explore=False,
+            )
+            self.rnn_state = rnn_state
+        else:
+            # non-recurrent Ray policies
+            obs_tensor = self._convertObs2Tensor(obs)
+            action = self.policy.compute_single_action(
+                obs=obs_tensor, explore=False
             )
 
         return action
