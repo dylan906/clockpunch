@@ -15,10 +15,12 @@ from numpy import array, cumsum, linspace, pi, zeros
 from numpy.random import default_rng
 from pandas import read_csv, read_pickle
 from ray.rllib.algorithms import ppo
+from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
 from punchclock.environment.misc_wrappers import getIdentityWrapperEnv
+from punchclock.nets.lstm_mask import MaskedLSTM
 from punchclock.policies.greedy_cov_v2 import GreedyCovariance
 from punchclock.policies.random_policy import RandomPolicy
 from punchclock.ray.build_env import buildEnv
@@ -205,6 +207,31 @@ algo_config = (
 algo = algo_config.build()
 policy = algo.get_policy()
 print(f"policy = {policy}")
+
+# Build dummy custom RNN policy
+ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+algo_config = (
+    ppo.PPOConfig()
+    .training(
+        model={
+            "custom_model": "MaskedLSTM",
+            "custom_model_config": {
+                "fcnet_hiddens": [6, 6],
+                "fcnet_activation": "relu",
+                "lstm_state_size": 10,
+            },
+        }
+    )
+    .environment(
+        env="my_env",
+        env_config=config,
+    )
+    .framework("torch")
+)
+algo = algo_config.build()
+policy = algo.get_policy()
+print(f"policy = {policy}")
+
 
 # %% Initialize SimRunner
 print("\nInitialize SimRunner...")
