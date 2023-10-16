@@ -304,7 +304,7 @@ class MonteCarloRunner:
             trial_name (`Any`): Trial name.
             env_config (`dict`): See buildEnv.
             policy_config_or_checkpoint (`dict | str`): A CustomPolicy config or
-                a path to a Ray checkpoint. See buildRayActionMaskPolicy and
+                a path to a Ray checkpoint. See buildCustomRayPolicy and
                 buildCustomPolicy for interface details.
             print_status (`bool`, optional): Set to True to print trial name and
                 run time. Defaults to False.

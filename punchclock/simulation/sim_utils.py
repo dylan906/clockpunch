@@ -12,7 +12,7 @@ from punchclock.common.constants import getConstants
 from punchclock.common.transforms import coe2eci, ecef2eci, lla2ecef
 from punchclock.policies.policy_base_class_v2 import CustomPolicy
 from punchclock.policies.policy_builder import buildCustomPolicy
-from punchclock.ray.build_ray_policy import buildRayActionMaskPolicy
+from punchclock.ray.build_ray_policy import buildCustomRayPolicy
 
 
 # %% Functions
@@ -212,7 +212,7 @@ def buildCustomOrRayPolicy(
 
     Args:
         config_or_path (`dict | str`): A CustomPolicy config or a path to a Ray
-            checkpoint. See buildRayActionMaskPolicy and buildCustomPolicy for
+            checkpoint. See buildCustomRayPolicy and buildCustomPolicy for
             interface details.
 
     Returns:
@@ -224,7 +224,7 @@ def buildCustomOrRayPolicy(
     ), "config_or_path must be a dict or str"
 
     if isinstance(config_or_path, str):
-        policy = buildRayActionMaskPolicy(config_or_path)
+        policy = buildCustomRayPolicy(config_or_path)
     elif isinstance(config_or_path, dict):
         policy = buildCustomPolicy(config_or_path)
 

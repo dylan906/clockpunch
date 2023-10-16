@@ -8,10 +8,11 @@ from ray.rllib.policy.policy import Policy
 
 # Punch Clock Imports
 from punchclock.nets.action_mask_model import MyActionMaskModel
+from punchclock.nets.lstm_mask import MaskedLSTM
 
 
 # %% Functions
-def buildRayActionMaskPolicy(
+def buildCustomRayPolicy(
     checkpoint_path: str,
 ) -> dict | Policy:
     """Build Ray policy using MyActionMask model from a checkpoint path.
@@ -29,6 +30,8 @@ def buildRayActionMaskPolicy(
     print("register model")
     # Register model (assumes MyActionMaskModel is used in policies)
     ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
+    ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+
     print("build policy from checkpoint")
     print(f"checkpoint path = {checkpoint_path}")
     policy = Policy.from_checkpoint(checkpoint_path)
