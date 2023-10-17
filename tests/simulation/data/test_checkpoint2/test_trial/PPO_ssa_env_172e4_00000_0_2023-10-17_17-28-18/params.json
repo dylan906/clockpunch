@@ -69,17 +69,36 @@
           }
         },
         {
-          "wrapper": "CopyObsItem",
+          "wrapper": "CopyObsInfoItem",
           "wrapper_config": {
-            "key": "vis_map_est",
-            "new_key": "vm_copy"
+            "copy_from": "obs",
+            "copy_to": "info",
+            "from_key": "vis_map_est",
+            "to_key": "vm_copy"
           }
         },
         {
           "wrapper": "VisMap2ActionMask",
           "wrapper_config": {
-            "rename_key": "action_mask",
+            "new_key": "action_mask",
+            "obs_info": "info",
             "vis_map_key": "vm_copy"
+          }
+        },
+        {
+          "wrapper": "CopyObsInfoItem",
+          "wrapper_config": {
+            "copy_from": "info",
+            "copy_to": "obs",
+            "from_key": "action_mask",
+            "info_space_config": {
+              "n": [
+                5,
+                2
+              ],
+              "space": "MultiBinary"
+            },
+            "to_key": "action_mask"
           }
         },
         {
@@ -91,6 +110,9 @@
             ],
             "new_key": "observations"
           }
+        },
+        {
+          "wrapper": "IdentityWrapper"
         },
         {
           "wrapper": "FlatDict"
@@ -250,17 +272,6 @@
       ]
     },
     "horizon": 10,
-    "reward_params": {
-      "inequality": ">",
-      "metric": "num_tasked",
-      "metric_value": 3,
-      "obs_or_info": "obs",
-      "penalty": 1,
-      "preprocessors": [
-        "min"
-      ],
-      "reward_func": "Threshold"
-    },
     "time_step": 100
   },
   "framework": "torch",
