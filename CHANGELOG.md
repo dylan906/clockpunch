@@ -15,7 +15,7 @@ I'm trying to get better about that.
 - New miscellaneous wrappers: `OperatorWrapper` (#69, #80), `MaskViolationChecker` (#75).
 - New `ObservationWrapper`: `MakeObsSpaceMultiBinary` (#74).
 - `NumWindows` wrapper can now be configured to run in open-loop mode (#76).
-- New model which layers N-number of FC layers with a single LSTM layer (#81, #82).
+- New model which layers N-number of FC layers with a single LSTM layer (#81, #82, #83).
 
 ### Changed
 
