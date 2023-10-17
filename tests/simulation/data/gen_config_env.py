@@ -15,15 +15,19 @@ from numpy import array, diag, pi
 from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci
 from punchclock.common.utilities import array2List
+from punchclock.ray.build_env import buildEnv
 
 # %% Config env
 RE = getConstants()["earth_radius"]
 sensor_init_ecef = array([[RE, 0, 0, 0, 0, 0], [0, RE, 0, 0, 0, 0]])
 sensor_init_eci = ecef2eci(sensor_init_ecef.transpose(), 0).transpose()
 
+num_sensors = 2
+num_targets = 4
+
 agent_params = {
-    "num_sensors": 2,
-    "num_targets": 4,
+    "num_sensors": num_sensors,
+    "num_targets": num_targets,
     "sensor_dynamics": "terrestrial",
     "target_dynamics": "satellite",
     "sensor_dist": None,
@@ -63,7 +67,7 @@ constructor_params = {
             "wrapper": "CopyObsInfoItem",
             "wrapper_config": {
                 "copy_from": "obs",
-                "copy_to": "obs",
+                "copy_to": "info",
                 "from_key": "vis_map_est",
                 "to_key": "vm_copy",
             },
@@ -71,9 +75,22 @@ constructor_params = {
         {
             "wrapper": "VisMap2ActionMask",
             "wrapper_config": {
-                "obs_info": "obs",
+                "obs_info": "info",
                 "vis_map_key": "vm_copy",
                 "new_key": "action_mask",
+            },
+        },
+        {
+            "wrapper": "CopyObsInfoItem",
+            "wrapper_config": {
+                "copy_from": "info",
+                "copy_to": "obs",
+                "from_key": "action_mask",
+                "to_key": "action_mask",
+                "info_space_config": {
+                    "space": "MultiBinary",
+                    "n": [num_targets + 1, num_sensors],
+                },
             },
         },
         {
@@ -95,6 +112,11 @@ env_config = {
     "time_step": 100,
     "constructor_params": constructor_params,
 }
+
+# %% Test env
+env = buildEnv(env_config)
+env.reset()
+env.step(env.action_space.sample())
 
 # %% Save file
 json_obj = json.dumps(env_config, default=array2List)
