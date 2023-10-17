@@ -19,6 +19,7 @@ from punchclock.environment.wrapper_utils import (
     SelectiveDictObsWrapper,
     SelectiveDictProcessor,
     checkDictSpaceContains,
+    configurableLogicGate,
     convertBinaryBoxToMultiBinary,
     convertNumpyFuncStrToCallable,
     getNumWrappers,
@@ -248,5 +249,36 @@ except Exception as e:
 # Fix both args
 thing = OperatorFuncBuilder("lt", a=1, b=2)
 print(f"output from fixed args: {thing()}")
+
+# %% configurableLogicGate
+print("\nTest configurableLogicGate...")
+info = {"a": 1, "b": 2}
+out = configurableLogicGate(
+    in_bool=True,
+    info=info,
+    return_if_true=None,
+    return_if_false="a",
+)
+print(f"out = {out}")
+assert out is True
+
+out = configurableLogicGate(
+    in_bool=False,
+    info=info,
+    return_if_true=None,
+    return_if_false="a",
+)
+print(f"out = {out}")
+assert out == info["a"]
+
+val_if_false = 7
+out = configurableLogicGate(
+    in_bool=False,
+    info=info,
+    return_if_true=None,
+    return_if_false=val_if_false,
+)
+print(f"out = {out}")
+assert out == val_if_false
 # %% done
 print("done")

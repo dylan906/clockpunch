@@ -5,7 +5,7 @@ from copy import deepcopy
 
 # Third Party Imports
 from gymnasium import Env
-from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
+from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 
 # from gymnasium.utils.env_checker import check_env
 from numpy import array, diag, pi
@@ -18,6 +18,7 @@ from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     CombineInfoItems,
+    ConfigurableLogicGate,
     GetNonZeroElements,
     LogisticTransformInfo,
     MaskViolationCounter,
@@ -395,5 +396,31 @@ for k in ["a", "b", "c"]:
     nz_env = GetNonZeroElements(rand_env, key=k, new_key="nonzeros")
     (_, _, _, _, info) = nz_env.step(nz_env.action_space.sample())
     print(f"info (via step) = {info}")
+
+# %% Test ConfigrableLogicGate
+print("\nTest ConfigrableLogicGate...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict(
+        {
+            "a": Box(low=0, high=2, shape=(2, 2)),
+            "b": Discrete(2),
+        }
+    ),
+)
+clg_env = ConfigurableLogicGate(
+    rand_env,
+    key="b",
+    return_if_false="a",
+)
+_, info = clg_env.reset()
+print(f"info (via reset) = {info}")
+
+(_, _, _, _, info) = clg_env.step(clg_env.action_space.sample())
+print(f"info (via step) = {info}")
+
+
 # %% done
 print("done")

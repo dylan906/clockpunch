@@ -23,6 +23,7 @@ from punchclock.common.utilities import (
 )
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
+    configurableLogicGate,
     convertNumpyFuncStrToCallable,
     countMaskViolations,
     countNullActiveActions,
@@ -86,12 +87,12 @@ class InfoWrapper(ABC, Wrapper):
         ) = self.env.step(action)
 
         new_info = self.updateInfo(
-            observations,
-            rewards,
-            terminations,
-            truncations,
-            infos,
-            action,
+            observations=observations,
+            rewards=rewards,
+            terminations=terminations,
+            truncations=truncations,
+            infos=infos,
+            action=action,
         )
         infos.update(new_info)
         self.info = deepcopy(infos)
@@ -986,3 +987,136 @@ class GetNonZeroElements(InfoWrapper):
         new_info.update(new_item)
 
         return new_info
+
+
+# %% ConfigurableLogicGate
+
+
+class ConfigurableLogicGate(InfoWrapper):
+    """Return a value from info (or a static value) based on a value of info.
+
+    See wrapper_utils.configurableLogicGate for details.
+
+    Examples:
+        wrapped_env = ConfigurableLogicGate(key="a", new_key="c", return_if_true="b")
+        info = {
+            "a": True,
+            "b": array([1, 2, 3])
+        }
+        _, _, _, _, new_info = wrapped_env.updateInfo(infos=info)
+        # new_info = {
+        #   "c": array([1, 2, 3]),
+        # }
+
+        info = {
+            "a": False,
+            "b": array([1, 2, 3])
+        }
+        _, _, _, _, new_info = wrapped_env.updateInfo(infos=info)
+        # new_info = {
+        #   "c": False,
+        # }
+
+        wrapped_env = ConfigurableLogicGate(
+            key="a",
+            new_key="c",
+            return_if_true="b",
+            return_if_false=2.0
+            )
+        info = {
+            "a": False,
+            "b": array([1, 2, 3])
+        }
+        _, _, _, _, new_info = wrapped_env.updateInfo(infos=info)
+        # new_info = {
+        #   "c": 2.0,
+        # }
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        key: str,
+        new_key: str = None,
+        return_if_true: None | str | Any = None,
+        return_if_false: None | str | Any = None,
+    ):
+        """Wrap environment.
+
+        Args:
+            env (Env): See InfoWrapper for requirements.
+            key (str): Key to test logical. Must correspond to a bool or 0/1 value.
+            new_key (str, optional): Key to store output. If None, overwrites `key`.
+                Defaults to None.
+            return_if_true (None | str | Any, optional): If None, returns the input.
+                If a str, return info[return_if_true]. Otherwise, returns
+                return_if_true. Defaults to None.
+            return_if_false (None | str | Any, optional): If None, returns the input.
+                If a str, return info[return_if_false]. Otherwise, returns
+                return_if_false. Defaults to None.
+        """
+        super().__init__(env)
+
+        info = getInfo(env)
+        assert key in info.keys()
+        assert isinstance(info[key], [bool, int])
+        if isinstance(return_if_false, str):
+            assert return_if_false in info.keys()
+        if isinstance(return_if_true, str):
+            assert return_if_true in info.keys()
+
+        self.key = key
+
+        if new_key is None:
+            new_key = deepcopy(key)
+        self.new_key = new_key
+
+        self.return_if_true = return_if_true
+        self.return_if_false = return_if_false
+
+    def updateInfo(
+        self,
+        infos: dict,
+        observations: Any = None,
+        rewards: Any = None,
+        terminations: Any = None,
+        truncations: Any = None,
+        action: Any = None,
+    ) -> dict:
+        """Check infos[self.key] and return a 1-item dict {self.new_key: val}.
+
+        Args:
+            observations, rewards, terminations, truncations, action (Any): Unused.
+            infos (dict): Unwrapped info dict.
+
+        Returns:
+            dict: Same as input `infos`, but with new/updated item corresponding
+                to self.new_key. The value of return_dict[new_key] depends on the
+                value of infos[self.key], as well as configuration parameters set
+                on instantiation.
+        """
+        in_bool = infos[self.key]
+        if isinstance(in_bool, int):
+            # Correction from int to bool makes testing easier. Allows for info[key]
+            # to be generated from a Gymnasium space (Gym spaces can't generate
+            # bools).
+            in_bool = self.intToBool(in_bool)
+
+        out = configurableLogicGate(
+            in_bool=in_bool,
+            info=infos,
+            return_if_true=self.return_if_true,
+            return_if_false=self.return_if_false,
+        )
+
+        new_item = {self.new_key: out}
+
+        return new_item
+
+    def intToBool(self, in_int: int) -> bool:
+        """Convert 1/0 to True/False."""
+        assert in_int in [0, 1]
+        if in_int == 1:
+            return True
+        elif in_int == 0:
+            return False

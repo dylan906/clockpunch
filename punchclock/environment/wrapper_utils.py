@@ -583,3 +583,45 @@ def binary2ActionMask(custody_array: ndarray, num_sensors: int) -> ndarray:
     )
 
     return full_action_mask_2d
+
+
+# %% configurableLogicGate
+def configurableLogicGate(
+    in_bool: bool,
+    info: dict,
+    return_if_true: None | str | Any = None,
+    return_if_false: None | str | Any = None,
+) -> Any:
+    """Returns `info[return_if_x]`, `return_if_x`, or `in_bool` depending on `in_bool`.
+
+    Args:
+        in_bool (bool): Input bool.
+        info (dict): Must contain return_if_x, if return_if_x is a str.
+        return_if_true (None | str | Any, optional): If None, returns the input.
+            If a str, return info[return_if_true]. Otherwise, returns return_if_true.
+            Defaults to None.
+        return_if_false (None | str | Any, optional): If None, returns the input.
+            If a str, return info[return_if_false]. Otherwise, returns return_if_false.
+            Defaults to None.
+
+    Returns:
+        Any: `info[return_if_x]` or `return_if_x` or `in_bool`
+    """
+    if isinstance(return_if_true, str):
+        return_if_true = info[return_if_true]
+    elif return_if_true is None:
+        return_if_true = in_bool
+    else:
+        return_if_true = return_if_true
+
+    if isinstance(return_if_false, str):
+        return_if_false = info[return_if_false]
+    elif return_if_false is None:
+        return_if_false = in_bool
+    else:
+        return_if_false = return_if_false
+
+    if in_bool is True:
+        return return_if_true
+    else:
+        return return_if_false
