@@ -465,7 +465,9 @@ class PrimitiveSimResults:
 def results2DF(results: SimResults | PrimitiveSimResults) -> DataFrame:
     """Convert SimResults or PrimitiveSimResults to a DataFrame."""
     obs_df = json_normalize(results.obs)
+    obs_df = obs_df.add_prefix("obs_")
     info_df = json_normalize(results.info)
+    info_df = info_df.add_prefix("info_")
     terminated_df = json_normalize(
         [{"terminated": v} for v in results.terminated]
     )
