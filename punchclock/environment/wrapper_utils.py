@@ -539,7 +539,10 @@ class OperatorFuncBuilder:
             a = self.a
 
         if self.b is None:
-            b = arg[1]
+            if len(arg) == 1:
+                b = arg[0]
+            else:
+                b = arg[1]
         else:
             b = self.b
 
