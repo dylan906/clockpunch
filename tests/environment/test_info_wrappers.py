@@ -415,6 +415,7 @@ clg_env = ConfigurableLogicGate(
     key="b",
     return_if_false="a",
 )
+
 _, info = clg_env.reset()
 print(f"info (via reset) = {info}")
 
