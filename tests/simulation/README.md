@@ -53,5 +53,6 @@ The MC config file `config_mc.json` has the data in the env config (also located
 
 ## MC Test
 The MC test, `test_mc.py`, loads the mc config file, `config_mc.json`, and generates a directory with results in `/mc_results/exp_*`.
-Each run generates a results folder `exp_*` which has .pkl files in it.
+Each run generates a results folder `/data/mc_results/exp_*` which has .pkl files in it.
+Before running `test_mc.py`, run (in order): `gen_config_env`, `gen_checkpoint`, and `test_mc_config`.
 
