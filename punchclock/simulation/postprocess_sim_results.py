@@ -44,9 +44,9 @@ def addPostProcessedCols(
     # Convert nested lists to arrays (if needed)
     df = convertNestedLists2Arrays(df)
 
-    df["cov_tr"] = df["est_cov"].apply(calc3dTr)
-    df["pos_cov_tr"] = df["est_cov"].apply(calc3dTr, pos_or_vel="pos")
-    df["vel_cov_tr"] = df["est_cov"].apply(calc3dTr, pos_or_vel="vel")
+    df["cov_tr"] = df["info_est_cov"].apply(calc3dTr)
+    df["pos_cov_tr"] = df["info_est_cov"].apply(calc3dTr, pos_or_vel="pos")
+    df["vel_cov_tr"] = df["info_est_cov"].apply(calc3dTr, pos_or_vel="vel")
     df["cov_mean"] = df["cov_tr"].apply(mean)
     df["cov_max"] = df["cov_tr"].apply(max)
     df["pos_cov_mean"] = df["pos_cov_tr"].apply(mean)
@@ -54,7 +54,7 @@ def addPostProcessedCols(
     df["vel_cov_mean"] = df["vel_cov_tr"].apply(mean)
     df["vel_cov_max"] = df["vel_cov_tr"].apply(max)
 
-    null_action_indx = df["num_targets"][0]
+    null_action_indx = df["info_num_targets"][0]
     df["null_action"] = df["action"].apply(
         countNullActions,
         null_action_indx=null_action_indx,
@@ -81,8 +81,8 @@ def addPostProcessedCols(
     df["action_array"] = df.apply(
         lambda x: actionSpace2Array(
             actions=x["action"],
-            num_sensors=df["num_sensors"][0],
-            num_targets=df["num_targets"][0],
+            num_sensors=df["info_num_sensors"][0],
+            num_targets=df["info_num_targets"][0],
         ),
         axis=1,
     )
@@ -104,6 +104,6 @@ def convertNestedLists2Arrays(df: DataFrame) -> DataFrame:
     """Convert nested lists to numpy arrays."""
     # Caused by using results directly rather than loading from .csv.
     # Does nothing if entries are already arrays.
-    df["est_cov"] = df["est_cov"].apply(array)
+    df["info_est_cov"] = df["info_est_cov"].apply(array)
 
     return df
