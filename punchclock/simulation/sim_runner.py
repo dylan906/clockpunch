@@ -254,8 +254,10 @@ class SimRunner:
         # Store reward as numpy float (vs python float) for consistency with the
         # rest of a sim run.
         self.reward_hist[0] = float64(0.0)
-        self.done_hist = [None] * self.max_steps
-        self.done_hist[0] = False
+        self.terminated_hist = [None] * self.max_steps
+        self.terminated_hist[0] = False
+        self.truncated_hist = [None] * self.max_steps
+        self.truncated_hist[0] = False
         self.action_hist = [None] * self.max_steps
         self.obs_hist = [None] * self.max_steps
 
@@ -284,12 +286,13 @@ class SimRunner:
         Returns:
             obs (`Any`): Type is dependent on wrappers used on self.env.
             reward (`float`): Reward for single step.
-            done (`bool`): Whether or not the env is done.
+            terminated (`bool`): Whether or not the env is terminated.
+            truncated (bool): Whether or not the env is truncated.
             info (`dict`): Info for single step.
             next_action (`ndarray`): Policy's action based on argument action.
         """
         # step environment
-        [obs, reward, done, truncated, info] = self.env.step(action)
+        [obs, reward, terminated, truncated, info] = self.env.step(action)
         if isinstance(self.policy, CustomPolicy):
             # Overwrite obs if using CustomPolicy. CustomPolicy requires obs =
             # {"observations": Dict, "action_mask": Box}
@@ -303,7 +306,7 @@ class SimRunner:
         next_action = self._computeSingleActionWrapper(obs)
         next_action = getActionArray(next_action)
 
-        return (obs, reward, done, info, next_action)
+        return (obs, reward, terminated, truncated, info, next_action)
 
     def runSim(self) -> SimResults:
         """Run through self.max_steps of a simulation and return results.
@@ -328,19 +331,28 @@ class SimRunner:
         action = self.action_hist[0]
         for i in range(1, self.max_steps):
             # output action is for next step
-            [observation, reward, done, info, action] = self.step(action)
+            [
+                observation,
+                reward,
+                terminated,
+                truncated,
+                info,
+                action,
+            ] = self.step(action)
 
             # record entries in _hist variables
             self.obs_hist[i] = observation
             self.reward_hist[i] = reward
-            self.done_hist[i] = done
+            self.terminated_hist[i] = terminated
+            self.truncated_hist[i] = truncated
             self.info_hist[i] = info
             self.action_hist[i] = action
 
         return SimResults(
             obs=self.obs_hist,
             reward=self.reward_hist,
-            done=self.done_hist,
+            terminated=self.terminated_hist,
+            truncated=self.truncated_hist,
             info=self.info_hist,
             actions=self.action_hist,
         )
@@ -352,7 +364,8 @@ class SimResults:
 
     obs: list
     reward: list
-    done: list
+    terminated: list
+    truncated: list
     info: list
     actions: list
 
@@ -437,7 +450,8 @@ class PrimitiveSimResults:
 
     obs: list
     reward: list
-    done: list
+    terminated: list
+    truncated: list
     info: list
     actions: list
 
@@ -452,7 +466,10 @@ def results2DF(results: SimResults | PrimitiveSimResults) -> DataFrame:
     """Convert SimResults or PrimitiveSimResults to a DataFrame."""
     obs_df = json_normalize(results.obs)
     info_df = json_normalize(results.info)
-    done_df = json_normalize([{"done": v} for v in results.done])
+    terminated_df = json_normalize(
+        [{"terminated": v} for v in results.terminated]
+    )
+    truncated_df = json_normalize([{"truncated": v} for v in results.truncated])
     action_df = json_normalize([{"action": v} for v in results.actions])
     reward_df = json_normalize([{"reward": v} for v in results.reward])
 
@@ -460,7 +477,8 @@ def results2DF(results: SimResults | PrimitiveSimResults) -> DataFrame:
         [
             obs_df,
             info_df,
-            done_df,
+            terminated_df,
+            truncated_df,
             action_df,
             reward_df,
         ],

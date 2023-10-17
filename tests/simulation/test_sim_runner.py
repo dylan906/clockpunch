@@ -39,8 +39,8 @@ rng = default_rng()
 def plotSimResults(results: SimResults, env, time):
     """Shortcut function for plotting standard sim results."""
     fig, axs = plt.subplots(2, 2, sharex=True)
-    axs[0, 0].plot(time, results.done)
-    axs[0, 0].set(ylabel="Done")
+    axs[0, 0].plot(time, results.terminated)
+    axs[0, 0].set(ylabel="terminated")
     axs[0, 0].set(xlabel="Time")
     axs[1, 0].plot(time, results.actions)
     axs[1, 0].set(ylabel="actions")
@@ -77,7 +77,7 @@ def printSimResults(sim_results: SimResults):
     print(" Variable Types:")
     dict_of_vars = {
         "actions": sim_results.actions,
-        "done": sim_results.done,
+        "terminated": sim_results.terminated,
         "obs": sim_results.obs,
         "reward": sim_results.reward,
     }
@@ -248,10 +248,13 @@ print(f"states = \n{states}")
 # %% Test step()
 print("\nTest step()...")
 act = sim_runner.env.action_space.sample()
-[obs, reward, done, info, next_action] = sim_runner.step(action=act)
+[obs, reward, terminated, truncated, info, next_action] = sim_runner.step(
+    action=act
+)
 print(f"obs = {obs}")
 print(f"reward = {reward}")
-print(f"done = {done}")
+print(f"terminated = {terminated}")
+print(f"truncated = {truncated}")
 print(f"info = {info}")
 print(f"next_action = {next_action}")
 
