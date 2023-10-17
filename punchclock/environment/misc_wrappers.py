@@ -605,6 +605,63 @@ class CustodyWrapper(ModifyObsOrInfo):
         return new_obs, new_info
 
 
+# %% TruncateIfNoCustody
+class TruncateIfNoCustody(Wrapper):
+    """Truncate environment if custody array is all zeros."""
+
+    def __init__(self, env: Env, obs_info: str, key: str):
+        """Wrap environment that already has custody array.
+
+        Args:
+            env (Env): Gymnasium environment.
+            obs_info (str): ["obs" | "info"] Whether custody array is in observation
+                or info.
+            key (str): Key corresponding to custody array.
+        """
+        super().__init__(env)
+        if obs_info == "info":
+            the_dict = getInfo(env)
+        elif obs_info == "obs":
+            the_dict = env.observation_space.spaces
+
+        assert key in the_dict
+
+        self.obs_info = obs_info
+        self.key = key
+
+    def step(self, action) -> Tuple[OrderedDict, float, bool, bool, dict]:
+        """Set truncate to True if custody array is all zeros.
+
+        Does not modify obs, reward, termination, info.
+        """
+        (
+            observations,
+            rewards,
+            terminations,
+            truncations,
+            infos,
+        ) = self.env.step(action)
+
+        relevant_item = self._getSourceItem(info=infos, obs=observations)
+        custody = relevant_item[self.key]
+        if all([c == 0 for c in custody]):
+            truncations = True
+
+        return (observations, rewards, terminations, truncations, infos)
+
+    def _getSourceItem(self, info: dict, obs: dict) -> dict:
+        """Copy an item from obs or info."""
+        if self.obs_info == "info":
+            source = deepcopy(info)
+        elif self.obs_info == "obs":
+            source = deepcopy(obs)
+
+        source_value = source[self.key]
+        new_item = {self.key: source_value}
+
+        return new_item
+
+
 # %% ConvertCustody2ActionMask
 class ConvertCustody2ActionMask(ModifyObsOrInfo):
     """Convert a MultiBinary custody array to a MultiBinary action mask.

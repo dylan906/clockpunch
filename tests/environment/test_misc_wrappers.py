@@ -21,6 +21,7 @@ from punchclock.environment.misc_wrappers import (
     ModifyObsOrInfo,
     OperatorWrapper,
     RandomInfo,
+    TruncateIfNoCustody,
     VisMap2ActionMask,
     getIdentityWrapperEnv,
 )
@@ -298,6 +299,23 @@ obs = cw.unwrapped.observation_space.sample()
 # Make covariance all positive to be ensure diagonals are properly conditioned.
 # obs["est_cov"] = abs(obs["est_cov"])
 print(f"wrapped obs = {cw.observation(obs)}")
+
+# %% TruncateIfNoCustody
+print("\nTest TruncateIfNoCustody...")
+env_rand = RandomInfo(
+    RandomEnv(
+        {
+            "observation_space": Dict({"a": MultiBinary((1))}),
+        }
+    ),
+    info_space=Dict({"custody_info": Dict({"b": MultiBinary((1))})}),
+)
+tinc_env = TruncateIfNoCustody(env=env_rand, obs_info="obs", key="a")
+obs, info = tinc_env.reset()
+
+obs, _, _, truncate, info = tinc_env.step(tinc_env.action_space.sample())
+print(f"obs = {obs}")
+print(f"truncate = {truncate}")
 
 # %% Test ConvertCustody2ActionMask
 print("\nTest ConvertCustody2ActionMask...")
