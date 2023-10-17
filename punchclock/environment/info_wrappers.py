@@ -990,8 +990,6 @@ class GetNonZeroElements(InfoWrapper):
 
 
 # %% ConfigurableLogicGate
-
-
 class ConfigurableLogicGate(InfoWrapper):
     """Return a value from info (or a static value) based on a value of info.
 
