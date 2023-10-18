@@ -29,6 +29,7 @@ I'm trying to get better about that.
 
 - Fixed edge case bug where `InfoWrapper` would incorrectly pass in action=None to `self.updateInfo()` (#70).
 - Fixed various bugs and clarified type hints/doc strings in some analysis util functions (#52).
+- `SimRunner` no longer fails to fetch info with some wrappers (#63).
 
 ### Removed
 
