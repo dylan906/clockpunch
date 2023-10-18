@@ -106,6 +106,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         # Holds the current "base" output (before logits layer).
         self._features = None
         # ---End Ray Example---
+        print(f"MaskedLSTM built: \n{self}")
 
     @override(ModelV2)
     def get_initial_state(self):
