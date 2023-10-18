@@ -19,6 +19,7 @@ from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     CombineInfoItems,
     ConfigurableLogicGate,
+    FilterInfo,
     GetNonZeroElements,
     LogisticTransformInfo,
     MaskViolationCounter,
@@ -422,6 +423,31 @@ print(f"info (via reset) = {info}")
 (_, _, _, _, info) = clg_env.step(clg_env.action_space.sample())
 print(f"info (via step) = {info}")
 
+# %% FilterInfo
+print("\nTest FilterInfo...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict(
+        {
+            "a": Discrete(2),
+            "b": Discrete(2),
+        }
+    ),
+)
+fi_env = FilterInfo(env=rand_env, keys=["a"])
+
+_, info = fi_env.reset()
+print(f"info (via reset) = {info}")
+
+(_, _, _, _, info) = fi_env.step(fi_env.action_space.sample())
+print(f"info (via step) = {info}")
+
+fi_env = FilterInfo(env=rand_env, keys=["a"], reverse=True)
+(_, _, _, _, info) = fi_env.step(fi_env.action_space.sample())
+print("Test with reverse filter:")
+print(f"info (via step) = {info}")
 
 # %% done
 print("done")

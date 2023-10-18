@@ -35,8 +35,15 @@ from punchclock.schedule_tree.access_windows import AccessWindowCalculator
 class InfoWrapper(ABC, Wrapper):
     """Base class for custom info wrappers."""
 
-    def __init__(self, env: Env):
-        """Wrap env with InfoWrapper."""
+    def __init__(self, env: Env, update_method: str = "union"):
+        """Wrap env with InfoWrapper.
+
+        update_method (str, optional): ("union" | "override") Which method to use
+            when merging unwrapped info with output of self.updateInfo.
+
+            union: wrapped_info = unwrapped_info.update(new_info)
+            override: wrapped_info = new_info
+        """
         assert isinstance(
             env.observation_space, Dict
         ), "env.observation_space must be a Dict."
@@ -48,6 +55,24 @@ class InfoWrapper(ABC, Wrapper):
             env.action_space.nvec == env.action_space.nvec[0]
         ), "All values in action_space.nvec must be same."
         super().__init__(env)
+
+        assert update_method in [
+            "union",
+            "override",
+        ], "update_method must be one of ['union', 'override']."
+
+        self.update_method = update_method
+
+    def _updateUnwrappedInfo(
+        self, unwrapped_info: dict, new_info: dict
+    ) -> dict:
+        if self.update_method == "union":
+            wrapped_info = deepcopy(unwrapped_info)
+            wrapped_info.update(new_info)
+        elif self.update_method == "override":
+            wrapped_info = new_info
+
+        return wrapped_info
 
     def reset(
         self, seed: int | None = None, options: dict | None = None
@@ -66,7 +91,9 @@ class InfoWrapper(ABC, Wrapper):
             infos=info,
             action=initial_action,
         )
-        info.update(new_info)
+
+        info = self._updateUnwrappedInfo(unwrapped_info=info, new_info=new_info)
+
         self.info = deepcopy(info)
 
         return obs, info
@@ -94,7 +121,11 @@ class InfoWrapper(ABC, Wrapper):
             infos=infos,
             action=action,
         )
-        infos.update(new_info)
+
+        infos = self._updateUnwrappedInfo(
+            unwrapped_info=infos, new_info=new_info
+        )
+
         self.info = deepcopy(infos)
 
         return (observations, rewards, terminations, truncations, infos)
@@ -1057,7 +1088,7 @@ class ConfigurableLogicGate(InfoWrapper):
 
         info = getInfo(env)
         assert key in info.keys()
-        assert isinstance(info[key], [bool, int])
+        assert isinstance(info[key], (bool, int))
         if isinstance(return_if_false, str):
             assert return_if_false in info.keys()
         if isinstance(return_if_true, str):
@@ -1118,3 +1149,76 @@ class ConfigurableLogicGate(InfoWrapper):
             return True
         elif in_int == 0:
             return False
+
+
+# %% FilterInfo
+class FilterInfo(InfoWrapper):
+    """Filter desired items in info.
+
+    Items in `keys` are kept, all others are discarded.
+    """
+
+    def __init__(self, env: Env, keys: str | list[str], reverse: bool = False):
+        """Wrap environment.
+
+        Args:
+            env (Env): See InfoWrapper for requirements.
+            keys (str | list[str]): Key(s) to keep in info.
+            reverse (bool, optional): If True, all items in `keys` will be deleted
+                from info, rather than kept. Defaults to False.
+        """
+        super().__init__(env=env, update_method="override")
+        info = getInfo(env)
+
+        if not isinstance(keys, list):
+            keys = [keys]
+
+        self.reverse = reverse
+
+        if self.reverse is True:
+            keep_keys = []
+            for k in info.keys():
+                if k not in keys:
+                    keep_keys.append(k)
+            keys = keep_keys
+        else:
+            for k in keys:
+                assert k in info
+
+        self.keys = keys
+
+    def updateInfo(
+        self,
+        observations,
+        rewards,
+        terminations,
+        truncations,
+        infos,
+        action,
+    ) -> dict:
+        """Override unwrapped info.
+
+        Args:
+            observations,rewards, terminations, truncations, action: Unused
+            infos (dict): Unwrapped info.
+
+        Returns:
+            dict: New info which overrides unwrapped info.
+        """
+        if isinstance(self.keys, list):
+            keys = self.keys
+        else:
+            keys = [self.keys]
+
+        new_info = self.deleteKeys(infos, include_keys=keys)
+
+        return new_info
+
+    def deleteKeys(self, info: dict, include_keys: list):
+        """Delete items from info that aren't in include_keys."""
+        new_info = deepcopy(info)
+        for k in info.keys():
+            if k not in include_keys:
+                del new_info[k]
+
+        return new_info
