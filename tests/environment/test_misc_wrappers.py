@@ -229,7 +229,7 @@ rand_env = RandomInfo(
     ),
     info_space=Dict({"a": MultiBinary((3, 3))}),
 )
-mvc_env = MaskViolationChecker(rand_env, mask_key="a")
+mvc_env = MaskViolationChecker(rand_env, mask_key="a", log_violations=True)
 
 # Test that action mask violation gets caught
 for _ in range(2):

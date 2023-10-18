@@ -412,13 +412,24 @@ class OperatorWrapper(ModifyObsOrInfo):
 class MaskViolationChecker(Wrapper):
     """Check if action violates action mask and warn if so."""
 
-    def __init__(self, env: Env, mask_key: str, debug: bool = False):
+    def __init__(
+        self,
+        env: Env,
+        mask_key: str,
+        log_violations: bool = False,
+        debug: bool = False,
+    ):
         """Wrap environment.
 
         Args:
             env (Env): Must have MultiDiscrete action space of shape [N+1] * M.
             mask_key (str): Key in info corresponding to action mask. Action mask
                 must be binary and shape (N+1, M).
+            log_violations (bool, optional): If True, wrapper appends an item
+                'mask_violations' to info on step. Item is empty if no mask violations
+                occured on step. Otherwise, has two entries: 'mask' and 'action',
+                which record the 2d mask and 1d action at time of violation. Defaults
+                to False.
             debug (bool, optional): If True, skip mask checking. Wrapper becomes
                 a pass-through. Defaults to False.
         """
@@ -427,6 +438,7 @@ class MaskViolationChecker(Wrapper):
         ), "env.action_space must be a MultiDiscrete."
 
         super().__init__(env)
+        self.log_violations = log_violations
         self.debug = debug
         self.mask_key = mask_key
         self.previous_mask = None
@@ -436,6 +448,7 @@ class MaskViolationChecker(Wrapper):
 
     def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
         """Step environment."""
+        log_item = {}
         if (self.previous_mask is not None) and (self.debug is False):
             action_2d = actionSpace2Array(
                 actions=action,
@@ -451,8 +464,15 @@ class MaskViolationChecker(Wrapper):
                      action = {action}
                      action_mask = {self.previous_mask}"""
                 )
+                log_item = {
+                    "action": deepcopy(action),
+                    "mask": deepcopy(self.previous_mask),
+                }
 
         (obs, reward, termination, truncation, info) = self.env.step(action)
+        if self.log_violations is True:
+            info.update({"mask_violation": log_item})
+
         self.previous_mask = deepcopy(info[self.mask_key])
         return obs, reward, termination, truncation, info
 
