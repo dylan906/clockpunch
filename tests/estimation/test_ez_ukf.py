@@ -57,3 +57,6 @@ ez_filter_params = {
 }
 ukf_test = ezUKF(ez_filter_params)
 print(f"ukf_test.est_p =\n{ukf_test.est_p}")
+
+# %% Done
+print("done")
