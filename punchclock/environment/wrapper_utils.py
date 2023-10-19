@@ -621,7 +621,7 @@ def configurableLogicGate(
     else:
         return_if_false = return_if_false
 
-    if in_bool is True:
+    if in_bool == True:  # noqa need to use == for numpy bool_
         return return_if_true
     else:
         return return_if_false
