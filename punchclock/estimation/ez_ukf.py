@@ -2,7 +2,6 @@
 
 # %% Imports
 # Third Party Imports
-import numpy.random
 from numpy import diag, eye, ndarray
 from numpy.random import default_rng
 
@@ -61,36 +60,26 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
 
     x_init = params["x_init"]
 
-    Q = params["Q"]
-    R = params["R"]
-    p_init = params["p_init"]
-
-    if isinstance(Q, (float, int)):
-        Q = Q * eye(6)
-
-    if isinstance(R, (float, int)):
-        R = R * eye(6)
-
-    if isinstance(p_init, (float, int)):
-        p_init = p_init * eye(6)
-
-    params_subset = {
-        k: v for k, v in params.items() if k in ["Q", "R", "p_init"]
-    }
+    QRP = {k: v for k, v in params.items() if k in ["Q", "R", "p_init"]}
     derived_params = {
-        "Q": Q,
-        "R": R,
-        "p_init": p_init,
+        "Q": None,
+        "R": None,
+        "p_init": None,
     }
-    for k, v in params_subset.items():
+    for k, v in QRP.items():
         if isinstance(v, dict):
-            rng = default_rng(seed=v.get("seed", None))
-            if v["dist"] == "uniform":
-                rngFunc = rng.uniform
-            elif v["dist"] == "normal":
-                rngFunc = rng.normal
-            rand_nums = rngFunc(*v["params"])
-            derived_params[k] = diag(rand_nums)
+            assert "dist" in v
+            assert "params" in v
+            assert len(v["params"]) == 2
+            assert len(v["params"][0]) == 6
+            assert len(v["params"][1]) == 6
+
+            rand_diags = getRandomParams(**v)
+            derived_params[k] = diag(rand_diags)
+        elif isinstance(v, (float, int)):
+            derived_params[k] = v * eye(6)
+        elif isinstance(v, ndarray):
+            derived_params[k] = v
 
     ukf = UnscentedKalmanFilter(
         time=time,
@@ -103,3 +92,27 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
     )
 
     return ukf
+
+
+def getRandomParams(
+    dist: str, params: list[list, list], seed: int = None
+) -> ndarray:
+    """Generate random numbers from a specified distribution.
+
+    Args:
+        dist (str): ["uniform" | "normal"]
+        params (list[list, list]): Sub-lists contain parameters to input to distribution
+            command. Lengths of sub-lists must be equal. See numpy.random for
+            details.
+        seed (int, optional): RNG seed. Defaults to None.
+
+    Returns:
+        ndarray: Has length = len(params[0])
+    """
+    rng = default_rng(seed=seed)
+    if dist == "uniform":
+        rngFunc = rng.uniform
+    elif dist == "normal":
+        rngFunc = rng.normal
+    rand_nums = rngFunc(*params)
+    return rand_nums
