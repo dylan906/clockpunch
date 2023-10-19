@@ -16,7 +16,7 @@ from punchclock.nets.lstm_mask import MaskedLSTM
 
 
 # %% Build env
-class wrappedRepeat(Env):
+class MaskRepeatAfterMe(Env):
     def __init__(self, config=None):
         self.internal_env = RepeatAfterMeEnv()
         self.observation_space = Dict(
@@ -32,11 +32,14 @@ class wrappedRepeat(Env):
     def reset(self, *, seed=None, options=None):
         obs, info = self.internal_env.reset()
         new_obs = self._wrapObs(obs)
+        self.last_obs = new_obs
         return new_obs, info
 
     def step(self, action):
-        obs, reward, done, trunc, info = self.internal_env.step(action)
+        trunc = self._checkMaskViolation(action)
+        obs, reward, done, _, info = self.internal_env.step(action)
         new_obs = self._wrapObs(obs)
+        self.last_obs = new_obs
         return new_obs, reward, done, trunc, info
 
     def _wrapObs(self, unwrapped_obs):
@@ -44,27 +47,37 @@ class wrappedRepeat(Env):
             "observations": flatten(
                 self.internal_env.observation_space, unwrapped_obs
             ),
-            # "action_mask": self.observation_space.spaces[
-            #     "action_mask"
-            # ].sample(),
-            "action_mask": ones(2, dtype=int),
+            "action_mask": self.observation_space.spaces[
+                "action_mask"
+            ].sample(),
+            # "action_mask": ones(2, dtype=int),
         }
-
         return wrapped_obs
 
+    def _checkMaskViolation(self, action):
+        flat_action = flatten(self.action_space, action)
+        diff = self.last_obs["action_mask"] - flat_action
+        if any([i < 0 for i in diff]):
+            truncate = True
+            print("mask violation")
+        else:
+            truncate = False
 
-env = wrappedRepeat()
+        return truncate
+
+
+env = MaskRepeatAfterMe()
 env.reset()
 obs, r, _, _, _ = env.step(env.action_space.sample())
 print(f"obs = {obs}")
 assert env.observation_space.contains(env.observation_space.sample())
 assert env.action_space.contains(env.action_space.sample())
-# %% Build Tuner
+# %% Build Tuner and run fit
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
 config = (
     ppo.PPOConfig()
-    .environment(wrappedRepeat)
+    .environment(MaskRepeatAfterMe)
     .framework("torch")
     .training(
         model={
@@ -82,7 +95,7 @@ config = (
 
 param_space = {
     "framework": "torch",
-    "env": wrappedRepeat,
+    "env": MaskRepeatAfterMe,
     "model": {
         # Specify our custom model from above.
         "custom_model": "MaskedLSTM",
@@ -98,22 +111,10 @@ tuner = tune.Tuner(
     trainable="PPO",
     param_space=param_space,
     run_config=air.RunConfig(
-        stop={"training_iteration": 100},
+        stop={"training_iteration": 10},
     ),
 )
 results = tuner.fit()
-# # %% Test policy
-# policy = algo.get_policy()
-# state = policy.get_initial_state()
-# # action = policy.action_space.sample()
-# obs, info = env.reset()
-# r_cum = 0
-# for _ in range(100):
-#     action, state, _ = policy.compute_single_action(obs=obs, state=state)
-#     obs, r, _, _, _ = env.step(action)
-#     r_cum += r
-
-# print(f"r_cum = {r_cum}")
 
 # %% Done
 print("done")
