@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Third Party Imports
-from numpy import arange, asarray, diagonal, eye, ndarray, sqrt, zeros
+from numpy import arange, asarray, diag, diagonal, eye, ndarray, sqrt, zeros
 from numpy.random import normal
 
 # Punch Clock Imports
@@ -12,7 +12,7 @@ from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from punchclock.estimation.ez_ukf import ezUKF
+from punchclock.estimation.ez_ukf import ezUKF, getRandomParams
 from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
 
 # from punchclock.policies.threshold import Threshold
@@ -316,13 +316,12 @@ class SSASchedulerParams:
             initial_conditions (`list[ndarray]`): List of (6,1) arrays of initial
                 conditions in ECI frame.
             dynamics_type (`str`): "terrestrial" | "satellite"
-            filter_params (`dict`): Values are nested lists for Q, R, and p_init
-                matrices. Each outer list is a row, each value within an inner
-                list corresponds to a column.
+            filter_params (`dict`): Structure of value is shown below. See ezUKF
+                for details.
                 {
-                    "Q": `list[list[float *6] *6]`,
-                    "R": `list[list[float *6] *6]`,
-                    "p_init": `list[list[float *6] *6]`,
+                    "Q": `list[list[float *6] *6]` | dict,
+                    "R": `list[list[float *6] *6]` | dict,
+                    "p_init": `list[list[float *6] *6]` | dict,
                 }
 
         Returns:
@@ -335,28 +334,31 @@ class SSASchedulerParams:
         """
         # Convert target_filter params to arrays if lists are provided; skip if params
         # are floats.
-        if type(filter_params["Q"]) is list:
+        if isinstance(filter_params["Q"], list):
             filter_params["Q"] = asarray(filter_params["Q"])
-        if type(filter_params["R"]) is list:
+        if isinstance(filter_params["R"], list):
             filter_params["R"] = asarray(filter_params["R"])
-        if type(filter_params["p_init"]) is list:
+        if isinstance(filter_params["p_init"], list):
             filter_params["p_init"] = asarray(filter_params["p_init"])
 
         # Need initial covariance to generate noisy initial estimates. Convert to array
         # if float was input.
-        if type(filter_params["p_init"]) is float or int:
-            filter_params["p_init"] = filter_params["p_init"] * eye(6)
+        if isinstance(filter_params["p_init"], (float, int)):
+            p_init_eye = filter_params["p_init"] * eye(6)
+        elif isinstance(filter_params["p_init"], dict):
+            p_init_eye = diag(getRandomParams(**filter_params["p_init"]))
+        elif isinstance(filter_params["p_init"], ndarray):
+            p_init_eye = filter_params["p_init"]
 
         # convert covariance to standard deviation
-        std = sqrt(diagonal(filter_params["p_init"]))
+        std = sqrt(diagonal(p_init_eye))
         # generate noise centered on initial conditions
         noisy_initial_conditions = [
             (normal(ic.transpose(), std)).transpose()
             for ic in initial_conditions
         ]
 
-        # list comprehension of filters using identical parameters EXCEPT for
-        # initial conditions.
+        # list comprehension of filters with noise-injected initial state estimated
         filters = [
             ezUKF(
                 {

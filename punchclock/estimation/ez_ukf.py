@@ -108,7 +108,7 @@ def getRandomParams(
         seed (int, optional): RNG seed. Defaults to None.
 
     Returns:
-        ndarray: Has length = len(params[0])
+        ndarray: (N, ) Has length N = len(params[0])
     """
     rng = default_rng(seed=seed)
     if dist == "uniform":
