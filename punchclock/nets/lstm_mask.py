@@ -57,7 +57,12 @@ class MaskedLSTM(TorchRNN, nn.Module):
         assert "action_mask" in orig_space.spaces
         assert len(orig_space.spaces) == 2
         assert len(orig_space["action_mask"].shape) == 1
-        assert orig_space["action_mask"].shape[0] == num_outputs
+        assert (
+            orig_space["action_mask"].shape[0] == num_outputs
+        ), f"""
+        orig_space['action_mask'].shape[0] = {orig_space['action_mask'].shape[0]}\n
+        num_outputs = {num_outputs}
+        """
         assert "lstm_state_size" in custom_model_kwargs
         assert "fcnet_hiddens" in custom_model_kwargs
         assert "fcnet_activation" in custom_model_kwargs
