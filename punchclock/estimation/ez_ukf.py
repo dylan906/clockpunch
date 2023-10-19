@@ -2,7 +2,9 @@
 
 # %% Imports
 # Third Party Imports
-from numpy import eye, ndarray
+import numpy.random
+from numpy import diag, eye, ndarray
+from numpy.random import default_rng
 
 # Punch Clock Imports
 from punchclock.dynamics.dynamics_classes import (
@@ -24,10 +26,10 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
         params (dict): Includes the following keys:
         {
             "x_init" (ndarray (6,) ): initial state estimate,
-            "p_init" (float | ndarray (6,6) ): initial estimate covariance
+            "p_init" (float | ndarray (6,6) | dict ): initial estimate covariance
             "dynamics_type" (str): 'terrestrial' | 'satellite',
-            "Q" (float | ndarray (6,6) ): process noise,
-            "R" (float | ndarray (6,6) ): measurement noise,
+            "Q" (float | ndarray (6,6) | dict ): process noise,
+            "R" (float | ndarray (6,6) | dict ): measurement noise,
         }
 
     Returns:
@@ -36,8 +38,15 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
     Notes:
         - If "Q", "R", or "p_init" are float or int, a (6, 6) diagonal array is
             generated with the input on the diagonal entries.
-        - If using ndarray arguments, "Q", "R", and "p_init" must be
+        - If using ndarray args, "Q", "R", and "p_init" must be
             well-conditioned.
+        - If using dict args, format like:
+            {
+                "dist" (str): ["uniform", "normal"] Random distribution
+                "params" (list): Params to use in distribution constructor
+                "seed" (int, optional): Seed to use in random distribution. Defaults
+                    to None.
+            }
         - Filter is initialized with time=0.
     """
     time = params.get("time", 0)
@@ -56,23 +65,41 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
     R = params["R"]
     p_init = params["p_init"]
 
-    if type(Q) is float or int:
+    if isinstance(Q, (float, int)):
         Q = Q * eye(6)
 
-    if type(R) is float or int:
+    if isinstance(R, (float, int)):
         R = R * eye(6)
 
-    if type(p_init) is float or int:
+    if isinstance(p_init, (float, int)):
         p_init = p_init * eye(6)
+
+    params_subset = {
+        k: v for k, v in params.items() if k in ["Q", "R", "p_init"]
+    }
+    derived_params = {
+        "Q": Q,
+        "R": R,
+        "p_init": p_init,
+    }
+    for k, v in params_subset.items():
+        if isinstance(v, dict):
+            rng = default_rng(seed=v.get("seed", None))
+            if v["dist"] == "uniform":
+                rngFunc = rng.uniform
+            elif v["dist"] == "normal":
+                rngFunc = rng.normal
+            rand_nums = rngFunc(*v["params"])
+            derived_params[k] = diag(rand_nums)
 
     ukf = UnscentedKalmanFilter(
         time=time,
         est_x=x_init,
-        est_p=p_init,
+        est_p=derived_params["p_init"],
         dynamics_model=dynamics_model,
         measurement_model=fullObservable6D,
-        q_matrix=Q,
-        r_matrix=R,
+        q_matrix=derived_params["Q"],
+        r_matrix=derived_params["R"],
     )
 
     return ukf

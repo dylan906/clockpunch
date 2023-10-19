@@ -31,12 +31,29 @@ print(f"ukf_test.est_x after update = {ukf_test.est_x}")
 print("  Test with float inputs...")
 
 # Q, R, p_init are floats
-ez_filter_params2 = {
+ez_filter_params = {
     "dynamics_type": "satellite",
     "x_init": array([8000, 0, 0, 0, 8, 0]),
     "Q": 0.1,
     "R": 0.5,
     "p_init": 0.3,
 }
-ukf_test2 = ezUKF(ez_filter_params2)
+ukf_test = ezUKF(ez_filter_params)
 print(f"ukf_test.Q =\n{ukf_test.q_matrix}")
+
+# %% Test with PDF inputs
+ez_filter_params = {
+    "dynamics_type": "satellite",
+    "x_init": array([8000, 0, 0, 0, 8, 0]),
+    "Q": 0.1,
+    "R": 0.5,
+    "p_init": {
+        "dist": "uniform",
+        "params": [
+            [1, 2, 3, 4, 5, 6],
+            [2, 3, 4, 5, 6, 7],
+        ],
+    },
+}
+ukf_test = ezUKF(ez_filter_params)
+print(f"ukf_test.Q =\n{ukf_test.est_p}")
