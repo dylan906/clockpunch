@@ -79,6 +79,7 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
         elif isinstance(v, (float, int)):
             derived_params[k] = v * eye(6)
         elif isinstance(v, ndarray):
+            assert v.shape == (6, 6)
             derived_params[k] = v
 
     ukf = UnscentedKalmanFilter(
