@@ -11,7 +11,7 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
-from numpy import asarray, insert, ndarray, where, zeros
+from numpy import asarray, bool_, insert, ndarray, where, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
@@ -1088,7 +1088,7 @@ class ConfigurableLogicGate(InfoWrapper):
 
         info = getInfo(env)
         assert key in info.keys()
-        assert isinstance(info[key], (bool, int))
+        assert isinstance(info[key], (bool, int, bool_))
         if isinstance(return_if_false, str):
             assert return_if_false in info.keys()
         if isinstance(return_if_true, str):
