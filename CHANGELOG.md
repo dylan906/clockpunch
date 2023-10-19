@@ -10,6 +10,7 @@ I'm trying to get better about that.
 ## [unreleased] - 20YY-MM-DD
 
 ### Added
+- ezUKF now has option for random Q, R, p_init (#86).
 
 ### Changed
 
