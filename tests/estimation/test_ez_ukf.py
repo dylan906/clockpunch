@@ -1,7 +1,5 @@
 """Test for ez_ukf.py."""
 # %% Imports
-from __future__ import annotations
-
 # Third Party Imports
 from numpy import array, eye
 

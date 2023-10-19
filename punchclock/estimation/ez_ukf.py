@@ -1,8 +1,6 @@
 """Shortcut for building a UKF."""
 
 # %% Imports
-from __future__ import annotations
-
 # Third Party Imports
 from numpy import eye, ndarray
 
@@ -23,22 +21,22 @@ def ezUKF(params: dict) -> UnscentedKalmanFilter:
         R = 0.1 * diag([1, 1, 1, 0.01, 0.01, 0.01])
 
     Args:
-        params (`dict`): Includes the following keys:
+        params (dict): Includes the following keys:
         {
-            "x_init" (`ndarray` (6,) ): initial state estimate,
-            "p_init" (`float` | `ndarray` (6,6) ): initial estimate covariance
-            "dynamics_type" (`str`): 'terrestrial' | 'satellite',
-            "Q" (`float` | `ndarray` (6,6) ): process noise,
-            "R" (`float` | `ndarray` (6,6) ): measurement noise,
+            "x_init" (ndarray (6,) ): initial state estimate,
+            "p_init" (float | ndarray (6,6) ): initial estimate covariance
+            "dynamics_type" (str): 'terrestrial' | 'satellite',
+            "Q" (float | ndarray (6,6) ): process noise,
+            "R" (float | ndarray (6,6) ): measurement noise,
         }
 
     Returns:
-        `UKF`: An instance of `UKF`, see ukf.py for documentation.
+        UKF: An instance of UKF, see ukf.py for documentation.
 
     Notes:
-        - If "Q", "R", or "p_init" are `float` or `int`, a (6, 6) diagonal array is
+        - If "Q", "R", or "p_init" are float or int, a (6, 6) diagonal array is
             generated with the input on the diagonal entries.
-        - If using `ndarray` arguments, "Q", "R", and "p_init" must be
+        - If using ndarray arguments, "Q", "R", and "p_init" must be
             well-conditioned.
         - Filter is initialized with time=0.
     """
