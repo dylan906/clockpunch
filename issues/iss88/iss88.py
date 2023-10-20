@@ -9,6 +9,7 @@ from gymnasium.spaces.utils import flatten, flatten_space
 from numpy import array, ones
 from ray import air, tune
 from ray.rllib.examples.env.repeat_after_me_env import RepeatAfterMeEnv
+from ray.rllib.examples.models.action_mask_model import TorchActionMaskModel
 from ray.rllib.models import ModelCatalog
 
 # Punch Clock Imports
@@ -23,16 +24,18 @@ assert env.observation_space.contains(env.observation_space.sample())
 assert env.action_space.contains(env.action_space.sample())
 # %% Build Tuner and run fit
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+ModelCatalog.register_custom_model("TorchModel", TorchActionMaskModel)
 
 param_space = {
     "framework": "torch",
     "env": MaskRepeatAfterMe,
     "model": {
-        "custom_model": "MaskedLSTM",
+        # "custom_model": "MaskedLSTM",
+        "custom_model": "TorchModel",
         "custom_model_config": {
             "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
-            "lstm_state_size": 10,
+            # "lstm_state_size": 10,
         },
     },
 }
