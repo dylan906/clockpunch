@@ -75,31 +75,11 @@ assert env.action_space.contains(env.action_space.sample())
 # %% Build Tuner and run fit
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
-config = (
-    ppo.PPOConfig()
-    .environment(MaskRepeatAfterMe)
-    .framework("torch")
-    .training(
-        model={
-            # Specify our custom model from above.
-            "custom_model": "MaskedLSTM",
-            # Extra kwargs to be passed to your model's c'tor.
-            "custom_model_config": {
-                "fcnet_hiddens": [6, 6],
-                "fcnet_activation": "relu",
-                "lstm_state_size": 10,
-            },
-        }
-    )
-)
-
 param_space = {
     "framework": "torch",
     "env": MaskRepeatAfterMe,
     "model": {
-        # Specify our custom model from above.
         "custom_model": "MaskedLSTM",
-        # Extra kwargs to be passed to your model's c'tor.
         "custom_model_config": {
             "fcnet_hiddens": [6, 6],
             "fcnet_activation": "relu",
