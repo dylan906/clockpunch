@@ -4,11 +4,12 @@
 from gymnasium import Env
 from gymnasium.spaces import Dict
 from gymnasium.spaces.utils import flatten, flatten_space
+from numpy import ones
 from ray.rllib.examples.env.repeat_after_me_env import RepeatAfterMeEnv
 
 
 class MaskRepeatAfterMe(Env):
-    def __init__(self, config=None):
+    def __init__(self, config={}):
         self.internal_env = RepeatAfterMeEnv()
         self.observation_space = Dict(
             {
@@ -19,6 +20,8 @@ class MaskRepeatAfterMe(Env):
             }
         )
         self.action_space = self.internal_env.action_space
+
+        self.mask_config = config.get("mask_config", "viable_random")
 
     def reset(self, *, seed=None, options=None):
         obs, info = self.internal_env.reset()
@@ -34,14 +37,21 @@ class MaskRepeatAfterMe(Env):
         return new_obs, reward, done, trunc, info
 
     def _wrapObs(self, unwrapped_obs):
+        if self.mask_config in ["viable_random"]:
+            mask = self.observation_space.spaces["action_mask"].sample()
+            mask[0] = 1
+        elif self.mask_config == "full_random":
+            mask = self.observation_space.spaces["action_mask"].sample()
+        elif self.mask_config == "off":
+            mask = ones(
+                self.observation_space.spaces["action_mask"].shape, dtype=int
+            )
+
         wrapped_obs = {
             "observations": flatten(
                 self.internal_env.observation_space, unwrapped_obs
             ),
-            "action_mask": self.observation_space.spaces[
-                "action_mask"
-            ].sample(),
-            # "action_mask": ones(2, dtype=int),
+            "action_mask": mask,
         }
         return wrapped_obs
 

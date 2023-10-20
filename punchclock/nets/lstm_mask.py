@@ -2,6 +2,7 @@
 # %% Imports
 # Standard Library Imports
 from typing import Dict, List, Tuple
+from warnings import warn
 
 # Third Party Imports
 import gymnasium as gym
@@ -13,6 +14,7 @@ from ray.rllib.utils.annotations import override
 from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 from ray.rllib.utils.typing import TensorType
+from torch import all as tensorall
 
 torch, nn = try_import_torch()
 
@@ -187,6 +189,8 @@ class MaskedLSTM(TorchRNN, nn.Module):
         assert all(
             [i in [0, 1] for i in mask_binary.detach().numpy().flatten()]
         )
+        if tensorall(mask_binary == 0):
+            warn("All actions masked")
 
         # Mask logits
         inf_mask = torch.clamp(torch.log(mask_binary), min=FLOAT_MIN)
