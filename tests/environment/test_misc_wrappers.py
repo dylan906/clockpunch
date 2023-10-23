@@ -7,7 +7,7 @@ from collections import OrderedDict
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
 from gymnasium.utils.env_checker import check_env
 from gymnasium.wrappers import FilterObservation
-from numpy import array, array_equal, ones, zeros
+from numpy import array, array_equal, ones
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
