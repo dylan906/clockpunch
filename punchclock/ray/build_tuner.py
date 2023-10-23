@@ -7,6 +7,8 @@ from __future__ import annotations
 
 # Standard Library Imports
 import os
+import random
+import string
 from copy import deepcopy
 from datetime import datetime
 
@@ -224,13 +226,18 @@ def _getExperimentName(
         dict: Contains "key" as a dict with a str value.
     """
     new_run_params = deepcopy(run_params)
+    rand_str = "".join(
+        random.choices(string.ascii_uppercase + string.digits, k=4)
+    )
     datetime_str = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # If a name is provided, append the datetime string; if not provided, then
     # just make assign the datetime string as "name".
     if "name" in new_run_params.keys():
-        new_run_params["name"] = new_run_params["name"] + "_" + datetime_str
+        new_run_params["name"] = (
+            new_run_params["name"] + "_" + rand_str + "_" + datetime_str
+        )
     else:
-        new_run_params["name"] = datetime_str
+        new_run_params["name"] = rand_str + "_" + datetime_str
 
     return new_run_params
