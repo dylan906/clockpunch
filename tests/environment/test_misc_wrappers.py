@@ -7,7 +7,7 @@ from collections import OrderedDict
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
 from gymnasium.utils.env_checker import check_env
 from gymnasium.wrappers import FilterObservation
-from numpy import array, array_equal, ones
+from numpy import array, array_equal, ones, zeros
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -244,6 +244,12 @@ mvc_env.previous_mask = ones((3, 3))
     action=mvc_env.action_space.sample()
 )
 print("Test passed")
+
+# Test with mask with 0 column
+mvc_env.previous_mask[:, 0] = 0
+(obs, reward, termination, truncation, info) = mvc_env.step(
+    action=mvc_env.action_space.sample()
+)
 
 # %% Test getIdentityWrapperEnv
 print("\nTest getIdentityWrapperEnv...")

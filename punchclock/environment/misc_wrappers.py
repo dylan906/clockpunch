@@ -410,7 +410,7 @@ class OperatorWrapper(ModifyObsOrInfo):
 
 # %% MaskViolationChecker
 class MaskViolationChecker(Wrapper):
-    """Check if action violates action mask and warn if so."""
+    """Check if action violates action mask or mask has 0s col and warn if so."""
 
     def __init__(
         self,
@@ -449,7 +449,9 @@ class MaskViolationChecker(Wrapper):
     def step(self, action: Any) -> Tuple[OrderedDict, float, bool, bool, dict]:
         """Step environment."""
         log_item = {}
+        make_log = False
         if (self.previous_mask is not None) and (self.debug is False):
+            # Check for action violating mask
             action_2d = actionSpace2Array(
                 actions=action,
                 num_sensors=self.num_sensors,
@@ -464,6 +466,18 @@ class MaskViolationChecker(Wrapper):
                      action = {action}
                      action_mask = {self.previous_mask}"""
                 )
+                make_log = True
+
+            # Check for bad mask (all 0s in a column)
+            for i, col in enumerate(self.previous_mask.T):
+                if all(col == 0):
+                    warn(
+                        f"""Column {i} is all 0s.
+                    action_mask = {self.previous_mask}"""
+                    )
+                    make_log = True
+
+            if make_log is True:
                 log_item = {
                     "action": deepcopy(action),
                     "mask": deepcopy(self.previous_mask),
