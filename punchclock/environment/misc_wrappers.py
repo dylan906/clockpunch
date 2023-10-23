@@ -410,7 +410,13 @@ class OperatorWrapper(ModifyObsOrInfo):
 
 # %% MaskViolationChecker
 class MaskViolationChecker(Wrapper):
-    """Check if action violates action mask or mask has 0s col and warn if so."""
+    """Check if action violates action mask or mask has 0s col and warn if so.
+
+    A mask violation is occurs under either of the below conditions:
+        1) an action array that has one or more 1s in indices where the action
+        mask has 0s
+        2) when a column of an action mask is all zeros.
+    """
 
     def __init__(
         self,
