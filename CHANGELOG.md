@@ -13,6 +13,7 @@ I'm trying to get better about that.
 - ezUKF now has option for random Q, R, p_init (#86).
 
 ### Changed
+- Experiment names now have a random string appended to manual name (#89).
 
 ### Deprecated
 
