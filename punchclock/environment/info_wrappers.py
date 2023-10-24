@@ -697,7 +697,8 @@ class MaskViolationCounter(InfoWrapper):
             self.num_targets + 1,
             self.num_sensors,
         ), f"""env.observation_space['{action_mask_key}'] must have shape (N+1, M),
-        which in this case is ({self.num_targets+1}, {self.num_sensors})."""
+        which in this case is ({self.num_targets+1}, {self.num_sensors}). Action
+        mask shape is {env.observation_space.spaces[action_mask_key].shape}."""
 
         self.new_key = new_key
         self.action_mask_key = action_mask_key
