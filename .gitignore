@@ -3,6 +3,7 @@
 *.egg-info/
 *:Zone.Identifier
 *.out
+.vscode/settings.json
 
 tests/analysis_utils/*.pkl
 
