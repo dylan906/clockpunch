@@ -1,18 +1,17 @@
 """Create a checkpoint."""
 # Standard Library Imports
-import os
 import random
 import string
 
 # Third Party Imports
 from ray import air, tune
-from ray.rllib.examples.env.repeat_after_me_env import RepeatAfterMeEnv
 from ray.rllib.models import ModelCatalog
 
 # Punch Clock Imports
 from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
 from punchclock.nets.lstm_mask import MaskedLSTM
 
+# %% Script
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
 
