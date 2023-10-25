@@ -17,9 +17,7 @@ from punchclock.ray.build_env import buildEnv
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 register_env("my_env", buildEnv)
 
-home_path = str(Path.home())
-storage_path = os.path.join(home_path, "ray_results")
-dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = Path(__file__).parent
 
 # change this line to the dir that the experiment checkpoint is stored
 exp_name = "data/training_run_OYP"

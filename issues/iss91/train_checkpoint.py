@@ -3,6 +3,7 @@
 import os
 import random
 import string
+from pathlib import Path
 
 # Third Party Imports
 from ray import air, tune
@@ -15,8 +16,9 @@ from punchclock.ray.build_tuner import buildTuner
 
 # %% Script
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
-dir_path = os.path.dirname(os.path.realpath(__file__))
-storage_path = dir_path + "/data"
+dir_path = Path(__file__).parent
+# storage_path = dir_path + "/data"
+storage_path = dir_path.joinpath("data")
 
 
 param_space = {
