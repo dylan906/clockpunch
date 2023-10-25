@@ -14,7 +14,19 @@ from operator import ge, gt, le, lt
 # Third Party Imports
 from gymnasium.spaces import Box, MultiDiscrete
 from gymnasium.spaces.utils import flatten, unflatten
-from numpy import arange, array, delete, ndarray, ones, vstack, zeros
+from numpy import (
+    arange,
+    array,
+    delete,
+    diag,
+    float32,
+    int64,
+    ndarray,
+    ones,
+    pi,
+    vstack,
+    zeros,
+)
 from satvis.visibility_func import isVis
 
 # Punch Clock Imports
@@ -395,3 +407,45 @@ def getInfo(env: Env) -> dict:
     env_copy = deepcopy(env)
     _, info = env_copy.reset()
     return info
+
+
+# %% Recusrively convert a dict of items to primitives
+def recursivelyConvertDictToPrimitive(in_dict: dict) -> dict:
+    """Recursively convert dict entries into primitives."""
+    out = {}
+    # Loop through key-value pairs of in_dict. If a value is a dict, then recurse.
+    # Otherwise, convert value to a JSON-able type. Special handling if the
+    # value is a `list`. Lists of dicts are recursed; lists of non-dicts and
+    # empty lists are converted to JSON-able as normal.
+    for k, v in in_dict.items():
+        if isinstance(v, dict):
+            out[k] = recursivelyConvertDictToPrimitive(v)
+        elif isinstance(v, list):
+            if len(v) == 0:
+                out[k] = [convertToPrimitive(a) for a in v]
+            elif isinstance(v[0], dict):
+                out[k] = [recursivelyConvertDictToPrimitive(a) for a in v]
+            else:
+                out[k] = [convertToPrimitive(a) for a in v]
+        else:
+            out[k] = convertToPrimitive(v)
+    return out
+
+
+def convertToPrimitive(entry: Any) -> list:
+    """Convert a non-serializable object into a JSON-able type.
+
+    Partner function to recursivelyConvertDictToPrimitive. Probably should not
+    use this on its own.
+    """
+    if isinstance(entry, ndarray):
+        # numpy arrays need their own tolist() method to convert properly.
+        out = entry.tolist()
+    elif isinstance(entry, set):
+        out = list(entry)
+    elif isinstance(entry, (float32, int64)):
+        out = entry.item()
+    else:
+        out = entry
+
+    return out
