@@ -19,12 +19,13 @@ register_env("my_env", buildEnv)
 
 home_path = str(Path.home())
 storage_path = os.path.join(home_path, "ray_results")
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
-# exp_name = "training_run_PEZ"  # SSA env
-# exp_name = "training_run_MMK"  # toy env
-exp_name = "training_run_ZWP"  # toy env that used buildTuner()
+# change this line to the dir that the experiment checkpoint is stored
+exp_name = "data/training_run_OYP"
 
-experiment_path = os.path.join(storage_path, exp_name)
+# experiment_path = os.path.join(storage_path, exp_name)
+experiment_path = os.path.join(dir_path, exp_name)
 print(f"Loading results from {experiment_path}...")
 
 restored_tuner = tune.Tuner.restore(

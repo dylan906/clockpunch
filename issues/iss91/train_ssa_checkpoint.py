@@ -1,6 +1,7 @@
 """Create a checkpoint using the SSA environment."""
 # %% Imports
 # Standard Library Imports
+import os
 import random
 import string
 
@@ -17,6 +18,7 @@ from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.common.utilities import recursivelyConvertDictToPrimitive
 from punchclock.nets.lstm_mask import MaskedLSTM
 from punchclock.ray.build_env import buildEnv
+from punchclock.ray.build_tuner import buildTuner
 
 # %% Environment params
 # Build environment with action mask
@@ -141,6 +143,9 @@ ray_check_env(env)
 register_env("my_env", buildEnv)
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+storage_path = dir_path + "/data"
+
 param_space = {
     "framework": "torch",
     "env": "my_env",
@@ -157,6 +162,7 @@ param_space = {
     "gamme": 0.999,
 }
 
+# Train with normal method
 rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
 exp_name = "training_run_" + rand_str
 tuner = tune.Tuner(
@@ -167,6 +173,21 @@ tuner = tune.Tuner(
             "training_iteration": 1,
         },
         name=exp_name,
+        storage_path=storage_path,
     ),
+)
+
+# use buildTuner() instead of manually making Tuner
+tuner = buildTuner(
+    {
+        "trainable": "PPO",
+        "param_space": param_space,
+        "run_config": {
+            "stop": {"training_iteration": 10},
+            "name": exp_name,
+            "storage_path": storage_path,
+        },
+    },
+    override_date=True,
 )
 results = tuner.fit()

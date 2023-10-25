@@ -1,5 +1,6 @@
 """Create a checkpoint."""
 # Standard Library Imports
+import os
 import random
 import string
 
@@ -14,6 +15,8 @@ from punchclock.ray.build_tuner import buildTuner
 
 # %% Script
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+dir_path = os.path.dirname(os.path.realpath(__file__))
+storage_path = dir_path + "/data"
 
 
 param_space = {
@@ -31,16 +34,19 @@ param_space = {
 
 rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
 exp_name = "training_run_" + rand_str
-# tuner = tune.Tuner(
-#     trainable="PPO",
-#     param_space=param_space,
-#     run_config=air.RunConfig(
-#         stop={
-#             "training_iteration": 10,
-#         },
-#         name=exp_name,
-#     ),
-# )
+
+# Train with normal method
+tuner = tune.Tuner(
+    trainable="PPO",
+    param_space=param_space,
+    run_config=air.RunConfig(
+        stop={
+            "training_iteration": 10,
+        },
+        name=exp_name,
+        storage_path=storage_path,
+    ),
+)
 
 # use buildTuner() instead of manually making Tuner
 tuner = buildTuner(
@@ -50,6 +56,7 @@ tuner = buildTuner(
         "run_config": {
             "stop": {"training_iteration": 10},
             "name": exp_name,
+            "storage_path": storage_path,
         },
     },
     override_date=True,
