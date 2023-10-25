@@ -3,8 +3,6 @@
 # Tuner documentation: https://docs.ray.io/en/latest/tune/api_docs/execution.html?highlight=Tuner#tuner
 # TunerInternal source: https://github.com/ray-project/ray/blob/0cd49130e669b296e3222c2d3eec8162ab34837f/python/ray/tune/impl/tuner_internal.py
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 import os
 import random
@@ -71,7 +69,7 @@ def buildTuner(
     # get default values
     [num_cpus, config["param_space"]] = _getDefaults(
         param_space=config["param_space"],
-        num_cpus=config["num_cpus"],
+        num_cpus=config.get("num_cpus", None),
     )
     # By default, add datetime to name string
     if override_date is False:
@@ -130,7 +128,8 @@ def buildTuner(
 
     # %% Tune config
     # algo_config = PPOConfig()
-    tune_config = tune.tune_config.TuneConfig(**config["tune_config"])
+    tune_config = config.get("tune_config", {})
+    tune_config = tune.tune_config.TuneConfig(**tune_config)
 
     # %% Run params
     # Hard code checkpoint at the end (True), and set the rest of the arguments via the input
@@ -169,7 +168,7 @@ def buildTuner(
 
 def _getDefaults(
     param_space: dict,
-    num_cpus: int,
+    num_cpus: int | None,
 ) -> tuple[int, dict]:
     """Get default values for some parameters to override Ray defaults.
 
