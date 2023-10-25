@@ -25,3 +25,4 @@ tests/ray/exp_name/trainable.pkl
 tests/common/data/*
 
 issues/iss81/*
+issues/iss91/data/*
