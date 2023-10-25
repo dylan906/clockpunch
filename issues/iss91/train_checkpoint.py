@@ -10,6 +10,7 @@ from ray.rllib.models import ModelCatalog
 # Punch Clock Imports
 from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
 from punchclock.nets.lstm_mask import MaskedLSTM
+from punchclock.ray.build_tuner import buildTuner
 
 # %% Script
 ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
@@ -30,14 +31,27 @@ param_space = {
 
 rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
 exp_name = "training_run_" + rand_str
-tuner = tune.Tuner(
-    trainable="PPO",
-    param_space=param_space,
-    run_config=air.RunConfig(
-        stop={
-            "training_iteration": 10,
+# tuner = tune.Tuner(
+#     trainable="PPO",
+#     param_space=param_space,
+#     run_config=air.RunConfig(
+#         stop={
+#             "training_iteration": 10,
+#         },
+#         name=exp_name,
+#     ),
+# )
+
+# use buildTuner() instead of manually making Tuner
+tuner = buildTuner(
+    {
+        "trainable": "PPO",
+        "param_space": param_space,
+        "run_config": {
+            "stop": {"training_iteration": 10},
+            "name": exp_name,
         },
-        name=exp_name,
-    ),
+    },
+    override_date=True,
 )
 results = tuner.fit()
