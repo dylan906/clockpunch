@@ -1,4 +1,4 @@
-"""Restore Tuner."""
+"""Load an existing checkpoint and resume the tuning run."""
 # %% Imports
 # Punch Clock Imports
 from punchclock.ray.build_tuner import buildTuner

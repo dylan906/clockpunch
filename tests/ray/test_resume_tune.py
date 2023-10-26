@@ -1,4 +1,4 @@
-"""Tests for restore_tuner.py."""
+"""Tests for resume_tune.py."""
 # %% Imports
 # Standard Library Imports
 import os
@@ -11,7 +11,7 @@ from ray.tune import Tuner
 
 # Punch Clock Imports
 from punchclock.common.utilities import loadJSONFile
-from punchclock.ray.restore_tuner import restoreTuner
+from punchclock.ray.resume_tune import restoreTuner
 
 # %% Load json file
 # path to the folder this script is contained
