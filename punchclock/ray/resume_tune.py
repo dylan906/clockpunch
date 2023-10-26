@@ -20,7 +20,7 @@ def resumeTune(checkpoint_dir: str, trainable, num_cpus: int | None):
         num_cpus (int): Number of CPUs to use.
     """
     assert isinstance(checkpoint_dir, str)
-    assert isinstance(num_cpus, (int, None))
+    assert isinstance(num_cpus, (int, type(None)))
 
     print("\nAttempting to resume tune run...")
     ray.init(
