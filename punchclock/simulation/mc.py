@@ -1,12 +1,13 @@
 """Monte Carlo sim runner module."""
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
+import random
+import string
 from copy import copy, deepcopy
 from datetime import datetime
 from multiprocessing import Pool
 from os import cpu_count, makedirs, path
+from pathlib import Path
 from typing import Any, Tuple
 from warnings import warn
 
@@ -106,7 +107,7 @@ class MonteCarloRunner:
         self.policy_configs = deepcopy(policy_configs)
         self.num_trials = len(self.policy_configs)
         self.print_status = deepcopy(print_status)
-        self.results_dir = results_dir
+        self.results_dir = Path(results_dir)
         self.multiprocess = multiprocess
         self.single_sim_mode = single_sim_mode
         self.save_format = save_format
@@ -182,7 +183,7 @@ class MonteCarloRunner:
         [exp_dir, config_name] = self._makeDirs()
 
         # Save config to results_dir for traceability
-        saveJSONFile(config_name, self.config)
+        saveJSONFile(str(config_name), self.config)
 
         # Initialize results dict; one entry per trial.
         self.results = {k: None for k in self.trial_names}
@@ -428,8 +429,8 @@ class MonteCarloRunner:
         """Generate config directory string and create directory if necessary.
 
         Returns:
-            `str`: Directory for experiment.
-            `str`: Directory for config file.
+            `pathlib.PosixPath`: Directory for experiment.
+            `pathlib.PosixPath`: Directory for config file.
         """
         # Create results directory if it doesn't already exist. Each call of runMC()
         # creates a new directory within results_dir. Each subdirectory is time-stamped.
@@ -437,8 +438,10 @@ class MonteCarloRunner:
         if not path.exists(self.results_dir):
             makedirs(self.results_dir)
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.exp_dir = self.results_dir + "/" + "exp_" + ts + "/"
-        config_file_name = self.exp_dir + "config"
+        rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
+        self.exp_dir = deepcopy(self.results_dir)
+        self.exp_dir = self.exp_dir.joinpath("exp_" + ts + "_" + rand_str)
+        config_file_name = self.exp_dir.joinpath("config").with_suffix(".json")
 
         return self.exp_dir, config_file_name
 
@@ -463,9 +466,13 @@ class MonteCarloRunner:
         """
         trial_df = self._convertResults2DF(trial_result, trial_name)
         if hasattr(self, "exp_dir"):
-            fpath = self.exp_dir + str(trial_name) + "." + file_format
+            fpath = self.exp_dir.joinpath(str(trial_name)).with_suffix(
+                "." + file_format
+            )
         else:
-            fpath = self.results_dir + "/" + str(trial_name) + "." + file_format
+            fpath = self.results_dir.joinpath(str(trial_name)).with_suffix(
+                "." + file_format
+            )
 
         if file_format == "pkl":
             trial_df.to_pickle(fpath)

@@ -8,6 +8,7 @@
 import os
 from copy import deepcopy
 from multiprocessing import active_children
+from pathlib import Path
 
 # Third Party Imports
 from pandas import DataFrame, concat, read_csv, read_pickle
@@ -47,8 +48,7 @@ print(f"Monte Carlo results = {mc_results}")
 print(f"active children: {active_children()}")
 combined_df = DataFrame()
 for i in range(3):
-    # loaded_df = read_csv(exp_dir + str(i) + ".csv")
-    loaded_df = read_pickle(exp_dir + str(i) + ".pkl")
+    loaded_df = read_pickle(exp_dir.joinpath(str(i)).with_suffix(".pkl"))
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
@@ -64,7 +64,7 @@ mcr4 = MonteCarloRunner(**mc_config4)
 exp_dir, results = mcr4.runMC()
 combined_df = DataFrame()
 for i in range(3):
-    loaded_df = read_pickle(exp_dir + str(i) + ".pkl")
+    loaded_df = read_pickle(exp_dir.joinpath(str(i)).with_suffix(".pkl"))
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
@@ -77,7 +77,7 @@ mcr4b = MonteCarloRunner(**mc_config4b)
 exp_dir, results = mcr4b.runMC()
 combined_df = DataFrame()
 for i in range(3):
-    loaded_df = read_csv(exp_dir + str(i) + ".csv")
+    loaded_df = read_csv(exp_dir.joinpath(str(i)).with_suffix(".csv"))
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
