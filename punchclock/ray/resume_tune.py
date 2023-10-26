@@ -1,12 +1,16 @@
 """Load an existing checkpoint and resume the tuning run."""
 # %% Imports
-# Punch Clock Imports
-from punchclock.ray.build_tuner import buildTuner
+# Standard Library Imports
+import os
+
+# Third Party Imports
+import ray
+from ray import tuner
 
 # %% Functions
 
 
-def restoreTuner(checkpoint_dir: str, config: dict):
+def restoreTuner(checkpoint_dir: str, num_cpus: int):
     """Build and restore tuner from checkpoint.
 
     Args:
@@ -16,9 +20,13 @@ def restoreTuner(checkpoint_dir: str, config: dict):
     Returns:
         `Tuner`: See Ray documentation for details.
     """
-    # build tuner
-    tuner = buildTuner(config=config)
-    # Restore checkpoint
+    ray.init(
+        ignore_reinit_error=True,
+        num_cpus=num_cpus,
+        num_gpus=0,
+    )
+    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(num_cpus - 1)
+
     tuner.restore(path=checkpoint_dir)
 
     return tuner
