@@ -4,29 +4,36 @@
 import os
 
 # Third Party Imports
+import psutil
 import ray
-from ray import tuner
+from ray.tune import Tuner
 
 # %% Functions
 
 
-def restoreTuner(checkpoint_dir: str, num_cpus: int):
-    """Build and restore tuner from checkpoint.
+def resumeTune(checkpoint_dir: str, trainable, num_cpus: int | None):
+    """Build a Tuner and run .fit from an experiment checkpoint.
 
     Args:
         checkpoint_dir (str): Path to checkpoint directory.
+        trainable: See Ray documentation for compatible formats.
         num_cpus (int): Number of CPUs to use.
-
-    Returns:
-        Tuner: See Ray documentation for details.
     """
+    print("\nAttempting to resume tune run...")
     ray.init(
         ignore_reinit_error=True,
         num_cpus=num_cpus,
         num_gpus=0,
     )
-    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(num_cpus - 1)
+    if num_cpus is None:
+        num_cpus_avail = psutil.cpu_count()
+    else:
+        num_cpus_avail = num_cpus
 
-    tuner.restore(path=checkpoint_dir)
+    os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(num_cpus_avail - 1)
 
-    return tuner
+    tuner = Tuner.restore(trainable=trainable, path=checkpoint_dir)
+    print(f"\nTuner restored: {tuner}")
+    print("\nBeginning fit...")
+    tuner.fit()
+    print("\n...fit complete")
