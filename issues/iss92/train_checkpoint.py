@@ -25,7 +25,6 @@ param_space = {
     },
 }
 
-
 rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
 exp_name = "training_run_" + rand_str
 
