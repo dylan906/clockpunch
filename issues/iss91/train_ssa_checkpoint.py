@@ -6,6 +6,7 @@ import random
 import string
 
 # Third Party Imports
+import ray
 from numpy import array, diag, pi
 from ray import air, tune
 from ray.rllib.models import ModelCatalog
@@ -160,24 +161,28 @@ param_space = {
     },
     "lr": 1e-5,
     "gamme": 0.999,
+    "num_workers": 19,
 }
 
 # Train with normal method
 rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
 exp_name = "training_run_" + rand_str
-tuner = tune.Tuner(
-    trainable="PPO",
-    param_space=param_space,
-    run_config=air.RunConfig(
-        stop={
-            "training_iteration": 1,
-        },
-        name=exp_name,
-        storage_path=storage_path,
-    ),
-)
+# tuner = tune.Tuner(
+#     trainable="PPO",
+#     param_space=param_space,
+#     run_config=air.RunConfig(
+#         stop={
+#             "training_iteration": 1,
+#         },
+#         name=exp_name,
+#         storage_path=storage_path,
+#     ),
+# )
 
 # use buildTuner() instead of manually making Tuner
+ray.init(num_cpus=20)
+os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(19)
+
 tuner = buildTuner(
     {
         "trainable": "PPO",
