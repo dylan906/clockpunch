@@ -18,6 +18,7 @@ I'm trying to get better about that.
 ### Deprecated
 
 ### Fixed
+- Old restore Tuner function resurrected and fixed (#91).
 
 ### Removed
 
