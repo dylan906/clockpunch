@@ -21,12 +21,14 @@ register_env("my_env", buildEnv)
 dir_path = Path(__file__).parent
 
 # change this line to the dir that the experiment checkpoint is stored
-exp_name = "data/training_run_ZFK"
+exp_name = "data/training_run_KTT"
 
 # experiment_path = os.path.join(storage_path, exp_name)
 experiment_path = os.path.join(dir_path, exp_name)
 print(f"Loading results from {experiment_path}...")
 ray.init(num_cpus=20)
+os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(19)
+
 restored_tuner = tune.Tuner.restore(
     experiment_path,
     trainable="PPO",
