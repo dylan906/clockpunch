@@ -160,7 +160,7 @@ param_space = {
         },
     },
     "lr": 1e-5,
-    "gamme": 0.999,
+    "gamma": 0.999,
     "num_workers": 19,
 }
 
