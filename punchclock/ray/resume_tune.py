@@ -19,6 +19,9 @@ def resumeTune(checkpoint_dir: str, trainable, num_cpus: int | None):
         trainable: See Ray documentation for compatible formats.
         num_cpus (int): Number of CPUs to use.
     """
+    assert isinstance(checkpoint_dir, str)
+    assert isinstance(num_cpus, (int, None))
+
     print("\nAttempting to resume tune run...")
     ray.init(
         ignore_reinit_error=True,
