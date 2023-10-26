@@ -14,11 +14,11 @@ def restoreTuner(checkpoint_dir: str, num_cpus: int):
     """Build and restore tuner from checkpoint.
 
     Args:
-        checkpoint_dir (`str`): Path to checkpoint directory.
-        config (`dict`): Config used to build the tuner via `BuildTuner()`.
+        checkpoint_dir (str): Path to checkpoint directory.
+        num_cpus (int): Number of CPUs to use.
 
     Returns:
-        `Tuner`: See Ray documentation for details.
+        Tuner: See Ray documentation for details.
     """
     ray.init(
         ignore_reinit_error=True,
