@@ -9,7 +9,12 @@ from pathlib import Path
 import ray
 import ray.rllib.algorithms.ppo as ppo
 import torch
+from gymnasium import Env
 from ray import air, tune
+from ray.rllib.algorithms.ppo import PPOConfig
+
+# Punch Clock Imports
+from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
 
 # %% Get paths
 fpath = Path(__file__).parent
@@ -17,6 +22,10 @@ storage_path = fpath.joinpath("data")
 trained_state_dict_path = storage_path.joinpath("model_weights").with_suffix(
     ".pth"
 )
+
+# Change experiment_name to desired checkpoint dir name
+experiment_name = "training_run_ITP"
+exp_path = storage_path.joinpath(experiment_name)
 
 
 # %% Custom trainable
@@ -40,6 +49,53 @@ class PPOalgo(ppo.PPO):  # noqa
         return True
 
 
+# %% Function to get trained state dict
+def getTrainedStateDict(
+    path,
+    trainable=None,
+    algo_config=None,
+    env: Env | str = None,
+) -> dict:
+    if trainable is None:
+        trainable = "PPO"
+    if algo_config is None:
+        algo_config = PPOConfig()
+    if env is None:
+        env = "CartPole-v1"
+
+    ray.init()
+
+    restored_tuner = tune.Tuner.restore(path=str(path), trainable="PPO")
+    best_result = restored_tuner.get_results().get_best_result(
+        metric="episode_reward_mean",
+        mode="max",
+    )
+
+    algo = (
+        algo_config.training()
+        .environment(env)
+        .framework(framework="torch")
+        .resources(num_gpus=0)
+        .build()
+    )
+    algo.restore(best_result.checkpoint)
+
+    trained_state_dict = algo.get_policy().model.state_dict()
+
+    ray.shutdown()
+
+    return trained_state_dict
+
+
+# %% Get trained state dict
+trained_state_dict = getTrainedStateDict(
+    path=exp_path,
+    # trainable="PPO",
+    # algo_config=PPOConfig(),
+    # env=MaskRepeatAfterMe,
+)
+torch.save(trained_state_dict, trained_state_dict_path)
+
 # %% Build Tuner
 
 trained_state_dict = torch.load(trained_state_dict_path)
@@ -55,7 +111,7 @@ param_space = {
 }
 
 rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
-exp_name = "retrain_run_" + rand_str
+exp_name = "retraining_run_" + rand_str
 
 tuner = tune.Tuner(
     trainable=PPOalgo,

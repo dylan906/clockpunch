@@ -1,6 +1,5 @@
 """Create a checkpoint."""
 # Standard Library Imports
-import os
 import random
 import string
 from pathlib import Path
@@ -10,18 +9,26 @@ from ray import air, tune
 from ray.rllib.models import ModelCatalog
 
 # Punch Clock Imports
-from punchclock.ray.build_tuner import buildTuner
+from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
+from punchclock.nets.lstm_mask import MaskedLSTM
 
 # %% Script
 dir_path = Path(__file__).parent
 storage_path = dir_path.joinpath("data")
 
+ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
 param_space = {
     "framework": "torch",
     "env": "CartPole-v1",
+    # "env": MaskRepeatAfterMe,
     "model": {
-        # "custom_model": "MaskedLSTM"
+        # "custom_model": "MaskedLSTM",
+        # "custom_model_config": {
+        #     "lstm_state_size": 4,
+        #     "fcnet_hiddens": [10],
+        #     "fcnet_activation": "relu",
+        # },
     },
 }
 
