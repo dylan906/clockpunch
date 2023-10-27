@@ -10,6 +10,7 @@ from ast import literal_eval
 from copy import deepcopy
 from itertools import groupby
 from operator import ge, gt, le, lt
+from pathlib import Path
 
 # Third Party Imports
 from gymnasium.spaces import Box, MultiDiscrete
@@ -34,7 +35,7 @@ from punchclock.common.agents import Agent
 
 
 # %% Functions
-def loadJSONFile(file_name: str) -> dict:
+def loadJSONFile(file_name: str | Path) -> dict:
     """Load in a JSON file into a Python dictionary.
 
     Args:
@@ -48,6 +49,9 @@ def loadJSONFile(file_name: str) -> dict:
     Returns:
         ``dict``: documents loaded from the JSON file
     """
+    if isinstance(file_name, Path):
+        file_name = str(file_name)
+
     try:
         with open(file_name, "r", encoding="utf-8") as input_file:
             json_data = json.load(input_file)
