@@ -149,13 +149,13 @@ ray.shutdown()  # important!
 storage_path = fpath.joinpath("data")
 
 tuner = tune.Tuner(
-    PPOalgo,
+    trainable=PPOalgo,
+    param_space=config,
     run_config=air.RunConfig(
         name="PPOalgo",
         stop={"training_iteration": 1},
         storage_path=storage_path,
     ),
-    param_space=config,
 )
 tuner.fit()
 

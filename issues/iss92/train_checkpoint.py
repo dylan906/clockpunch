@@ -21,7 +21,7 @@ param_space = {
     "framework": "torch",
     "env": "CartPole-v1",
     "model": {
-        # "custom_model": "MaskedLSTM",
+        # "custom_model": "MaskedLSTM"
     },
 }
 
