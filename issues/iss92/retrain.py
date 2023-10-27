@@ -5,6 +5,7 @@
 from pathlib import Path
 
 # Third Party Imports
+import numpy as np
 import ray
 import ray.rllib.algorithms.ppo as ppo
 from ray import air, tune
@@ -14,14 +15,10 @@ from ray.rllib.algorithms.ppo import PPOConfig
 
 # %% Load model
 fpath = Path(__file__).parent
-checkpoint_path = Path(
-    # "issues/iss92/data/training_run_PRU/PPO_CartPole-v1_843ef_00000_0_2023-10-26_17-56-29/checkpoint_000001/policies/default_policy"
-    # "issues/iss92/data/training_run_PRU/PPO_CartPole-v1_843ef_00000_0_2023-10-26_17-56-29"
-    "issues/iss92/data/training_run_PRU"
-)
+checkpoint_path = Path("issues/iss92/data/training_run_JLU")
 
 # %% Script
-ray.init()
+# ray.init(num_cpus=1)
 
 # reload the previous tuner
 restored_tuner = tune.Tuner.restore(path=str(checkpoint_path), trainable="PPO")
@@ -55,7 +52,7 @@ result_df[["training_iteration", "episode_reward_mean", "time_total_s"]]
 algo = (
     PPOConfig()
     .training(lr=best_result.config["lr"])
-    .rollouts(num_rollout_workers=4)
+    # .rollouts(num_rollout_workers=4)
     .environment("CartPole-v1")
     .framework(framework="torch")
     .resources(num_gpus=0)
@@ -64,9 +61,46 @@ algo = (
 algo.restore(best_result.checkpoint)
 
 policy = algo.get_policy()
-fcn = (
-    policy.model
-)  # instance of ray.rllib.models.torch.fcnet.FullyConnectedNetwork
+# instance of ray.rllib.models.torch.fcnet.FullyConnectedNetwork
+fcn = policy.model
 print(fcn)
 
+trained_weights = algo.get_policy().get_weights()
+trained_state_dict = algo.get_policy().model.state_dict()
+
+new_algo = (
+    PPOConfig()
+    .training(lr=best_result.config["lr"])
+    .environment("CartPole-v1")
+    .framework(framework="torch")
+    .build()
+)
+
+untrained_weights = new_algo.get_policy().get_weights()
+
+# check whether weights are equal
+
+arrays_equal = all(
+    [
+        np.array_equal(t, u)
+        for t, u in zip(trained_weights.values(), untrained_weights.values())
+    ]
+)
+
+print(f"Trained and untrained weights equal? {arrays_equal}")  # False
+
+new_algo.get_policy().model.load_state_dict(trained_state_dict)
+
+loaded_weights = new_algo.get_policy().get_weights()
+
+arrays_equal = all(
+    [
+        np.array_equal(t, l)
+        for t, l in zip(trained_weights.values(), loaded_weights.values())
+    ]
+)
+
+print(f"Trained and loaded weights equal? {arrays_equal}")  # True
+#  %% Done
+ray.shutdown()
 print("done")

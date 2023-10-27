@@ -34,7 +34,7 @@ tuner = tune.Tuner(
     param_space=param_space,
     run_config=air.RunConfig(
         stop={
-            "training_iteration": 1,
+            "training_iteration": 2,
         },
         name=exp_name,
         storage_path=storage_path,
