@@ -2,7 +2,6 @@
 # https://github.com/jlsvane/Ray-Tune-Tensorflow/blob/main/tune_reload_test.py
 # %% Imports
 # Standard Library Imports
-import os
 from pathlib import Path
 
 # Third Party Imports
@@ -11,9 +10,7 @@ import ray
 import ray.rllib.algorithms.ppo as ppo
 import torch
 from ray import air, tune
-from ray.air import Result
-from ray.rllib.algorithms.algorithm import Algorithm
-from ray.rllib.algorithms.ppo import PPO, PPOConfig
+from ray.rllib.algorithms.ppo import PPOConfig
 
 # %% Load model
 fpath = Path(__file__).parent
@@ -113,11 +110,10 @@ del algo
 
 
 # New algo class that just loads the trained weights
-class PPOalgo(ppo.PPO):
-    def __init__(self, config, **kwargs):
+class PPOalgo(ppo.PPO):  # noqa
+    def __init__(self, config, **kwargs):  # noqa
         super(PPOalgo, self).__init__(config, **kwargs)
-        """ Needs full path here!"""
-        # _cwd = os.path.dirname(os.path.abspath(__file__))
+        """Needs full path here!"""
         weights_path = (
             Path(__file__)
             .parent.joinpath("data")
@@ -130,7 +126,7 @@ class PPOalgo(ppo.PPO):
         self.workers.sync_weights()  # Important!!!
 
     def reset_config(self, new_config):
-        """to enable reuse of actors"""
+        """To enable reuse of actors."""
         self.config = new_config
         return True
 
@@ -144,17 +140,17 @@ config = (
     )
     .environment(env="CartPole-v1")
 )
+
+
+# Make Tuner with custom algo class, but vanilla algo config
+ray.shutdown()  # important!
 storage_path = fpath.joinpath("data")
 
-ray.shutdown()  # important!
-# Make Tuner with custom algo class, but vanilla algo config
 tuner = tune.Tuner(
     PPOalgo,
     run_config=air.RunConfig(
         name="PPOalgo",
-        stop={
-            "training_iteration": 1,  # note only one iteration
-        },
+        stop={"training_iteration": 1},
         storage_path=storage_path,
     ),
     param_space=config,
