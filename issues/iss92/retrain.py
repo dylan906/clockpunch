@@ -141,6 +141,8 @@ config = (
     .environment(env="CartPole-v1")
 )
 
+# Test class instantiation
+PPOalgo(config=config)
 
 # Make Tuner with custom algo class, but vanilla algo config
 ray.shutdown()  # important!
