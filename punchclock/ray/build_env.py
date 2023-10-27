@@ -1,13 +1,12 @@
 """Environment builder."""
 # Used by Ray to register and build environments
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 import json
 import warnings
 from copy import deepcopy
 from datetime import datetime
+from pathlib import Path
 
 # Third Party Imports
 import gymnasium as gym
@@ -171,7 +170,7 @@ def getWrapper(wrapper_name: str) -> Wrapper:
 
 
 def genConfigFile(
-    config_dir: str,
+    config_dir: str | Path,
     param_space: dict,
     config_file_name: str = None,
     num_cpus: int = None,
@@ -184,7 +183,7 @@ def genConfigFile(
     By default, file is saves as 'config_YY-MM-DD_HH-MM-SS.json'.
 
     Args:
-        config_dir (`str`): Directory to save config file.
+        config_dir (`str | Path`): Directory to save config file.
         param_space (`dict`): Search space of the tuning job. Must include the following
             keys:
             {
@@ -206,6 +205,9 @@ def genConfigFile(
     if "env_config" not in param_space:
         raise ValueError("'env_config' is not in param_space")
 
+    if isinstance(config_dir, str):
+        config_dir = Path(config_dir)
+
     if tune_config is None:
         tune_config = {}
 
@@ -226,13 +228,15 @@ def genConfigFile(
         # get time stamp for file name
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_path = config_dir + "/config_" + date_time + ".json"
+        file_path = config_dir.joinpath("config_" + date_time).with_suffix(
+            ".json"
+        )
     else:
         # set file path for custom file name
-        file_path = config_dir + "/" + config_file_name + ".json"
+        file_path = config_dir.joinpath(config_file_name).with_suffix(".json")
 
     # save json
-    with open(file_path, "w") as outfile:
+    with open(str(file_path), "w") as outfile:
         outfile.write(json_object)
 
     print(f"Config file saved to {file_path} \n")
