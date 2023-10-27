@@ -68,6 +68,10 @@ class MaskedLSTM(TorchRNN, nn.Module):
         assert "lstm_state_size" in custom_model_kwargs
         assert "fcnet_hiddens" in custom_model_kwargs
         assert "fcnet_activation" in custom_model_kwargs
+        assert isinstance(custom_model_kwargs["fcnet_hiddens"], list)
+        assert all(
+            [isinstance(i, int) for i in custom_model_kwargs["fcnet_hiddens"]]
+        )
 
         # print(f"obs_space = {obs_space}")
         # print(f"action_space = {action_space}")
