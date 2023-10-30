@@ -8,8 +8,7 @@ References:
             Systems for Signal Processing, Communications, and Control Symposium
         John Crassidis, John Junkins, "Optimal Estimation of Dynamic Systems, 2d Edition", 2012
 """
-from __future__ import annotations
-
+# %% Imports
 # Standard Library Imports
 from copy import deepcopy
 from typing import Callable
@@ -136,8 +135,8 @@ class UnscentedKalmanFilter(Filter):
         # Main estimation products, used as outputs of the filter class
         self.est_x = deepcopy(self.reset_params["est_x"])
         self.est_p = deepcopy(self.reset_params["est_p"])
-        self.pred_x = array([])
-        self.pred_p = array([])
+        self.pred_x = deepcopy(self.reset_params["est_x"])
+        self.pred_p = deepcopy(self.reset_params["est_p"])
 
         # Intermediate values, used for checking statistical consistency & simplifying equations
         self.nis = array([])
