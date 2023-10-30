@@ -15,7 +15,7 @@ from numpy import asarray, bool_, insert, ndarray, where, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
-from punchclock.common.math import logistic
+from punchclock.common.math import kldGaussian, logistic
 from punchclock.common.utilities import (
     actionSpace2Array,
     getInequalityFunc,
@@ -879,6 +879,64 @@ class LogisticTransformInfo(InfoWrapper):
         x = infos[self.key]
         x_transform = self.logisticPartial(x)
         new_info = {self.key: x_transform}
+        return new_info
+
+
+# %% KLDInfo
+class KLDInfo(InfoWrapper):
+    """Calculate the KL divergence of two Gaussian distributions.
+
+    Creates new item in info.
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        new_key: str,
+        mu0: str,
+        mu1: str,
+        sigma0: str,
+        sigma1: str,
+    ):
+        """Wrap environment with KLDInfo.
+
+        Args:
+            env (Env): A Gymnasium Environment.
+            new_key (str): New key to create in info.
+            mu0 (str): Key of mean vector.
+            mu1 (str): Key of mean vector.
+            sigma0 (str): Key of covariance array.
+            sigma1 (str): Key of covariance array.
+        """
+        super().__init__(env)
+        self.new_key = new_key
+        self.mu0 = mu0
+        self.mu1 = mu1
+        self.sigma0 = sigma0
+        self.sigma1 = sigma1
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ) -> dict:
+        """Update info from an env.
+
+        Args:
+            observations, rewards, terminations, truncations, action: Unused.
+            infos (dict): Info from an env.
+
+        Returns:
+            dict: Same keys as input, but with new key specified by self.new_key.
+        """
+        new_info = deepcopy(infos)
+        kld = kldGaussian(
+            mu0=new_info[self.mu0],
+            mu1=new_info[self.mu1],
+            sigma0=new_info[self.sigma0],
+            sigma1=new_info[self.sigma1],
+        )
+
+        new_info[self.new_key] = kld
+
         return new_info
 
 

@@ -21,6 +21,7 @@ from punchclock.environment.info_wrappers import (
     ConfigurableLogicGate,
     FilterInfo,
     GetNonZeroElements,
+    KLDInfo,
     LogisticTransformInfo,
     MaskViolationCounter,
     NumWindows,
@@ -343,6 +344,38 @@ print(f"info (wrapped) = {info_wrapped}")
 (_, _, _, _, info) = log_env.step(log_env.action_space.sample())
 print(f"info (via step) = {info}")
 
+# %% Test KLDInfo
+print("\nTest KLDInfo...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict(
+        {
+            "mu0": Box(low=-1, high=1, shape=(1, 2)),
+            "mu1": Box(low=-1, high=1, shape=(1, 2)),
+            "sigma0": Box(
+                low=array([[0, 0], [0, 0]]),
+                high=array([[1, 0.1], [0.1, 1]]),
+            ),
+            "sigma1": Box(
+                low=array([[0, 0], [0, 0]]),
+                high=array([[1, 0.1], [0.1, 1]]),
+            ),
+        }
+    ),
+)
+
+kld_env = KLDInfo(
+    rand_env,
+    new_key="kld",
+    mu0="mu0",
+    mu1="mu1",
+    sigma0="sigma0",
+    sigma1="sigma1",
+)
+(_, _, _, _, info) = kld_env.step(kld_env.action_space.sample())
+print(f"info (via step) = {info}")
 # %% TransformInfoWith Numpy
 print("\nTest TransformInfoWithNumpy...")
 rand_env = RandomInfo(
