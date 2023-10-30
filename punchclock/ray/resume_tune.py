@@ -31,6 +31,8 @@ def resumeTune(
         checkpoint_dir (str): Path to checkpoint directory.
         trainable: See Ray documentation for compatible formats.
         num_cpus (int): Number of CPUs to use.
+        resume_errored (bool, optional): Resume errored trials. Defaults to True.
+        restart_errored (bool, optional): Restart errored trials. Defaults to False.
     """
     assert isinstance(checkpoint_dir, str)
     assert isinstance(num_cpus, (int, type(None)))
