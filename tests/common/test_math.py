@@ -4,10 +4,11 @@ from __future__ import annotations
 
 # Third Party Imports
 from matplotlib import pyplot as plt
-from numpy import array, dot, linspace
+from numpy import array, dot, eye, linspace
+from numpy.random import rand
 
 # Punch Clock Imports
-from punchclock.common.math import logistic, normalVec, saturate
+from punchclock.common.math import kldGaussian, logistic, normalVec, saturate
 
 # %% Test logistic function
 print("\nTest logistic function...")
@@ -55,6 +56,16 @@ print("\nTest normalVec...")
 r1 = array([1, 2, 3])
 r2 = normalVec(r1)
 print(f"dot(r1, r2) = {dot(r1, r2)}")
+
+# %% Test kldGaussian
+print("\nTest kldGaussian...")
+kld = kldGaussian(
+    mu0=rand(2, 1),
+    mu1=rand(2, 1),
+    sigma0=rand(1) * eye(2),
+    sigma1=rand(1) * eye(2),
+)
+print(f"{kld=}")
 # %% Done
 plt.show()
 print("done")

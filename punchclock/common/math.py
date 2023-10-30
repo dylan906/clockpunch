@@ -5,8 +5,24 @@ from __future__ import annotations
 from math import floor, log10
 
 # Third Party Imports
-from numpy import amin, cross, diag, dot, exp, eye, ndarray, real, spacing, sqrt
-from numpy.linalg import LinAlgError, cholesky, multi_dot, norm
+from numpy import (
+    amin,
+    cross,
+    diag,
+    dot,
+    exp,
+    eye,
+    log,
+    matmul,
+    ndarray,
+    real,
+    spacing,
+    sqrt,
+    squeeze,
+    trace,
+    transpose,
+)
+from numpy.linalg import LinAlgError, cholesky, det, inv, multi_dot, norm
 from numpy.random import default_rng
 from scipy.linalg import eigvals, svd
 
@@ -187,3 +203,37 @@ def normalVec(a: ndarray) -> ndarray:
     c_hat = cross(a_hat, b_hat)
 
     return c_hat
+
+
+# %% KL Divergence of Gaussian distributions
+def kldGaussian(
+    mu0: ndarray,
+    mu1: ndarray,
+    sigma0: ndarray,
+    sigma1: ndarray,
+    bits: bool = False,
+) -> float:
+    """Kullback-Leibler divergence of two Gaussian distributions.
+
+    Args:
+        mu0 (ndarray): Mean of distribution 0.
+        mu1 (ndarray): Mean of distribution 1.
+        sigma0 (ndarray): Covariance matrix of distribution 0.
+        sigma1 (ndarray): Covariance matrix of distribution 1.
+        bits (bool, optional): Set to True to return value in units of bits. Otherwise,
+            return is in nats. Defaults to False.
+    """
+    # https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback%E2%80%93Leibler_divergence #noqa
+    # NOTE: Returns nan if eitehr covariance matrix is singular.
+    term1 = trace(matmul(inv(sigma1), sigma0))
+    term2 = matmul(matmul(transpose(mu1 - mu0), inv(sigma1)), mu1 - mu0)
+    term3 = len(mu0)
+    term4 = log(det(sigma1) / det(sigma0))
+
+    kld = float(0.5 * (term1 + term2 - term3 + term4))
+
+    if bits is True:
+        # get kld in bits vice nats
+        kld = kld / log(2)
+
+    return kld
