@@ -936,16 +936,23 @@ class CovKLD(InfoWrapper):
         new_info = deepcopy(infos)
         kld = zeros(self.k)
         for i in range(self.k):
-            kld[i] = kldGaussian(
+            kld_temp = kldGaussian(
                 mu0=zeros([6, 1]),
                 mu1=zeros([6, 1]),
                 sigma0=new_info[self.pred_cov][i, :, :],
                 sigma1=new_info[self.est_cov][i, :, :],
             )
+            kld[i] = self._takeupNumericalSlack(kld_temp)
 
         new_info[self.new_key] = kld
 
         return new_info
+
+    def _takeupNumericalSlack(self, x: float) -> float:
+        """Numerical effects can output a small KLD that should be 0."""
+        if (x < 1e-6 and x > 0) or (x > -1e-6 and x < 0):
+            x = 0.0
+        return x
 
 
 # %% TransformInfoWithNumpy
