@@ -6,7 +6,14 @@ import os
 # Third Party Imports
 import psutil
 import ray
+from ray.rllib.models import ModelCatalog
 from ray.tune import Tuner
+from ray.tune.registry import register_env
+
+# Punch Clock Imports
+from punchclock.nets.action_mask_model import MyActionMaskModel
+from punchclock.nets.lstm_mask import MaskedLSTM
+from punchclock.ray.build_env import buildEnv
 
 # %% Functions
 
@@ -28,6 +35,12 @@ def resumeTune(checkpoint_dir: str, trainable, num_cpus: int | None):
         num_cpus=num_cpus,
         num_gpus=0,
     )
+
+    # %% Register environment builder (via Ray, not Gym) and action mask model
+    register_env("ssa_env", buildEnv)
+    ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
+    ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
+
     if num_cpus is None:
         num_cpus_avail = psutil.cpu_count()
     else:
