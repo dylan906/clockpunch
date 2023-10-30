@@ -225,6 +225,12 @@ def kldGaussian(
     """
     # https://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback%E2%80%93Leibler_divergence #noqa
     # NOTE: Returns nan if eitehr covariance matrix is singular.
+
+    if mu0.shape[1] > mu0.shape[0]:
+        mu0 = mu0.T
+    if mu1.shape[1] > mu1.shape[0]:
+        mu1 = mu1.T
+
     term1 = trace(matmul(inv(sigma1), sigma0))
     term2 = matmul(matmul(transpose(mu1 - mu0), inv(sigma1)), mu1 - mu0)
     term3 = len(mu0)
