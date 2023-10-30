@@ -11,7 +11,13 @@ from ray.tune import Tuner
 # %% Functions
 
 
-def resumeTune(checkpoint_dir: str, trainable, num_cpus: int | None):
+def resumeTune(
+    checkpoint_dir: str,
+    trainable,
+    num_cpus: int | None,
+    resume_errored: bool = True,
+    restart_errored: bool = False,
+):
     """Build a Tuner and run .fit from an experiment checkpoint.
 
     Args:
@@ -35,7 +41,12 @@ def resumeTune(checkpoint_dir: str, trainable, num_cpus: int | None):
 
     os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(num_cpus_avail - 1)
 
-    tuner = Tuner.restore(trainable=trainable, path=checkpoint_dir)
+    tuner = Tuner.restore(
+        trainable=trainable,
+        path=checkpoint_dir,
+        resume_errored=restart_errored,
+        restart_errored=restart_errored,
+    )
     print(f"\nTuner restored: {tuner}")
     print("\nBeginning fit...")
     tuner.fit()
