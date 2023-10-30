@@ -236,7 +236,7 @@ class UnscentedKalmanFilter(Filter):
                 `None` to signify no measurement, but to update filter based
                 on prediction.
         """
-        if type(measurement) == type(None):
+        if measurement is None:
             # Save the 0th sigma point because it is the non-sampled propagated state. This means
             #   that we don't inject any noise into the state estimate when no measurements occur.
             self.est_x = self.sigma_points[:, 0].copy()
