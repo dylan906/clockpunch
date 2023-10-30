@@ -962,11 +962,16 @@ class TransformInfoWithNumpy(InfoWrapper):
     Apply a numpy function to a single entry in a dict info.
 
     Works only with numpy functions that can be called like numpy.[func](args).
-
-    Overwrites key[value] in info.
     """
 
-    def __init__(self, env: Env, numpy_func_str: str, key: str, **kwargs):
+    def __init__(
+        self,
+        env: Env,
+        numpy_func_str: str,
+        key: str,
+        new_key: str = None,
+        **kwargs,
+    ):
         """Wrap environment with TransformInfoWithNumpy.
 
         Args:
@@ -974,6 +979,8 @@ class TransformInfoWithNumpy(InfoWrapper):
             numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
                 getattr(numpy, numpy_func_str)).
             key (str): Key in info, as returned from env.step().
+            new_key (str, optional): New key to assign to info. If None, overrides
+                key. Defaults to None.
         """
         super().__init__(env)
         self.partialFunc = convertNumpyFuncStrToCallable(
@@ -981,6 +988,9 @@ class TransformInfoWithNumpy(InfoWrapper):
             **kwargs,
         )
         self.key = key
+        if new_key is None:
+            new_key = key
+        self.new_key = new_key
 
     def updateInfo(
         self, observations, rewards, terminations, truncations, infos, action
@@ -998,7 +1008,7 @@ class TransformInfoWithNumpy(InfoWrapper):
         new_info = deepcopy(infos)
         val = new_info[self.key]
         val_trans = self.partialFunc(val)
-        new_info[self.key] = val_trans
+        new_info[self.new_key] = val_trans
 
         return new_info
 
