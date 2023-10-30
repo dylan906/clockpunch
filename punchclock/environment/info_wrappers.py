@@ -882,38 +882,44 @@ class LogisticTransformInfo(InfoWrapper):
         return new_info
 
 
-# %% KLDInfo
-class KLDInfo(InfoWrapper):
-    """Calculate the KL divergence of two Gaussian distributions.
+# %% CovKLD
+class CovKLD(InfoWrapper):
+    """Calculate the KL divergence of between predicted and estimated covariances.
 
-    Creates new item in info.
+    Tracks KLD for all targets.
+
+    Creates new item in info, whose value is ndarray(N,), where each entry is the
+    KLD for each target.
     """
 
     def __init__(
         self,
         env: Env,
         new_key: str,
-        mu0: str,
-        mu1: str,
-        sigma0: str,
-        sigma1: str,
+        pred_cov: str,
+        est_cov: str,
     ):
-        """Wrap environment with KLDInfo.
+        """Wrap environment with CovKLD.
 
         Args:
             env (Env): A Gymnasium Environment.
             new_key (str): New key to create in info.
-            mu0 (str): Key of mean vector.
-            mu1 (str): Key of mean vector.
-            sigma0 (str): Key of covariance array.
-            sigma1 (str): Key of covariance array.
+            pred_cov (str): Key of predicted (forecast) covariance array.
+            est_cov (str): Key of estimated (final) covariance array.
         """
+        info = getInfo(env)
+
+        for key in [pred_cov, est_cov]:
+            assert key in info
+            assert info[key].ndim == 3
+            assert info[key].shape[1::] == (6, 6)
+
         super().__init__(env)
+
         self.new_key = new_key
-        self.mu0 = mu0
-        self.mu1 = mu1
-        self.sigma0 = sigma0
-        self.sigma1 = sigma1
+        self.pred_cov = pred_cov
+        self.est_cov = est_cov
+        self.k = info[pred_cov].shape[0]
 
     def updateInfo(
         self, observations, rewards, terminations, truncations, infos, action
@@ -928,12 +934,14 @@ class KLDInfo(InfoWrapper):
             dict: Same keys as input, but with new key specified by self.new_key.
         """
         new_info = deepcopy(infos)
-        kld = kldGaussian(
-            mu0=new_info[self.mu0],
-            mu1=new_info[self.mu1],
-            sigma0=new_info[self.sigma0],
-            sigma1=new_info[self.sigma1],
-        )
+        kld = zeros(self.k)
+        for i in range(self.k):
+            kld[i] = kldGaussian(
+                mu0=zeros([6, 1]),
+                mu1=zeros([6, 1]),
+                sigma0=new_info[self.pred_cov][i, :, :],
+                sigma1=new_info[self.est_cov][i, :, :],
+            )
 
         new_info[self.new_key] = kld
 

@@ -8,7 +8,7 @@ from gymnasium import Env
 from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 
 # from gymnasium.utils.env_checker import check_env
-from numpy import array, diag, pi
+from numpy import array, diag, eye, pi, stack, zeros
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -19,9 +19,9 @@ from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     CombineInfoItems,
     ConfigurableLogicGate,
+    CovKLD,
     FilterInfo,
     GetNonZeroElements,
-    KLDInfo,
     LogisticTransformInfo,
     MaskViolationCounter,
     NumWindows,
@@ -344,35 +344,31 @@ print(f"info (wrapped) = {info_wrapped}")
 (_, _, _, _, info) = log_env.step(log_env.action_space.sample())
 print(f"info (via step) = {info}")
 
-# %% Test KLDInfo
-print("\nTest KLDInfo...")
+# %% Test CovKLD
+print("\nTest CovKLD...")
 rand_env = RandomInfo(
     RandomEnv(
         {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
     ),
     info_space=Dict(
         {
-            "mu0": Box(low=-1, high=1, shape=(1, 2)),
-            "mu1": Box(low=-1, high=1, shape=(1, 2)),
             "sigma0": Box(
-                low=array([[0, 0], [0, 0]]),
-                high=array([[1, 0.1], [0.1, 1]]),
+                low=zeros((2, 6, 6)),
+                high=stack([eye(6), eye(6)]),
             ),
             "sigma1": Box(
-                low=array([[0, 0], [0, 0]]),
-                high=array([[1, 0.1], [0.1, 1]]),
+                low=zeros((2, 6, 6)),
+                high=stack([eye(6), eye(6)]),
             ),
         }
     ),
 )
 
-kld_env = KLDInfo(
+kld_env = CovKLD(
     rand_env,
     new_key="kld",
-    mu0="mu0",
-    mu1="mu1",
-    sigma0="sigma0",
-    sigma1="sigma1",
+    pred_cov="sigma0",
+    est_cov="sigma1",
 )
 (_, _, _, _, info) = kld_env.step(kld_env.action_space.sample())
 print(f"info (via step) = {info}")
