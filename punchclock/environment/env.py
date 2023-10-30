@@ -11,7 +11,18 @@ from copy import deepcopy
 # Third Party Imports
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
-from numpy import array, asarray, float32, int64, multiply, ndarray, ones, zeros
+from numpy import (
+    array,
+    asarray,
+    float32,
+    int64,
+    mean,
+    multiply,
+    ndarray,
+    ones,
+    trace,
+    zeros,
+)
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
@@ -392,6 +403,8 @@ class SSAScheduler(gym.Env):
                     km/s)
             "est_cov": (ndarray[float]) with shape (N, 6, 6), Estimate covariance
                 matrices for all targets.
+            "pred_p": (ndarray[float]) with shape (N, 6, 6), Filter predicted covariance
+                matrices prior to measurement.
             "mean_pos_var": (float) Mean of estimate position covariance across
                 whole catalog.
             "mean_vel_var": (float) Mean of estimate velocity covariance across
@@ -405,26 +418,26 @@ class SSAScheduler(gym.Env):
         """
         self.info["est_x"] = self.getEstStates()
 
-        # Update covariance matrices of targets.
-        # NOTE: The diagonals are already recorded in observation, but storing
-        # in info to save off-diagonals.
-        covariance_list = [
-            agent.target_filter.est_p
-            for agent in self.agents
-            if type(agent) is Target
-        ]
-        # "est_cov" is (N, 6, 6) array. Convert to float32 to prevent float64 types
-        # when mixed ints/float32s are returned from agents.
-        self.info["est_cov"] = asarray(covariance_list, dtype=float32)
+        # Get selected attrs from filters and assign to info items. Filter attr
+        # names need not be same as env.info names, so make a map first. All attrs
+        # from filters are arrays.
+        infokey_filterattr_map = {
+            "est_cov": "est_p",  # final estimate covariances
+            "filter_pred_p": "pred_p",  # predicted covariances
+        }
+        for ikey, fkey in infokey_filterattr_map.items():
+            attr_list = [
+                deepcopy(getattr(agent.target_filter, fkey))
+                for agent in self.agents
+                if isinstance(agent, Target)
+            ]
+            self.info[ikey] = asarray(attr_list, dtype=float32)
 
-        # Update mean covariance.
-        # make list of covariances; need to swap Target-axis to interface with
-        # meanVarUncertainty.
-        # covariance_list = list(self._getObs()["est_cov"].transpose())
-        self.info["mean_pos_var"] = meanVarUncertainty(covariance_list)
-        self.info["mean_vel_var"] = meanVarUncertainty(
-            covariance_list, pos_vel="velocity"
-        )
+        # Record mean trace of covariance matrices for data logging.
+        (
+            self.info["mean_pos_var"],
+            self.info["mean_vel_var"],
+        ) = self._getVarMeans()
 
         # Get true states
         true_states_list = [agent.eci_state.squeeze() for agent in self.agents]
@@ -589,3 +602,15 @@ class SSAScheduler(gym.Env):
         truncated = False
 
         return observation, reward, done, truncated, info
+
+    def _getVarMeans(self):
+        """Calculate the mean* trace of positional and velocity covariances.
+
+        *With respect to number of targets.
+        """
+        est_cov = deepcopy(self.info["est_cov"])
+        tr_pos = trace(est_cov[:, :3, :3], axis1=1, axis2=2)
+        tr_vel = trace(est_cov[:, 3:, 3:], axis1=1, axis2=2)
+        mean_pos = mean(tr_pos)
+        mean_vel = mean(tr_vel)
+        return mean_pos, mean_vel
