@@ -216,15 +216,14 @@ for _ in range(max_steps * 3 + 1):
     # pick arbitrary action
     action_step = env.action_space.sample()
 
-    [obs, rwd, done, truncated, info] = env.step(action_step)
+    [obs, rwd, terminated, truncated, info] = env.step(action_step)
 
     # print post-reset states
-    if done is True:
+    if terminated is True:
         print(
             f"AFTER RESET: \n"
             f"  env._getInfo() = {env._getInfo()} \n"
             f"  eci_state[:3] = {env.agents[3].eci_state[:3]}\n"
-            # f"  num_windows_left = {env._getObs()['num_windows_left']}"
         )
 # %% More thorough reset() test.
 # Make sure that all properties of agent and agent.target_filter get reset to initial conditions
