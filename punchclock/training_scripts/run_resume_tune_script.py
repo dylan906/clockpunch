@@ -22,7 +22,7 @@ parser.add_argument(
     "config_path",  # key of argument
     type=str,
     nargs="+",  # gathers all command line arguments into a list
-    help="path to configuration file",
+    help="path to experiment dir",
 )
 # get Namespace variable
 config_path = parser.parse_args()
@@ -34,11 +34,11 @@ print(f"config file path = {config_path}")
 # %% Load config file
 # Opening JSON file
 # with open("bash_script_demo/test_config.json", "r", encoding="UTF-8") as f:
-with open(config_path, "r", encoding="UTF-8") as f:
-    config = json.load(f)
+# with open(config_path, "r", encoding="UTF-8") as f:
+#     config = json.load(f)
 
 # Print config contents
-print(f"config file contents= {config}")
+# print(f"config file contents= {config}")
 
 # %% Run tune job
-resumeTune(**config)
+resumeTune(config_path)
