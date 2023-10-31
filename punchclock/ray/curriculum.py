@@ -112,5 +112,8 @@ class CurriculumCapableEnv(TaskSettableEnv):
         self.switch_env = True
 
     def _makeEnv(self, config: dict):
-        config["horizon"] = self.MAPS[self.cur_level - 1]
-        self.env = buildEnv(config)
+        new_config = deepcopy(config)
+        new_config["horizon"] = self.MAPS[self.cur_level - 1]
+        del new_config["start_level"]  # prevents error in buildEnv caused by
+        # unrecognized arg
+        self.env = buildEnv(new_config)

@@ -19,12 +19,11 @@ from punchclock.ray.curriculum import CurriculumCapableEnv, curriculum_fn
 # register_env("ssa_env", buildEnv)
 
 config_path = Path(__file__).parent.joinpath("config_test").with_suffix(".json")
-config = loadJSONFile(config_path)
-# env_config = config["env_config"]
+loaded_config = loadJSONFile(config_path)
+env_config = loaded_config["param_space"]["env_config"]
+env_config.update({"start_level": 1})
 
-config.update({"start_level": 1})
-
-env = CurriculumCapableEnv(config["param_space"]["env_config"])
+env = CurriculumCapableEnv(env_config)
 
 ray.init(num_cpus=2)
 config = (
@@ -33,7 +32,7 @@ config = (
     .environment(
         CurriculumCapableEnv,
         # env_config={"start_level": 1},
-        env_config=config,
+        env_config=env_config,
         env_task_fn=curriculum_fn,
     )
     .framework("torch")
@@ -44,8 +43,8 @@ config = (
 
 stop = {
     "training_iteration": 1,
-    # "timesteps_total": args.stop_timesteps,
-    # "episode_reward_mean": args.stop_reward,
+    "timesteps_total": 100,
+    "episode_reward_mean": 1,
 }
 
 tuner = tune.Tuner(
