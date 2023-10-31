@@ -1,0 +1,1 @@
+"""Test curriculum.py."""
