@@ -20,6 +20,7 @@ from punchclock.environment.info_wrappers import (
     CombineInfoItems,
     ConfigurableLogicGate,
     CovKLD,
+    EntropyDiff,
     FilterInfo,
     GetNonZeroElements,
     LogisticTransformInfo,
@@ -372,6 +373,36 @@ kld_env = CovKLD(
 )
 (_, _, _, _, info) = kld_env.step(kld_env.action_space.sample())
 print(f"info (via step) = {info}")
+
+# %% Test EntropyDiff
+print("\nTest EntropyDiff...")
+rand_env = RandomInfo(
+    RandomEnv(
+        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
+    ),
+    info_space=Dict(
+        {
+            "sigma0": Box(
+                low=zeros((2, 6, 6)),
+                high=stack([eye(6), eye(6)]),
+            ),
+            "sigma1": Box(
+                low=zeros((2, 6, 6)),
+                high=stack([eye(6), eye(6)]),
+            ),
+        }
+    ),
+)
+
+ed_env = EntropyDiff(
+    rand_env,
+    new_key="entropy",
+    cov_num="sigma0",
+    cov_den="sigma1",
+)
+(_, _, _, _, info) = ed_env.step(ed_env.action_space.sample())
+print(f"info (via step) = {info}")
+
 # %% TransformInfoWith Numpy
 print("\nTest TransformInfoWithNumpy...")
 rand_env = RandomInfo(

@@ -15,7 +15,7 @@ from numpy import asarray, bool_, insert, ndarray, where, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
-from punchclock.common.math import kldGaussian, logistic
+from punchclock.common.math import entropyDiff, kldGaussian, logistic
 from punchclock.common.utilities import (
     actionSpace2Array,
     getInequalityFunc,
@@ -953,6 +953,79 @@ class CovKLD(InfoWrapper):
         if (x < 1e-6 and x > 0) or (x > -1e-6 and x < 0):
             x = 0.0
         return x
+
+
+# %% EntropyDiff
+class EntropyDiff(InfoWrapper):
+    """Calculate the entropy difference of between covariance matrices.
+
+    Tracks entropy for all targets.
+
+    Creates new item in info, whose value is ndarray(N,), where each entry is the
+    entropy for each target.
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        new_key: str,
+        cov_num: str,
+        cov_den: str,
+        logbase: int | str = None,
+    ):
+        """Wrap environment with CovKLD.
+
+        Args:
+            env (Env): A Gymnasium Environment.
+            new_key (str): New key to create in info.
+            cov_num (str): Key of numerator covariance array.
+            cov_den (str): Key of denominator covariance array.
+            logbase (int | str, optional): Which base to use for entropy calc.
+                Defaults to entropyDiff default.
+        """
+        info = getInfo(env)
+
+        for key in [cov_num, cov_den]:
+            assert key in info
+            assert info[key].ndim == 3
+            assert info[key].shape[1::] == (6, 6)
+
+        assert info[cov_num].shape[0] == info[cov_den].shape[0]
+
+        super().__init__(env)
+
+        self.new_key = new_key
+        self.cov_num = cov_num
+        self.cov_den = cov_den
+        self.logbase = logbase
+        self.k = info[cov_num].shape[0]
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ) -> dict:
+        """Update info from an env.
+
+        Args:
+            observations, rewards, terminations, truncations, action: Unused.
+            infos (dict): Info from an env.
+
+        Returns:
+            dict: Same keys as input, but with new key specified by self.new_key.
+        """
+        new_info = deepcopy(infos)
+        entropy = zeros(self.k)
+        for i in range(self.k):
+            cd = new_info[self.cov_den][i, :, :]
+            cn = new_info[self.cov_num][i, :, :]
+            entropy[i] = entropyDiff(
+                sigma_den=cd,
+                sigma_num=cn,
+                logbase=self.logbase,
+            )
+
+        new_info[self.new_key] = entropy
+
+        return new_info
 
 
 # %% TransformInfoWithNumpy

@@ -249,7 +249,9 @@ def kldGaussian(
 
 # %% EntropyDiff
 def entropyDiff(
-    sigma_den: ndarray, sigma_num: ndarray, logbase: int | str = "e"
+    sigma_num: ndarray,
+    sigma_den: ndarray,
+    logbase: int | str = "e",
 ) -> float:
     """Calculate difference in entropy between two normal distributions.
 
@@ -260,8 +262,8 @@ def entropyDiff(
     See: https://en.wikipedia.org/wiki/Entropy_(information_theory)
 
     Args:
-        sigma_den (ndarray): Variance matrix in denominator.
         sigma_num (ndarray): Variance matrix in numerator.
+        sigma_den (ndarray): Variance matrix in denominator.
         logbase (int | str, optional): [10 | 2 | "e"] Which base to use in the
             logarithmic function. Defaults to "e" (units are 'nats').
 
