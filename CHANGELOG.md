@@ -11,6 +11,7 @@ I'm trying to get better about that.
 
 ### Added
 - ezUKF now has option for random Q, R, p_init (#86).
+- Added KL Divergence wrapper (#94).
 
 ### Changed
 - Experiment names now have a random string appended to manual name (#89).
