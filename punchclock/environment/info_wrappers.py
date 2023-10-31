@@ -1017,11 +1017,12 @@ class EntropyDiff(InfoWrapper):
         for i in range(self.k):
             cd = new_info[self.cov_den][i, :, :]
             cn = new_info[self.cov_num][i, :, :]
-            entropy[i] = entropyDiff(
+            e = entropyDiff(
                 sigma_den=cd,
                 sigma_num=cn,
                 logbase=self.logbase,
             )
+            entropy[i] = e
 
         new_info[self.new_key] = entropy
 
