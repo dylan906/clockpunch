@@ -13,6 +13,8 @@ from numpy import (
     exp,
     eye,
     log,
+    log2,
+    log10,
     matmul,
     ndarray,
     real,
@@ -243,3 +245,36 @@ def kldGaussian(
         kld = kld / log(2)
 
     return kld
+
+
+# %% EntropyDiff
+def entropyDiff(
+    sigma_den: ndarray, sigma_num: ndarray, logbase: int | str = "e"
+) -> float:
+    """Calculate difference in entropy between two normal distributions.
+
+    entropy = 0.5 * log(det(sigma_num) / det(sigma_den))
+
+    where the base of the log function determines the units of the output.
+
+    See: https://en.wikipedia.org/wiki/Entropy_(information_theory)
+
+    Args:
+        sigma_den (ndarray): Variance matrix in denominator.
+        sigma_num (ndarray): Variance matrix in numerator.
+        logbase (int | str, optional): [10 | 2 | "e"] Which base to use in the
+            logarithmic function. Defaults to "e" (units are 'nats').
+
+    Returns:
+        float: Entropy
+    """
+    if (logbase == "e") or (logbase is None):
+        logfunc = log
+    elif logbase == 10:
+        logfunc = log10
+    elif logbase == 2:
+        logfunc = log2
+
+    entropy = 0.5 * logfunc(det(sigma_num) / det(sigma_den))
+
+    return entropy

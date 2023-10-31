@@ -8,7 +8,13 @@ from numpy import array, dot, eye, linspace
 from numpy.random import rand
 
 # Punch Clock Imports
-from punchclock.common.math import kldGaussian, logistic, normalVec, saturate
+from punchclock.common.math import (
+    entropyDiff,
+    kldGaussian,
+    logistic,
+    normalVec,
+    saturate,
+)
 
 # %% Test logistic function
 print("\nTest logistic function...")
@@ -66,6 +72,11 @@ kld = kldGaussian(
     sigma1=rand(1) * eye(2),
 )
 print(f"{kld=}")
+
+# %% Test entropyDiff
+print("\nTest entropyDiff...")
+e = entropyDiff(sigma_den=0.1 * eye(2), sigma_num=eye(2))
+print(f"{e=}")
 # %% Done
 plt.show()
 print("done")
