@@ -44,7 +44,12 @@ def curriculum_fn(
     # Level 1: Expect rewards between 0.0 and 1.0.
     # Level 2: Expect rewards between 1.0 and 10.0, etc..
     # We will thus raise the level/task each time we hit a new power of 10.0
-    new_task = int(np.log10(train_results["episode_reward_mean"]) + 2.1)
+    # new_task = int(np.log10(train_results["episode_reward_mean"]) + 2.1)
+    cur_level = task_settable_env.get_task()
+    print(f"current level (curriculum_fn) = {cur_level}")
+    if train_results["episode_reward_mean"] > 1:
+        new_task = cur_level + 1
+
     # Clamp between valid values, just in case:
     new_task = max(min(new_task, 6), 1)
     print(
@@ -65,7 +70,7 @@ class CurriculumCapableEnv(TaskSettableEnv):
     # Increase horizon for each level of difficulty
     MAPS = [50, 100, 150, 200, 250, 288]
 
-    def __init__(self, config: dict):
+    def __init__(self, config: EnvContext):
         self.cur_level = config.get("start_level", 1)
         self.horizon = config.get("horizon", 10)
         self.backup_config = deepcopy(config)
@@ -114,6 +119,8 @@ class CurriculumCapableEnv(TaskSettableEnv):
     def _makeEnv(self, config: dict):
         new_config = deepcopy(config)
         new_config["horizon"] = self.MAPS[self.cur_level - 1]
+        print(f"{self.cur_level=}")
+        print(f"horizon = {new_config['horizon']}")
         del new_config["start_level"]  # prevents error in buildEnv caused by
         # unrecognized arg
         self.env = buildEnv(new_config)
