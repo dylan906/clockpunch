@@ -49,6 +49,8 @@ def curriculum_fn(
     print(f"current level (curriculum_fn) = {cur_level}")
     if train_results["episode_reward_mean"] > 1:
         new_task = cur_level + 1
+    else:
+        new_task = cur_level
 
     # Clamp between valid values, just in case:
     new_task = max(min(new_task, 6), 1)

@@ -30,7 +30,7 @@ env = CurriculumCapableEnv(env_config)
 
 check_env(env)
 
-ray.init(num_cpus=2, num_gpus=0)
+ray.init(num_cpus=20, num_gpus=0)
 
 config = (
     get_trainable_cls("PPO")
@@ -42,14 +42,14 @@ config = (
         env_task_fn=curriculum_fn,
     )
     .framework("torch")
-    .rollouts(num_rollout_workers=1, num_envs_per_worker=1)
+    # .rollouts(num_rollout_workers=1, num_envs_per_worker=1)
     # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
     # .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", "0")))
 )
 
 # os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(1)
 stop = {
-    "training_iteration": 1,
+    "training_iteration": 3,
     "timesteps_total": 10,
     "episode_reward_mean": 1,
 }
@@ -57,6 +57,6 @@ stop = {
 tuner = tune.Tuner(
     "PPO",
     param_space=config.to_dict(),
-    run_config=air.RunConfig(stop=stop, verbose=2),
+    run_config=air.RunConfig(stop=stop, verbose=3),
 )
 results = tuner.fit()
