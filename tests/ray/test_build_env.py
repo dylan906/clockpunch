@@ -70,14 +70,14 @@ constructor_params = {
                 "copy_from": "obs",
                 "copy_to": "obs",
                 "from_key": "vis_map_est",
-                "to_key": "vm_copy",
+                "to_key": "action_mask",
             },
         },
         {
             "wrapper": "VisMap2ActionMask",
             "wrapper_config": {
                 "obs_info": "obs",
-                "vis_map_key": "vm_copy",
+                "vis_map_key": "action_mask",
                 "new_key": "action_mask",
             },
         },
