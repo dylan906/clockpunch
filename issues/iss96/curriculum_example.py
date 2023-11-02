@@ -86,6 +86,4 @@ if __name__ == "__main__":
     )
     results = tuner.fit()
 
-    # if args.as_test:
-    #     check_learning_achieved(results, args.stop_reward)
     ray.shutdown()

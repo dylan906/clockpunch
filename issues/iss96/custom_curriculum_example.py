@@ -2,19 +2,27 @@
 # %% Imports
 # Standard Library Imports
 import random
+from pprint import pprint
 
 # Third Party Imports
 import ray
-from gymnasium.spaces import Box
+from gymnasium.spaces import Box, Dict
 from ray import air, tune
+from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
 # %% Imports
 from ray.rllib.env.apis.task_settable_env import TaskSettableEnv, TaskType
+from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.env.env_context import EnvContext
+from ray.rllib.evaluation.episode import Episode
 from ray.rllib.examples.env.random_env import RandomEnv
+from ray.rllib.policy import Policy
 from ray.rllib.utils import check_env
 from ray.rllib.utils.annotations import override
 from ray.tune.registry import get_trainable_cls
+
+# Punch Clock Imports
+from punchclock.environment.misc_wrappers import RandomInfo
 
 
 # %% Test curriculum_fn
@@ -23,7 +31,7 @@ def test_curriculum_fn(
 ) -> TaskType:
     """Function returning a possibly new task to set `task_settable_env` to.
 
-    Increases env level +1 every call.
+    Increases env level +1 every call, up to 6.
     """
     cur_level = task_settable_env.get_task()
     print(f"current level (curriculum_fn) = {cur_level}")
@@ -62,8 +70,13 @@ class TestCurriculumEnv(TaskSettableEnv):
         return self.env.reset(seed=seed, options=options)
 
     def step(self, action):  # noqa
+        """Set info_b differently if final step of env."""
         self._timesteps += 1
         obs, rew, terminated, truncated, info = self.env.step(action)
+        if terminated or truncated:
+            info["info_b"] = 1
+        else:
+            info["info_b"] = 0
         return obs, rew, terminated, truncated, info
 
     @override(TaskSettableEnv)
@@ -83,16 +96,54 @@ class TestCurriculumEnv(TaskSettableEnv):
         self.switch_env = True
 
     def _makeEnv(self):
-        """Reward is equal to current task (task is a number)."""
+        """Reward is equal to current task (task is a number).
+
+        Info is two random numbers.
+        """
         reward = self.get_task()
         print(f"from _makeEnv, {reward=}")
-        self.env = RandomEnv(
-            {
-                "reward_space": Box(low=reward, high=reward, shape=()),
-            }
+        self.env = RandomInfo(
+            RandomEnv(
+                {
+                    "reward_space": Box(low=reward, high=reward, shape=()),
+                }
+            ),
+            info_space=Dict(
+                {
+                    "info_a": Box(low=0, high=1),
+                    "info_b": Box(low=0, high=1, dtype=int),
+                }
+            ),
         )
 
 
+# %% Custom Callbacks to use for custom metrics
+class CustomCallbacks(DefaultCallbacks):
+    """Functions to be called throughout training."""
+
+    def on_episode_end(
+        self,
+        *,
+        worker: "RolloutWorker",  # noqa
+        base_env: BaseEnv,
+        policies: dict[str, Policy],
+        episode: Episode,
+        env_index: int,
+        **kwargs,
+    ):
+        """Record last info from episode in custom_metrics."""
+        pprint(f"episode vars = {vars(episode)}")
+        last_info = episode._last_infos
+        # last_info = episode.user_data["last_info"]
+        pprint(f"\n {last_info=}")
+        last_info1 = list(last_info.values())[1]
+        pprint(f"\n {last_info1=}")
+        # pprint(f"\n {vars(last_info1)=}")
+        episode.custom_metrics["last_info_a"] = last_info1["info_a"]
+        episode.custom_metrics["last_info_b"] = last_info1["info_b"]
+
+
+# %% Scripts
 if __name__ == "__main__":
     env = TestCurriculumEnv(config={})
     check_env(env)
@@ -107,6 +158,7 @@ if __name__ == "__main__":
             env_config={},
             env_task_fn=test_curriculum_fn,
         )
+        .callbacks(CustomCallbacks)  # comment out this to skip custom Callbacks
         .framework("torch")
     )
 
@@ -121,4 +173,5 @@ if __name__ == "__main__":
     )
     results = tuner.fit()
 
-# %%
+    # %% done
+    print("done")
