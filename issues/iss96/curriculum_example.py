@@ -52,7 +52,9 @@ def curriculum_fn(
 
 if __name__ == "__main__":
     # args = parser.parse_args()
-    ray.init(local_mode="store_true")
+    # ray.init(local_mode="store_true")
+    ray.init(num_cpus=20)
+    # os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(49)
 
     # Can also register the env creator function explicitly with:
     # register_env(
