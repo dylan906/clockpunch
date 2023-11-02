@@ -3,6 +3,7 @@
 # Standard Library Imports
 import argparse
 import os
+from pprint import pprint
 
 # Third Party Imports
 import numpy as np
@@ -39,6 +40,7 @@ def curriculum_fn(
     # Level 1: Expect rewards between 0.0 and 1.0.
     # Level 2: Expect rewards between 1.0 and 10.0, etc..
     # We will thus raise the level/task each time we hit a new power of 10.0
+    pprint(f"{train_results}")
     new_task = int(np.log10(train_results["episode_reward_mean"]) + 2.1)
     # Clamp between valid values, just in case:
     new_task = max(min(new_task, 5), 1)
@@ -53,7 +55,7 @@ def curriculum_fn(
 if __name__ == "__main__":
     # args = parser.parse_args()
     # ray.init(local_mode="store_true")
-    ray.init(num_cpus=20)
+    ray.init(num_cpus=3)
     # os.environ["TUNE_MAX_PENDING_TRIALS_PG"] = str(49)
 
     # Can also register the env creator function explicitly with:
@@ -76,9 +78,9 @@ if __name__ == "__main__":
     )
 
     stop = {
-        "training_iteration": 50,
-        "timesteps_total": 200000,
-        "episode_reward_mean": 10000,
+        # "training_iteration": 3,
+        # "timesteps_total": 100,
+        "episode_reward_mean": 100,
     }
 
     tuner = tune.Tuner(
