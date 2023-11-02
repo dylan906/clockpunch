@@ -134,11 +134,11 @@ class CustomCallbacks(DefaultCallbacks):
         """Record last info from episode in custom_metrics."""
         pprint(f"episode vars = {vars(episode)}")
         last_info = episode._last_infos
-        # last_info = episode.user_data["last_info"]
         pprint(f"\n {last_info=}")
+        # last_info is a 2-item dict, where the 0th item is empty and the 1st item
+        # is info returned from env.
         last_info1 = list(last_info.values())[1]
         pprint(f"\n {last_info1=}")
-        # pprint(f"\n {vars(last_info1)=}")
         episode.custom_metrics["last_info_a"] = last_info1["info_a"]
         episode.custom_metrics["last_info_b"] = last_info1["info_b"]
 
