@@ -11,7 +11,7 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
-from numpy import asarray, bool_, insert, ndarray, where, zeros
+from numpy import asarray, bool_, insert, isnan, ndarray, where, zeros
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
@@ -1023,6 +1023,8 @@ class EntropyDiff(InfoWrapper):
                 logbase=self.logbase,
             )
             entropy[i] = e
+            if isnan(e):
+                warn("\nBad entropy value.\n")
 
         new_info[self.new_key] = entropy
 
