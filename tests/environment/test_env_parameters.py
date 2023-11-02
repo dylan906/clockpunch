@@ -224,5 +224,7 @@ print(
 print(f"last_time_tasked = {env_params6.agent_params['init_last_time_tasked']}")
 print(f"num_tasked = {env_params6.agent_params['init_num_tasked']}")
 
+# Now with less inputs, more defaults
+env_params = SSASchedulerParams(horizon=1, agent_params={}, filter_params={})
 # %%
 print("done")

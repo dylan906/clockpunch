@@ -2,9 +2,12 @@
 # %% Imports
 from __future__ import annotations
 
+# Standard Library Imports
+from copy import deepcopy
+
 # Third Party Imports
-from numpy import arange, asarray, diag, diagonal, eye, ndarray, sqrt, zeros
-from numpy.random import normal
+from numpy import arange, asarray, diag, diagonal, eye, ndarray, pi, sqrt, zeros
+from numpy.random import default_rng, normal
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
@@ -68,12 +71,12 @@ class SSASchedulerParams:
             horizon (`int`): Number of steps at which simulation resets.
             agent_params (`dict`): Spatial parameters of agents.
                 {
-                    "num_sensors": `int`,
-                    "num_targets": `int`,
+                    "num_sensors": `int`, Defaults to 1.
+                    "num_targets": `int`, Defaults to 1.
                     "sensor_starting_num": `int`, Defaults to 1000.
                     "target_starting_num": `int`, Defaults to 5000.
-                    "sensor_dynamics": 'terrestrial' | 'satellite',
-                    "target_dynamics": 'terrestrial' | 'satellite',
+                    "sensor_dynamics": 'terrestrial' | 'satellite', Defaults to 'terrestrial'.
+                    "target_dynamics": 'terrestrial' | 'satellite', Defaults to 'satellite'.
                     "sensor_dist": None | 'normal' | 'uniform',  # Enter None
                         if using fixed sensors. Defaults to None.
                     "target_dist": None | 'normal' | 'uniform',  # Enter None
@@ -119,6 +122,8 @@ class SSASchedulerParams:
             - If "*_dist" is 'uniform', each row is "*_dist_params" is [low, high]
         """
         # %% Assign agent_params defaults if keys not specified
+        agent_params["num_sensors"] = agent_params.get("num_sensors", 1)
+        agent_params["num_targets"] = agent_params.get("num_targets", 1)
         agent_params["sensor_starting_num"] = agent_params.get(
             "sensor_starting_num", 1000
         )
@@ -147,6 +152,15 @@ class SSASchedulerParams:
         agent_params["init_last_time_tasked"] = agent_params.get(
             "init_last_time_tasked", None
         )
+        agent_params["sensor_dynamics"] = agent_params.get(
+            "sensor_dynamics", "terrestrial"
+        )
+        agent_params["target_dynamics"] = agent_params.get(
+            "target_dynamics", "satellite"
+        )
+
+        # Default to randomly generated agents if distribution and fixed params are None
+        agent_params.update(self.getDefaultAgentDists(agent_params))
 
         # %% Argument checks
         # For fixed agents, make sure that the number of agents specified matches
@@ -467,3 +481,50 @@ class SSASchedulerParams:
             )
 
         return [dict(zip(keys, values)) for values in params_tuples]
+
+    def getDefaultAgentDists(self, config: dict) -> dict:
+        """Set default distribution params for agents.
+
+        Targets default to LEO, sensors default to Earth's surface.
+
+        Targets and sensors default to uniform distributions.
+
+        Does not modify sensor/target config if either "x_dist" or "fixed_x" are set.
+
+        Args:
+            config (dict): Agent config.
+
+        Returns:
+            dict: Potentially modified agent config.
+        """
+        new_config = deepcopy(config)
+        if (config["sensor_dist"] is None) and (
+            config["fixed_sensors"] is None
+        ):
+            # default sensors are uniformly distributed on globe with 0 altitude
+            new_config["sensor_dist"] = "uniform"
+            new_config["sensor_dist_frame"] = "LLA"
+            new_config["sensor_dist_params"] = [
+                [-pi / 2, pi / 2],
+                [-pi, pi],
+                [0, 0],
+                [0, 0],  # last 3 entries not used in LLA
+                [0, 0],  # ''
+                [0, 0],  # ''
+            ]
+        if (config["target_dist"] is None) and (
+            config["fixed_targets"] is None
+        ):
+            # default targets are uniformly distributed in LEO with 0 eccentricity
+            new_config["target_dist"] = "uniform"
+            new_config["target_dist_frame"] = "COE"
+            new_config["target_dist_params"] = [
+                [400, 1000],
+                [0, 0],
+                [-pi, pi],
+                [0, 2 * pi],
+                [0, 2 * pi],
+                [0, 2 * pi],
+            ]
+
+        return new_config
