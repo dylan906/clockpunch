@@ -151,7 +151,7 @@ class SSASchedulerParams:
         # %% Argument checks
         # For fixed agents, make sure that the number of agents specified matches
         # the shape of initial conditions arrays.
-        if type(agent_params["fixed_sensors"]) is list:
+        if isinstance(agent_params["fixed_sensors"], list):
             if (
                 len(agent_params["fixed_sensors"])
                 != agent_params["num_sensors"]
@@ -165,7 +165,7 @@ class SSASchedulerParams:
                     "are using fixed agents, ensure they match.",
                 )
 
-        if type(agent_params["fixed_targets"]) is list:
+        if isinstance(agent_params["fixed_targets"], list):
             if (
                 len(agent_params["fixed_targets"])
                 != agent_params["num_targets"]
@@ -185,7 +185,7 @@ class SSASchedulerParams:
             (agent_params["sensor_dist"] is not None)
             or (agent_params["sensor_dist_frame"] is not None)
             or (agent_params["sensor_dist_params"] is not None)
-        ) and (type(agent_params["fixed_sensors"]) is list):
+        ) and (isinstance(agent_params["fixed_sensors"], list)):
             print(
                 "Error: Conflicting values set for 'sensor_dist*' and 'fixed_sensors'."
             )
@@ -201,7 +201,7 @@ class SSASchedulerParams:
             (agent_params["target_dist"] is not None)
             or (agent_params["target_dist_frame"] is not None)
             or (agent_params["target_dist_params"] is not None)
-        ) and (type(agent_params["fixed_targets"]) is list):
+        ) and (isinstance(agent_params["fixed_targets"], list)):
             print(
                 "Error: Conflicting values set for 'target_dist*' and 'fixed_targets'."
             )
