@@ -119,30 +119,34 @@ class SSASchedulerParams:
             - If "*_dist" is 'uniform', each row is "*_dist_params" is [low, high]
         """
         # %% Assign agent_params defaults if keys not specified
-        if "sensor_starting_num" not in agent_params:
-            agent_params["sensor_starting_num"] = 1000
-        if "target_starting_num" not in agent_params:
-            agent_params["target_starting_num"] = 5000
-        if "sensor_dist" not in agent_params:
-            agent_params["sensor_dist"] = None
-        if "target_dist" not in agent_params:
-            agent_params["target_dist"] = None
-        if "sensor_dist_frame" not in agent_params:
-            agent_params["sensor_dist_frame"] = None
-        if "target_dist_frame" not in agent_params:
-            agent_params["target_dist_frame"] = None
-        if "sensor_dist_params" not in agent_params:
-            agent_params["sensor_dist_params"] = None
-        if "target_dist_params" not in agent_params:
-            agent_params["target_dist_params"] = None
-        if "fixed_sensors" not in agent_params:
-            agent_params["fixed_sensors"] = None
-        if "fixed_targets" not in agent_params:
-            agent_params["fixed_targets"] = None
-        if "init_num_tasked" not in agent_params:
-            agent_params["init_num_tasked"] = None
-        if "init_last_time_tasked" not in agent_params:
-            agent_params["init_last_time_tasked"] = None
+        agent_params["sensor_starting_num"] = agent_params.get(
+            "sensor_starting_num", 1000
+        )
+        agent_params["target_starting_num"] = agent_params.get(
+            "target_starting_num", 5000
+        )
+        agent_params["sensor_dist"] = agent_params.get("sensor_dist", None)
+        agent_params["target_dist"] = agent_params.get("target_dist", None)
+        agent_params["sensor_dist_frame"] = agent_params.get(
+            "sensor_dist_frame", None
+        )
+        agent_params["target_dist_frame"] = agent_params.get(
+            "target_dist_frame", None
+        )
+        agent_params["sensor_dist_params"] = agent_params.get(
+            "sensor_dist_params", None
+        )
+        agent_params["target_dist_params"] = agent_params.get(
+            "target_dist_params", None
+        )
+        agent_params["fixed_sensors"] = agent_params.get("fixed_sensors", None)
+        agent_params["fixed_targets"] = agent_params.get("fixed_targets", None)
+        agent_params["init_num_tasked"] = agent_params.get(
+            "init_num_tasked", None
+        )
+        agent_params["init_last_time_tasked"] = agent_params.get(
+            "init_last_time_tasked", None
+        )
 
         # %% Argument checks
         # For fixed agents, make sure that the number of agents specified matches
