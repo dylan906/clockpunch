@@ -61,7 +61,7 @@ class SSASchedulerParams:
         self,
         horizon: int,
         agent_params: dict,
-        filter_params: dict,
+        filter_params: dict, = None,
         time_step: float = 100,
         seed: int = None,
     ):
@@ -103,12 +103,15 @@ class SSASchedulerParams:
                         should be negative or 0. Defaults to 0 if not entered or
                         if None used.
                 }
-            filter_params (`dict`): Parameters of UKF for sensors to use.
+            filter_params (`dict`, optional): Parameters of UKF for sensors to use.
                 {
-                    "Q": `float` | `list[list[float *6] *6]`,  # Process noise
-                    "R": `float` | `list[list[float *6] *6]`,  # Measurement noise
+                    "Q": `float` | `list[list[float *6] *6]`,  # Process noise.
+                        Defaults to 0.1 * diag([1, 1, 1, 1e-2, 1e-2, 1e-2]).
+                    "R": `float` | `list[list[float *6] *6]`,  # Measurement noise.
+                        Defaults to diag([1, 1, 1, 1e-2, 1e-2, 1e-2]).
                     "p_init": `float` | `list[list[float *6] *6]`,  # recommend
                         setting an order of magnitude greater than R
+                        Defaults to 10 * diag([1, 1, 1, 1e-2, 1e-2, 1e-2]).
                 }
             time_step (`float`, optional): Time in seconds. Defaults to 100.
             seed (`int`, optional): Initial conditions RNG seed. Defaults to None.
@@ -161,6 +164,9 @@ class SSASchedulerParams:
 
         # Default to randomly generated agents if distribution and fixed params are None
         agent_params.update(self.getDefaultAgentDists(agent_params))
+
+        # Get default filter config
+        filter_params.update(self.getDefaultFilterConfig(filter_params))
 
         # %% Argument checks
         # For fixed agents, make sure that the number of agents specified matches
@@ -526,5 +532,25 @@ class SSASchedulerParams:
                 [0, 2 * pi],
                 [0, 2 * pi],
             ]
+
+        return new_config
+
+    def getDefaultFilterConfig(self, config: dict) -> dict:
+        """Get default Q, R, P for filters if any are not provided.
+
+        Does not modify entries of filter config that are already populated.
+
+        Args:
+            config (dict): Can have any combination or none of "Q", "R", "p_init".
+
+        Returns:
+            dict: Potentially modified filter config.
+        """
+        new_config = deepcopy(config)
+        noise_vec = [1, 1, 1, 1e-2, 1e-2, 1e-2]
+        noise_matrix = diag(noise_vec)
+        new_config["Q"] = new_config.get("Q", 0.1 * noise_matrix)
+        new_config["R"] = new_config.get("R", 1 * noise_matrix)
+        new_config["p_init"] = new_config.get("p_init", 10 * noise_matrix)
 
         return new_config
