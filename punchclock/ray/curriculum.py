@@ -6,17 +6,15 @@
 # Standard Library Imports
 import random
 from copy import deepcopy
+from pprint import pprint
 
 # Third Party Imports
-import numpy as np
-
 # %% Imports
 from ray.rllib.env.apis.task_settable_env import TaskSettableEnv, TaskType
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.utils.annotations import override
 
 # Punch Clock Imports
-from punchclock.environment.env import SSAScheduler
 from punchclock.ray.build_env import buildEnv
 
 
@@ -46,6 +44,7 @@ def curriculum_fn(
     # We will thus raise the level/task each time we hit a new power of 10.0
     # new_task = int(np.log10(train_results["episode_reward_mean"]) + 2.1)
     cur_level = task_settable_env.get_task()
+    pprint(f"{train_results}")
     print(f"current level (curriculum_fn) = {cur_level}")
     if train_results["episode_reward_mean"] > 1:
         new_task = cur_level + 1
