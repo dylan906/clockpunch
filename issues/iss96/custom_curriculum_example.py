@@ -5,7 +5,7 @@ import random
 
 # Third Party Imports
 import ray
-from gymnasium.spaces import Box, Dict
+from gymnasium.spaces import Box
 from ray import air, tune
 
 # %% Imports
@@ -21,7 +21,10 @@ from ray.tune.registry import get_trainable_cls
 def test_curriculum_fn(
     train_results: dict, task_settable_env: TaskSettableEnv, env_ctx: EnvContext
 ) -> TaskType:
-    """Function returning a possibly new task to set `task_settable_env` to."""
+    """Function returning a possibly new task to set `task_settable_env` to.
+
+    Increases env level +1 every call.
+    """
     cur_level = task_settable_env.get_task()
     print(f"current level (curriculum_fn) = {cur_level}")
     new_task = cur_level + 1
@@ -38,25 +41,27 @@ def test_curriculum_fn(
 
 # %% Test Env
 class TestCurriculumEnv(TaskSettableEnv):
+    """Env gives reward equal to current level set on instantiation."""
+
     def __init__(self, config: EnvContext):
+        """Default level is 1, but is set in config."""
         self.cur_level = config.get("start_level", 1)
         self.horizon = config.get("horizon", 10)
         self.env = None
-        # self.backup_config = deepcopy(config)
         self._makeEnv()
         self.observation_space = self.env.observation_space
         self.action_space = self.env.action_space
         self.switch_env = False
         self._timesteps = 0
 
-    def reset(self, *, seed=None, options=None):
+    def reset(self, *, seed=None, options=None):  # noqa
         if self.switch_env:
             self.switch_env = False
             self._makeEnv()
         self._timesteps = 0
         return self.env.reset(seed=seed, options=options)
 
-    def step(self, action):
+    def step(self, action):  # noqa
         self._timesteps += 1
         obs, rew, terminated, truncated, info = self.env.step(action)
         return obs, rew, terminated, truncated, info
@@ -78,11 +83,11 @@ class TestCurriculumEnv(TaskSettableEnv):
         self.switch_env = True
 
     def _makeEnv(self):
+        """Reward is equal to current task (task is a number)."""
         reward = self.get_task()
         print(f"from _makeEnv, {reward=}")
         self.env = RandomEnv(
             {
-                "observation_space": Dict({"a": Box(low=0, high=5, dtype=int)}),
                 "reward_space": Box(low=reward, high=reward, shape=()),
             }
         )
@@ -96,7 +101,7 @@ if __name__ == "__main__":
 
     config = (
         get_trainable_cls("PPO")
-        .get_default_config()  # or "curriculum_env" if registered above
+        .get_default_config()
         .environment(
             TestCurriculumEnv,
             env_config={},
@@ -115,3 +120,5 @@ if __name__ == "__main__":
         run_config=air.RunConfig(stop=stop, verbose=3),
     )
     results = tuner.fit()
+
+# %%
