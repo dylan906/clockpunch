@@ -1,4 +1,8 @@
 """Custom curriculum learning example."""
+# https://github.com/ray-project/ray/blob/master/rllib/evaluation/episode_v2.py#L26
+# https://github.com/ray-project/ray/blob/master/rllib/examples/curriculum_learning.py
+# https://github.com/ray-project/ray/blob/master/rllib/examples/env/curriculum_capable_env.py#L9
+# https://github.com/ray-project/ray/blob/master/rllib/examples/custom_metrics_and_callbacks.py
 # %% Imports
 # Standard Library Imports
 import random
