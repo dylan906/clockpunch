@@ -7,7 +7,7 @@ from copy import deepcopy
 
 # Third Party Imports
 from numpy import arange, asarray, diag, diagonal, eye, ndarray, pi, sqrt, zeros
-from numpy.random import default_rng, normal
+from numpy.random import normal
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
@@ -60,8 +60,8 @@ class SSASchedulerParams:
     def __init__(
         self,
         horizon: int,
-        agent_params: dict,
-        filter_params: dict, = None,
+        agent_params: dict = None,
+        filter_params: dict = None,
         time_step: float = 100,
         seed: int = None,
     ):
@@ -69,7 +69,8 @@ class SSASchedulerParams:
 
         Args:
             horizon (`int`): Number of steps at which simulation resets.
-            agent_params (`dict`): Spatial parameters of agents.
+            agent_params (`dict`, optional): Spatial parameters of agents. Each
+                item has its own default.
                 {
                     "num_sensors": `int`, Defaults to 1.
                     "num_targets": `int`, Defaults to 1.
@@ -125,6 +126,11 @@ class SSASchedulerParams:
             - If "*_dist" is 'uniform', each row is "*_dist_params" is [low, high]
         """
         # %% Assign agent_params defaults if keys not specified
+        if agent_params is None:
+            agent_params = {}
+        if filter_params is None:
+            filter_params = {}
+
         agent_params["num_sensors"] = agent_params.get("num_sensors", 1)
         agent_params["num_targets"] = agent_params.get("num_targets", 1)
         agent_params["sensor_starting_num"] = agent_params.get(
@@ -547,8 +553,12 @@ class SSASchedulerParams:
             dict: Potentially modified filter config.
         """
         new_config = deepcopy(config)
+        # Create default diagonal matrix with larger positional elements than velocity
+        # elements. The magnitude difference is necessary to keep dynamics propagation
+        # well-behaved.
         noise_vec = [1, 1, 1, 1e-2, 1e-2, 1e-2]
         noise_matrix = diag(noise_vec)
+
         new_config["Q"] = new_config.get("Q", 0.1 * noise_matrix)
         new_config["R"] = new_config.get("R", 1 * noise_matrix)
         new_config["p_init"] = new_config.get("p_init", 10 * noise_matrix)
