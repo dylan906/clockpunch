@@ -11,7 +11,7 @@ from copy import deepcopy
 from pprint import pprint
 
 # Third Party Imports
-from numpy import abs, min
+from numpy import max, min
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
 # %% Imports
@@ -23,6 +23,7 @@ from ray.rllib.policy import Policy
 from ray.rllib.utils.annotations import override
 
 # Punch Clock Imports
+from punchclock.common.utilities import findNearest
 from punchclock.ray.build_env import buildEnv
 
 
@@ -52,18 +53,21 @@ def curriculumFnCustody(
     cur_level = task_settable_env.get_task()
     print(f"current level (curriculum_fn) = {cur_level}")
 
+    num_targets = task_settable_env.env.num_targets
     percent_custody = (
-        train_results["custom_metrics"]["mean_last_sum_custody"]
-        / train_results["custom_metrics"]["num_targets"]
+        train_results["custom_metrics"]["last_sum_custody_mean"] / num_targets
     )
     percent_custody_levels = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-    closest_percent = min(
-        percent_custody_levels, key=lambda x: abs(x - percent_custody)
+    closest_percent, idx = findNearest(
+        x=percent_custody_levels,
+        val=percent_custody,
+        round="down",
+        return_index=True,
     )
-    new_task = percent_custody_levels.index(closest_percent)
+    new_task = idx
 
     # Clamp between valid values, just in case:
-    new_task = max(min(new_task, len(percent_custody_levels)), 1)
+    new_task = max([min([new_task, len(percent_custody_levels)]), 1])
     print(
         f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
         f"\nR={train_results['episode_reward_mean']}"
@@ -128,10 +132,10 @@ class CurriculumCustodyEnv(TaskSettableEnv):
         self._timesteps = 0
         return self.env.reset(seed=seed, options=options)
 
-    # def step(self, action):
-    #     self._timesteps += 1
-    #     obs, rew, terminated, truncated, info = self.env.step(action)
-    #     return obs, rew, terminated, truncated, info
+    def step(self, action):
+        self._timesteps += 1
+        obs, rew, terminated, truncated, info = self.env.step(action)
+        return obs, rew, terminated, truncated, info
 
     @override(TaskSettableEnv)
     def sample_tasks(self, n_tasks):
@@ -154,6 +158,8 @@ class CurriculumCustodyEnv(TaskSettableEnv):
         new_config["horizon"] = self.MAP[self.cur_level - 1]
         print(f"{self.cur_level=}")
         print(f"horizon = {new_config['horizon']}")
-        del new_config["start_level"]  # prevents error in buildEnv caused by
-        # unrecognized arg
+
+        # prevents error in buildEnv caused by unrecognized arg
+        new_config.pop("start_level", None)
+
         self.env = buildEnv(new_config)
