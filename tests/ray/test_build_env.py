@@ -2,7 +2,6 @@
 # NOTE: This test generates a new file (config_test.json) in the same directory
 # as the test script.
 # %% Imports
-
 # Standard Library Imports
 import warnings
 from copy import deepcopy
@@ -210,10 +209,10 @@ run_config = {
 
 dat = genConfigFile(
     config_dir=config_dir,
-    param_space=param_space,
     config_file_name=file_name,
     num_cpus=None,
     trainable=trainable,
+    param_space=param_space,
     tune_config=tune_config,
     run_config=run_config,
 )

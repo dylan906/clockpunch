@@ -167,29 +167,29 @@ def getWrapper(wrapper_name: str) -> Wrapper:
 
 def genConfigFile(
     config_dir: str | Path,
-    param_space: dict,
     config_file_name: str = None,
     num_cpus: int = None,
     trainable: str = None,
+    param_space: dict = None,
     tune_config: dict = None,
     run_config: dict = None,
 ) -> dict:
-    """Generate a config file for a ML tuning run.
+    """Generate a config file to be used by buildTuner.
 
     By default, file is saves as 'config_YY-MM-DD_HH-MM-SS.json'.
 
     Args:
         config_dir (`str | Path`): Directory to save config file.
-        param_space (`dict`): Search space of the tuning job. Must include the following
-            keys:
-            {
-                "env_config": (`dict`) See `SSASchedulerParams`.
-                }
         config_file_name (`str`, optional): The name of the config file. Do not include
             path or file extension. Defaults to 'config_YY-MM-DD_HH-MM-SS'.
         num_cpus (`int`, optional): Number of CPUs to use in training run. Use
             None to use maximum available on machine. Defaults to None.
         trainable (`str`, optional): Defaults to None.
+        param_space (`dict`): Search space of the tuning job. Must include the following
+            keys:
+            {
+                "env_config": (`dict`) See `SSASchedulerParams`.
+                }
         tune_config (`dict`, optional): Defaults to {}.
         run_config (`dict`, optional): Defaults to None.
 
