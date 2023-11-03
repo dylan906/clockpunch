@@ -184,11 +184,11 @@ a = [1, 2, 5, 6]
 x = 1.5
 print(f"{a=}")
 print(f"{x=}")
-out = findNearest(a=a, val=x)
+out = findNearest(x=a, val=x)
 print(f"{out=}")
-out = findNearest(a=a, val=x, round="down")
+out = findNearest(x=a, val=x, round="down")
 print(f"{out=}")
-out = findNearest(a=a, val=x, round="up")
+out = findNearest(x=a, val=x, round="up")
 print(f"{out=}")
 # %%
 print("done")

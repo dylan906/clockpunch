@@ -446,14 +446,37 @@ def convertToPrimitive(entry: Any) -> list:
     return out
 
 
-def findNearest(a: ndarray, val: float | int, round: str = None):
-    original = a
-    a = deepcopy(asarray(a, dtype=float))
+def findNearest(
+    x: ndarray,
+    val: float | int,
+    round: str = None,
+    return_index: bool = False,
+):
+    """Get the value of x that is closest to val.
+
+    Args:
+        x (ndarray): Array to search
+        val (float | int): Value to search for nearest.
+        round (str, optional): ["down" | "up" | None] Whether to search for the
+            nearest entry of x that is less/greater than val. Defaults to None.
+        return_index (bool, optional): If True, returns index as well as value
+            of x. Defaults to False.
+
+    Returns:
+        float: Value of x closest to val.
+        float, int: If return_index is True, return both value and index of x.
+    """
+    original = x
+    # need to convert to float to use Inf
+    x = deepcopy(asarray(x, dtype=float))
     if round == "down":
-        a[a > val] = Inf
+        x[x > val] = Inf
     elif round == "up":
-        a[a < val] = -Inf
+        x[x < val] = -Inf
 
-    idx = (abs(a - val)).argmin()
+    idx = (abs(x - val)).argmin()
 
-    return original[idx]
+    if return_index is False:
+        return original[idx]
+    elif return_index is True:
+        return original[idx], idx
