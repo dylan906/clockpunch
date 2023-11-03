@@ -31,7 +31,7 @@ env_config = {
                 "wrapper": "RandomInfo",
                 "wrapper_config": {
                     "info_space": Dict(
-                        {"sum_custody": Box(0, 5, dtype=int, shape=())}
+                        {"custody_sum": Box(0, 5, dtype=int, shape=())}
                     )
                 },
             },
@@ -60,7 +60,7 @@ print(f"info (step) = {info}")
 print("\nTest curriculumFnCustody...")
 results = {
     "custom_metrics": {
-        "last_sum_custody_mean": 1.2,
+        "last_custody_sum_mean": 1.2,
     },
     "episode_reward_mean": 1,
 }
@@ -86,7 +86,7 @@ algo_config = (
 )
 
 stop = {
-    "training_iteration": 3,
+    "training_iteration": 1,
     # "timesteps_total": 10,
     # "episode_reward_mean": 1,
 }
@@ -98,4 +98,5 @@ tuner = tune.Tuner(
 )
 results = tuner.fit()
 
-# %%
+# %% Done
+print("done")
