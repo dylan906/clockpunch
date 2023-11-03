@@ -55,7 +55,7 @@ def curriculumFnCustody(
 
     num_targets = task_settable_env.env.num_targets
     percent_custody = (
-        train_results["custom_metrics"]["last_sum_custody_mean"] / num_targets
+        train_results["custom_metrics"]["last_custody_sum_mean"] / num_targets
     )
     percent_custody_levels = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
     closest_percent, idx = findNearest(
@@ -101,7 +101,7 @@ class CustomCallbacks(DefaultCallbacks):
         # is info returned from env.
         last_info1 = list(last_info.values())[1]
         pprint(f"\n {last_info1=}")
-        episode.custom_metrics["last_sum_custody"] = last_info1["sum_custody"]
+        episode.custom_metrics["last_custody_sum"] = last_info1["custody_sum"]
 
 
 # %% Curriculum Wrapper
