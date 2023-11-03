@@ -31,7 +31,7 @@ from punchclock.environment.env import SSAScheduler, SSASchedulerParams
 # to build the environment, so the environment builder function here acts as a
 # wrapper around SSASchedulerParams.
 def buildEnv(env_config: dict) -> gym.Env:
-    """Build SSASCheduler environment from config dict.
+    """Build SSAScheduler environment from config dict.
 
     Args:
         env_config (`dict`): A dict with the following structure:
@@ -57,10 +57,6 @@ def buildEnv(env_config: dict) -> gym.Env:
 
     Returns:
         `env`: Gym environment.
-
-    Supported wrappers:
-        gym defaults: "filter_observation", "flatten_observation"
-        Punch Clock: "float_obs", "action_mask", "flat_dict", "rescale_dict_obs"
 
     Example wrappers input:
         constructor_params = {
