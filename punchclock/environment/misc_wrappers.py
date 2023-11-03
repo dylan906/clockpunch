@@ -57,8 +57,8 @@ class RandomInfo(Wrapper):
 
     def reset(self, seed: int | None = None, options=None):
         """Reset me bro."""
-        obs = self.observation_space.sample()
-        info = self.info_space.sample()
+        obs, info = super().reset(seed=seed, options=options)
+        info.update(self.info_space.sample())
 
         return obs, info
 
