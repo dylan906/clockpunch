@@ -144,7 +144,7 @@ def buildTuner(
 
     run_config = air.RunConfig(
         checkpoint_config=air.CheckpointConfig(
-            num_to_keep=2,
+            # num_to_keep=2,
             checkpoint_score_attribute="episode_reward_mean",
             checkpoint_at_end=True,
         ),
