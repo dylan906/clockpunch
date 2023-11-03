@@ -313,6 +313,12 @@ def calcVisMap(
     if target_states.shape[0] != 6:
         raise ValueError("Bad input: target_states must be (6, M)")
 
+    # Reshape if 1-d arrays passed in
+    if sensor_states.ndim == 1:
+        sensor_states = sensor_states.reshape((6, 1))
+    if target_states.ndim == 1:
+        target_states = target_states.reshape((6, 1))
+
     # get numbers of agents
     num_sensors = sensor_states.shape[1]
     num_targets = target_states.shape[1]
