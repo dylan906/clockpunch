@@ -1,22 +1,16 @@
 """Test curriculum.py."""
 # %% Imports
 # Standard Library Imports
-from pathlib import Path
 
 # Third Party Imports
 import ray
 from gymnasium.spaces import Box, Dict
 from ray import air, tune
 from ray.rllib.env.env_context import EnvContext
-from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.utils import check_env
-from ray.tune.registry import get_trainable_cls, register_env
+from ray.tune.registry import get_trainable_cls
 
 # Punch Clock Imports
-from punchclock.common.utilities import loadJSONFile
-from punchclock.environment.env import SSAScheduler
-from punchclock.environment.env_parameters import SSASchedulerParams
-from punchclock.environment.misc_wrappers import RandomInfo
 from punchclock.ray.build_env import buildEnv
 from punchclock.ray.curriculum import (
     CurriculumCustodyEnv,
@@ -37,7 +31,7 @@ env_config = {
                 "wrapper": "RandomInfo",
                 "wrapper_config": {
                     "info_space": Dict(
-                        {"sum_custody": Box(0, 3, dtype=int, shape=())}
+                        {"sum_custody": Box(0, 5, dtype=int, shape=())}
                     )
                 },
             },

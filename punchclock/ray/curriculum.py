@@ -68,6 +68,7 @@ def curriculumFnCustody(
 
     # Clamp between valid values, just in case:
     new_task = max([min([new_task, len(percent_custody_levels)]), 1])
+
     print(
         f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
         f"\nR={train_results['episode_reward_mean']}"
@@ -137,6 +138,17 @@ class CurriculumCustodyEnv(TaskSettableEnv):
         obs, rew, terminated, truncated, info = self.env.step(action)
         return obs, rew, terminated, truncated, info
 
+    def _makeEnv(self, config: dict):
+        new_config = deepcopy(config)
+        new_config["horizon"] = self.MAP[self.cur_level - 1]
+        print(f"{self.cur_level=}")
+        print(f"horizon = {new_config['horizon']}")
+
+        # prevents error in buildEnv caused by unrecognized arg
+        new_config.pop("start_level", None)
+
+        self.env = buildEnv(new_config)
+
     @override(TaskSettableEnv)
     def sample_tasks(self, n_tasks):
         """Implement this to sample n random tasks."""
@@ -152,14 +164,3 @@ class CurriculumCustodyEnv(TaskSettableEnv):
         """Implement this to set the task (curriculum level) for this env."""
         self.cur_level = task
         self.switch_env = True
-
-    def _makeEnv(self, config: dict):
-        new_config = deepcopy(config)
-        new_config["horizon"] = self.MAP[self.cur_level - 1]
-        print(f"{self.cur_level=}")
-        print(f"horizon = {new_config['horizon']}")
-
-        # prevents error in buildEnv caused by unrecognized arg
-        new_config.pop("start_level", None)
-
-        self.env = buildEnv(new_config)
