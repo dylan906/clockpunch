@@ -94,7 +94,6 @@ class MonteCarloConfig:
         if append_timestamp is True:
             now = datetime.now()
             date_time = now.strftime("%Y%m%d-%H%M%S")
-            # fpath = fpath + "_" + date_time
             fpath = fpath.joinpath("_" + date_time)
 
         saveJSONFile(str(fpath), self.config)
