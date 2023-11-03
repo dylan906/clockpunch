@@ -51,6 +51,10 @@ rand_env = RandomEnv({"observation_space": Box(0, 1)})
 identity_env = IdentityWrapper(rand_env)
 
 print(f"identity env = {identity_env}")
+obs, info = identity_env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
 unwrapped_obs = rand_env.observation_space.sample()
 wrapped_obs = identity_env.observation(unwrapped_obs)
 print(f"unwrapped obs = {unwrapped_obs}")
