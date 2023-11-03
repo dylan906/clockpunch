@@ -16,8 +16,11 @@ from pathlib import Path
 from gymnasium.spaces import Box, MultiDiscrete
 from gymnasium.spaces.utils import flatten, unflatten
 from numpy import (
+    Inf,
+    abs,
     arange,
     array,
+    asarray,
     delete,
     diag,
     float32,
@@ -100,24 +103,6 @@ def safe_open_w(path):
     # From https://stackoverflow.com/questions/23793987/write-a-file-to-a-directory-that-doesnt-exist # noqa
     os.makedirs(os.path.dirname(path), exist_ok=True)
     return open(path, "w")
-
-
-def filterAgentsType(agents: list[Agent], filter_type: type) -> list:
-    """Gets all members of `agents` that are type `filter_type`.
-
-    Args:
-        agents (``list[Agent]``): List `Agent` objects.
-        filter_type (``type``): Key to check type of each entry of `agents`.
-
-    Returns:
-        ``list``: Subset of `agents`.
-
-    Example:
-        filterAgentsType([sensor_A, target_1], 'Target')
-
-        >> [target_1]
-    """
-    return [x for x in agents if type(x) is filter_type]
 
 
 def cumAvg(val: float, old_avg: float, num_entries: int) -> float:
@@ -459,3 +444,16 @@ def convertToPrimitive(entry: Any) -> list:
         out = entry
 
     return out
+
+
+def findNearest(a: ndarray, val: float | int, round: str = None):
+    original = a
+    a = deepcopy(asarray(a, dtype=float))
+    if round == "down":
+        a[a > val] = Inf
+    elif round == "up":
+        a[a < val] = -Inf
+
+    idx = (abs(a - val)).argmin()
+
+    return original[idx]

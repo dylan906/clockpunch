@@ -1,6 +1,5 @@
 """Test Utilities module."""
 # %% Imports
-from __future__ import annotations
 
 # Third Party Imports
 from gymnasium.spaces import MultiDiscrete, flatten
@@ -12,7 +11,7 @@ from punchclock.common.agents import Sensor, Target
 from punchclock.common.utilities import (
     MaskConverter,
     calcVisMap,
-    filterAgentsType,
+    findNearest,
     fromStringArray,
     isActionValid,
     printNestedDict,
@@ -72,18 +71,6 @@ print(f"act_mask_1d = {act_mask_1d}")
 
 mask_no_inaction = mc.removeInactionsFrom1dMask(mask1d=act_mask_1d)
 print(f"mask without inaction = {mask_no_inaction}")
-
-# %% Test filterAgentType
-list_of_agents = [
-    Target("ground", 1, zeros([6]), target_filter=None),
-    Sensor("ground", 1, zeros([6])),
-]
-der = filterAgentsType(list_of_agents, Sensor)
-print(f"filtered agents = {der}")
-
-der = filterAgentsType(list_of_agents, Target)
-print(f"filtered agents = {der}")
-
 
 # %% CalcVisMap
 RE = 6378
@@ -190,5 +177,18 @@ print(f"input = {test_string}")
 print(f"type(input) = {type(test_string)}")
 print(f"output = {out_array}")
 print(f"type(output) = {type(out_array)}")
+
+# %% Test findNearest
+print("\nTest findNearest...")
+a = [1, 2, 5, 6]
+x = 1.5
+print(f"{a=}")
+print(f"{x=}")
+out = findNearest(a=a, val=x)
+print(f"{out=}")
+out = findNearest(a=a, val=x, round="down")
+print(f"{out=}")
+out = findNearest(a=a, val=x, round="up")
+print(f"{out=}")
 # %%
 print("done")
