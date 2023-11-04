@@ -1,7 +1,7 @@
 """Generic math functions module."""
-from __future__ import annotations
-
+# %% Imports
 # Standard Library Imports
+import warnings
 from math import floor, log10
 
 # Third Party Imports
@@ -277,15 +277,17 @@ def entropyDiff(
     elif logbase == 2:
         logfunc = log2
 
+    warnings.filterwarnings("error")
     try:
         det_num = det(sigma_num)
         det_den = det(sigma_den)
         entropy = 0.5 * logfunc(det_num / det_den)
-    except Exception as ex:
+    except RuntimeWarning as ex:
         print(ex)
         print(f"{sigma_num=}")
         print(f"{sigma_den=}")
         print(f"det(sigma_num) = {det_num}")
         print(f"det(sigma_den) = {det_den}")
 
+    warnings.resetwarnings()
     return entropy
