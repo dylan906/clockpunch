@@ -77,6 +77,10 @@ print(f"{kld=}")
 print("\nTest entropyDiff...")
 e = entropyDiff(sigma_den=0.1 * eye(2), sigma_num=eye(2))
 print(f"{e=}")
+sigma_scaler = [1e20, 1e25, 1e30, 1e40]
+for s in sigma_scaler:
+    e = entropyDiff(sigma_den=(1 / s) * eye(2), sigma_num=s * eye(2))
+
 # %% Done
 plt.show()
 print("done")

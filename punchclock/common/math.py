@@ -277,6 +277,13 @@ def entropyDiff(
     elif logbase == 2:
         logfunc = log2
 
-    entropy = 0.5 * logfunc(det(sigma_num) / det(sigma_den))
+    try:
+        entropy = 0.5 * logfunc(det(sigma_num) / det(sigma_den))
+    except Exception as ex:
+        print(ex)
+        print(f"{sigma_num=}")
+        print(f"{sigma_den=}")
+        print(f"det(sigma_num) = {det(sigma_num)}")
+        print(f"det(sigma_den) = {det(sigma_den)}")
 
     return entropy
