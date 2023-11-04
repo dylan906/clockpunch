@@ -13,6 +13,7 @@ from ray.tune.registry import get_trainable_cls
 # Punch Clock Imports
 from punchclock.ray.build_env import buildEnv
 from punchclock.ray.curriculum import (
+    ConfigurableCurriculumEnv,
     CurriculumCustodyEnv,
     CustomCallbacks,
     curriculumFnCustody,
@@ -69,6 +70,13 @@ task = curriculumFnCustody(
     train_results=results, task_settable_env=taskable_env, env_ctx=env_ctx
 )
 print(f"{task=}")
+
+# %% Test ConfigurableCurriculumEnv
+env = ConfigurableCurriculumEnv(config=env_config)
+env.set_task({"horizon": 42})
+env.reset()
+task = env.get_task()
+
 
 # %% Test Fit
 ray.init(num_cpus=3, num_gpus=0)

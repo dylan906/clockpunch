@@ -164,3 +164,63 @@ class CurriculumCustodyEnv(TaskSettableEnv):
         """Implement this to set the task (curriculum level) for this env."""
         self.cur_level = task
         self.switch_env = True
+
+
+# %% ConfigurableCirriculumEnv
+class ConfigurableCurriculumEnv(TaskSettableEnv):
+    """Curriculum learning wrapper around SSAScheduler.
+
+    Task is a dict that is operated on by env_config.update(task).
+    """
+
+    def __init__(self, config: EnvContext):
+        self.cur_task = config.get("start_task", {})
+        assert isinstance(self.cur_task, dict)
+
+        self.backup_config = deepcopy(config)
+        self.env = None
+        self._makeEnv(config)  # create self.env
+        self.observation_space = self.env.observation_space
+        self.action_space = self.env.action_space
+        self.switch_env = False
+        self._timesteps = 0
+
+    def reset(self, *, seed=None, options=None):
+        if self.switch_env:
+            self.switch_env = False
+            self._makeEnv(self.backup_config)
+        self._timesteps = 0
+        return self.env.reset(seed=seed, options=options)
+
+    def step(self, action):
+        self._timesteps += 1
+        obs, rew, terminated, truncated, info = self.env.step(action)
+        return obs, rew, terminated, truncated, info
+
+    def _makeEnv(self, config: dict):
+        new_config = deepcopy(config)
+        task = self.cur_task
+        print(f"{self.cur_task=}")
+
+        new_config.update(task)
+        # prevents error in buildEnv caused by unrecognized arg
+        new_config.pop("start_task", None)
+
+        self.env = buildEnv(new_config)
+
+    @override(TaskSettableEnv)
+    def sample_tasks(self, n_tasks):
+        """Implement this to sample n random tasks."""
+        return [random.randint(1, 10) for _ in range(n_tasks)]
+
+    @override(TaskSettableEnv)
+    def get_task(self):
+        """Implement this to get the current task (curriculum level)."""
+        return self.cur_task
+
+    @override(TaskSettableEnv)
+    def set_task(self, task):
+        """Implement this to set the task (curriculum level) for this env."""
+        assert isinstance(task, dict)
+        self.cur_task = task
+        self.switch_env = True
