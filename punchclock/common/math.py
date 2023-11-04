@@ -278,7 +278,9 @@ def entropyDiff(
         logfunc = log2
 
     try:
-        entropy = 0.5 * logfunc(det(sigma_num) / det(sigma_den))
+        det_num = det(sigma_num)
+        det_den = det(sigma_den)
+        entropy = 0.5 * logfunc(det_num / det_den)
     except Exception as ex:
         print(ex)
         print(f"{sigma_num=}")
