@@ -57,7 +57,7 @@ def curriculumFnCustody(
     percent_custody = (
         train_results["custom_metrics"]["last_custody_sum_mean"] / num_targets
     )
-    percent_custody_levels = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+    percent_custody_levels = [0.1, 0.15, 0.2, 0.25, 0.3, 0.4]
     closest_percent, idx = findNearest(
         x=percent_custody_levels,
         val=percent_custody,
