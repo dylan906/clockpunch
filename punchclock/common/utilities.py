@@ -480,3 +480,19 @@ def findNearest(
         return original[idx]
     elif return_index is True:
         return original[idx], idx
+
+
+# %% Chained get
+def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
+    """
+    Get a value nested in a dictionary by its nested path.
+    """
+    value_path = list(args)
+    dict_chain = dictionary
+    while value_path:
+        try:
+            dict_chain = dict_chain.get(value_path.pop(0))
+        except AttributeError:
+            return default
+
+    return dict_chain

@@ -23,8 +23,117 @@ from ray.rllib.policy import Policy
 from ray.rllib.utils.annotations import override
 
 # Punch Clock Imports
-from punchclock.common.utilities import findNearest
+from punchclock.common.utilities import chainedGet, findNearest
 from punchclock.ray.build_env import buildEnv
+
+
+# %% Curriculum class
+class ConfigurableCurriculumFn:
+    """A configurable curriculum tasking function to be used in a Ray Tuner.
+
+    To be used with ConfigurableCurriculumEnv.
+
+    Usage:
+        1. Configure the function on instantiation
+        2. When setting Tuner parameters, set the instance method assignTask as
+            the env_task_fn arg.
+
+    Example:
+        curriculum = ConfigurableCurriculum(results_metric, metric_levels, task_map)
+        algo_config = (
+            get_trainable_cls("PPO")
+            .get_default_config()
+            .environment(
+                ConfigurableCurriculumEnv,
+                env_config=env_config,
+                env_task_fn=curriculum.assignTask,
+            )
+        )
+        tuner = tune.Tuner(param_space = algo_config.to_dict())
+    """
+
+    def __init__(
+        self,
+        results_metric: list[str] | str,
+        metric_levels: list[int | float],
+        task_map: list[dict],
+    ):
+        """Initialize curriculum to later call via assignTask().
+
+        Args:
+            results_metric (list[str] | str): The path of keys to get to the desired
+                value in a training results dict. If accessing top level of dict,
+                can input a str.
+            metric_levels (list[int  |  float]): The levels of the curriculum
+                that the value of the results metric is measured against. Must
+                be same length as task_map.
+            task_map (list[dict]): The map between levels and tasks. Each entry
+                must have at least 1 item that is used in the env config. Must
+                be same length as metric_levels.
+        """
+        assert len(metric_levels) == len(task_map)
+        if isinstance(results_metric, str):
+            results_metric = [results_metric]
+
+        self.metric = results_metric
+        self.metric_levels = metric_levels
+        self.task_map = task_map
+
+    def assignTask(
+        self,
+        train_results: dict,
+        task_settable_env: TaskSettableEnv,
+        env_ctx: EnvContext,
+    ) -> dict:
+        """Function returning a possibly new task to set `task_settable_env` to.
+
+        Args:
+            train_results: The train results returned by Algorithm.train().
+            task_settable_env: A single TaskSettableEnv object
+                used inside any worker and at any vector position. Use `env_ctx`
+                to get the worker_index, vector_index, and num_workers.
+            env_ctx: The env context object (i.e. env's config dict
+                plus properties worker_index, vector_index and num_workers) used
+                to setup the `task_settable_env`.
+
+        Returns:
+            dict: The task to set the env to. This may be the same as the
+                current one.
+        """
+        pprint(f"{train_results}")
+        cur_task = task_settable_env.get_task()
+        print(f"current task (via curriculum_fn) = {cur_task}")
+
+        metric_val = self.getMetricValue(train_results)
+        closest_level, idx = findNearest(
+            x=self.metric_levels,
+            val=metric_val,
+            round="down",
+            return_index=True,
+        )
+        task = self.task_map[idx]
+        print(
+            f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
+            f"\nR={train_results['episode_reward_mean']}"
+            f"\nSetting env to task={task}"
+            f"\nMetric value = {metric_val}"
+            f"\nNearest metric level = {closest_level}"
+        )
+        return task
+
+    def getMetricValue(self, train_results: dict) -> float | None:
+        """Get value of metric from possibly multi-level dict.
+
+        Args:
+            train_results (dict): The train results returned by Algorithm.train().
+
+        Returns:
+            float | None: If key path into multi-level dict is faulty, returns
+                None. Otherwise, should return a single numerical value.
+        """
+        # This seems like a lot of code for a 1-liner function, but the 1 functional
+        # line is not self-explanatory.
+        return chainedGet(train_results, *self.metric, default=None)
 
 
 # %% Curriculum function

@@ -14,6 +14,7 @@ from ray.tune.registry import get_trainable_cls
 from punchclock.ray.build_env import buildEnv
 from punchclock.ray.curriculum import (
     ConfigurableCurriculumEnv,
+    ConfigurableCurriculumFn,
     CurriculumCustodyEnv,
     CustomCallbacks,
     curriculumFnCustody,
@@ -71,6 +72,18 @@ task = curriculumFnCustody(
 )
 print(f"{task=}")
 
+# %% Test ConfigurableCurriculumFn
+task_map = [{"horizon": 10}, {"horizon": 20}]
+c = ConfigurableCurriculumFn(
+    results_metric=["custom_metrics", "last_custody_sum_mean"],
+    metric_levels=[0.2, 0.5],
+    task_map=task_map,
+)
+task = c.assignTask(
+    train_results=results, task_settable_env=taskable_env, env_ctx=env_ctx
+)
+print(f"{task=}")
+
 # %% Test ConfigurableCurriculumEnv
 env = ConfigurableCurriculumEnv(config=env_config)
 env.set_task({"horizon": 42})
@@ -85,9 +98,9 @@ algo_config = (
     get_trainable_cls("PPO")
     .get_default_config()  # or "curriculum_env" if registered above
     .environment(
-        CurriculumCustodyEnv,
+        ConfigurableCurriculumEnv,
         env_config=env_config,
-        env_task_fn=curriculumFnCustody,
+        env_task_fn=c.assignTask,
     )
     .callbacks(CustomCallbacks)
     .framework("torch")
