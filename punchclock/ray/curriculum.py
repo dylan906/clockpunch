@@ -163,8 +163,8 @@ class CustomCallbacks(DefaultCallbacks):
         # pprint(f"\n {last_info1=}")
         episode.custom_metrics["last_custody_sum"] = last_info1["custody_sum"]
         episode.custom_metrics["last_custody_percent"] = last_info1[
-            "custody_sum"
-        ] / len(last_info1["custody"])
+            "custody_percent"
+        ]
 
 
 # %% ConfigurableCirriculumEnv
