@@ -11,11 +11,10 @@ from copy import deepcopy
 from pprint import pprint
 
 # Third Party Imports
-from numpy import max, min
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
 # %% Imports
-from ray.rllib.env.apis.task_settable_env import TaskSettableEnv, TaskType
+from ray.rllib.env.apis.task_settable_env import TaskSettableEnv
 from ray.rllib.env.base_env import BaseEnv
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.evaluation.episode import Episode
@@ -176,6 +175,12 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
     """
 
     def __init__(self, config: EnvContext):
+        """Wrap taskable environment.
+
+        Args:
+            config (EnvContext): Env config plus some extra items (see Ray documentation
+                for EnvContext).
+        """
         self.cur_task = config.get("start_task", {})
         assert isinstance(self.cur_task, dict)
 
@@ -188,6 +193,7 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
         self._timesteps = 0
 
     def reset(self, *, seed=None, options=None):
+        """Reset env with possibly new task."""
         if self.switch_env:
             self.switch_env = False
             self._makeEnv(self.backup_config)
@@ -195,11 +201,13 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
         return self.env.reset(seed=seed, options=options)
 
     def step(self, action):
+        """Step env."""
         self._timesteps += 1
         obs, rew, terminated, truncated, info = self.env.step(action)
         return obs, rew, terminated, truncated, info
 
     def _makeEnv(self, config: dict):
+        """Make environment from backup config with updates from cur_task."""
         new_config = deepcopy(config)
         task = self.cur_task
         print(f"{self.cur_task=}")
