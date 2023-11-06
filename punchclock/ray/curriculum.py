@@ -201,15 +201,23 @@ class CustomCallbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        """Record last custody sum in every episode."""
+        """Record last values of some custom metrics in every episode.
+
+        Metrics:
+            custody_sum (int):
+            custody_percent (float):
+        """
         pprint(f"episode vars = {vars(episode)}")
         last_info = episode._last_infos
         pprint(f"\n {last_info=}")
         # last_info is a 2-item dict, where the 0th item is empty and the 1st item
         # is info returned from env.
         last_info1 = list(last_info.values())[1]
-        pprint(f"\n {last_info1=}")
+        # pprint(f"\n {last_info1=}")
         episode.custom_metrics["last_custody_sum"] = last_info1["custody_sum"]
+        episode.custom_metrics["last_custody_percent"] = last_info1[
+            "custody_sum"
+        ] / len(last_info1["custody"])
 
 
 # %% Curriculum Wrapper

@@ -4,7 +4,7 @@
 
 # Third Party Imports
 import ray
-from gymnasium.spaces import Box, Dict
+from gymnasium.spaces import Box, Dict, MultiBinary
 from ray import air, tune
 from ray.rllib.env.env_context import EnvContext
 from ray.rllib.utils import check_env
@@ -33,7 +33,10 @@ env_config = {
                 "wrapper": "RandomInfo",
                 "wrapper_config": {
                     "info_space": Dict(
-                        {"custody_sum": Box(0, 5, dtype=int, shape=())}
+                        {
+                            "custody_sum": Box(0, 5, dtype=int, shape=()),
+                            "custody": MultiBinary(4),
+                        }
                     )
                 },
             },
@@ -98,7 +101,7 @@ algo_config = (
     .environment(
         ConfigurableCurriculumEnv,
         env_config=env_config,
-        env_task_fn=c.assignTask,
+        env_task_fn=c,
     )
     .callbacks(CustomCallbacks)
     .framework("torch")
