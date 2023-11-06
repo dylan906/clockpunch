@@ -35,18 +35,17 @@ class ConfigurableCurriculumFn:
 
     Usage:
         1. Configure the function on instantiation
-        2. When setting Tuner parameters, set the instance method assignTask as
-            the env_task_fn arg.
+        2. When setting Tuner parameters, set the instance as the env_task_fn arg.
 
     Example:
-        curriculum = ConfigurableCurriculum(results_metric, metric_levels, task_map)
+        curriculumFunc = ConfigurableCurriculum(results_metric, metric_levels, task_map)
         algo_config = (
             get_trainable_cls("PPO")
             .get_default_config()
             .environment(
                 ConfigurableCurriculumEnv,
                 env_config=env_config,
-                env_task_fn=curriculum.assignTask,
+                env_task_fn=curriculumFunc,
             )
         )
         tuner = tune.Tuner(param_space = algo_config.to_dict())
@@ -58,7 +57,7 @@ class ConfigurableCurriculumFn:
         metric_levels: list[int | float],
         task_map: list[dict],
     ):
-        """Initialize curriculum to later call via assignTask().
+        """Initialize curriculum to later call via __call__().
 
         Args:
             results_metric (list[str] | str): The path of keys to get to the desired
@@ -79,7 +78,7 @@ class ConfigurableCurriculumFn:
         self.metric_levels = metric_levels
         self.task_map = task_map
 
-    def assignTask(
+    def __call__(
         self,
         train_results: dict,
         task_settable_env: TaskSettableEnv,

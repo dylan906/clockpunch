@@ -79,9 +79,7 @@ c = ConfigurableCurriculumFn(
     metric_levels=[0.2, 0.5],
     task_map=task_map,
 )
-task = c.assignTask(
-    train_results=results, task_settable_env=taskable_env, env_ctx=env_ctx
-)
+task = c(train_results=results, task_settable_env=taskable_env, env_ctx=env_ctx)
 print(f"{task=}")
 
 # %% Test ConfigurableCurriculumEnv
