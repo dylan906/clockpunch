@@ -7,7 +7,7 @@ import string
 from copy import copy, deepcopy
 from datetime import datetime
 from multiprocessing import Pool
-from os import cpu_count, makedirs, path
+from os import cpu_count, path
 from pathlib import Path, PosixPath
 from typing import Any, Tuple
 from warnings import warn
@@ -533,9 +533,6 @@ class MonteCarloRunner:
         trial_df = self._convertResults2DF(trial_result, str(trial_name))
         if hasattr(self, "exp_dir"):
             trial_path = self.lookupTrialPath(str(trial_name), self.trial_dirs)
-            # fpath = self.exp_dir.joinpath(str(trial_name)).with_suffix(
-            #     "." + file_format
-            # )
             fpath = trial_path.joinpath("results_" + str(trial_name)).with_suffix(
                 "." + file_format
             )
@@ -553,6 +550,7 @@ class MonteCarloRunner:
         return fpath
 
     def lookupTrialPath(self, trial_name: str, trial_dirs: list[PosixPath]):
+        """Lookup trial path given a trial name."""
         for td in trial_dirs:
             if trial_name in td.name:
                 return td
