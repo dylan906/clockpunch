@@ -101,7 +101,7 @@ except Exception as e:
 
 # Test Set env_config["seed"] to improper value
 mc_config5["single_sim_mode"] = False
-mc_config5["env_config"]["seed"] = None
+mc_config5["env_configs"][0]["seed"] = None
 try:
     mcr = MonteCarloRunner(**mc_config5)
 except Exception as e:
@@ -109,7 +109,7 @@ except Exception as e:
 
 # Set env_config seed to real number and single_sim_mode to False
 # (should get 1 warning)
-mc_config5["env_config"]["seed"] = 1
+mc_config5["env_configs"][0]["seed"] = 1
 mc_config5["single_sim_mode"] = False
 try:
     mcr = MonteCarloRunner(**mc_config5)

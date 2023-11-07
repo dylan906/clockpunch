@@ -1,6 +1,7 @@
 """Monte Carlo sim runner module."""
 # %% Imports
 # Standard Library Imports
+import itertools
 import random
 import string
 from copy import copy, deepcopy
@@ -47,6 +48,8 @@ class MonteCarloRunner:
     ):
         """Initialize MonteCarloRunner. Does not run a simulation.
 
+        Number of trials = len(policy_configs) * len(env_configs)
+
         Args:
             num_episodes (int): Number of episodes per trial.
             policy_configs (list[dict | str]): One trial will be run for each
@@ -55,9 +58,8 @@ class MonteCarloRunner:
                 loaded from the checkpoint specified by the arg.
             results_dir (str): Where to save trial results. One DataFrame per
                 trial will be saved here. Each file will have a unique name.
-            env_configs (list[dict] | dict): List of env configs to be paired with
-                policy configs. If len > 1, must be same length as policy_configs.
-                See buildEnv.
+            env_configs (list[dict] | dict): List of env configs to be run with
+                all policies.
             trial_names (list, optional): Names of trials. If not specified,
                 trials are assigned integer names starting at 0.
             print_status (bool, optional): Set to True to have status print while
@@ -86,7 +88,7 @@ class MonteCarloRunner:
                 num_episodes == 1
             ), """When using fixed initial conditions (single_sim_mode
                 == True), num_episodes must be 1."""
-        if "seed" in env_config.keys():
+        if any("seed" in ec.keys() for ec in env_configs):
             assert isinstance(
                 env_config.get("seed"), int
             ), "If env_config contains 'seed' as a key, the value must be an integer."
@@ -108,21 +110,17 @@ class MonteCarloRunner:
 
         # TODO: Delete env_config after a version or two.
         if env_config is not None:
-            warn(
-                "The arg 'env_config' is deprecated. Replace with 'env_configs'."
-            )
+            warn("The arg 'env_config' is deprecated. Replace with 'env_configs'.")
             env_configs = [env_config]
         assert env_configs is not None
         if isinstance(env_configs, dict):
             env_configs = [env_configs]
-        if len(env_configs) > 1:
-            assert len(env_configs) == len(policy_configs)
 
         # Deepcopy args to prevent MCR from modifying args at higher scope.
         self.num_episodes = deepcopy(num_episodes)
         self.env_configs = deepcopy(env_configs)
         self.policy_configs = deepcopy(policy_configs)
-        self.num_trials = len(self.policy_configs)
+        self.num_trials = len(self.policy_configs) * len(self.env_configs)
         self.print_status = deepcopy(print_status)
         self.results_dir = Path(results_dir)
         self.multiprocess = multiprocess
@@ -339,9 +337,7 @@ class MonteCarloRunner:
             t0 = datetime.now()
 
         # %% Build policy
-        policy = buildCustomOrRayPolicy(
-            config_or_path=policy_config_or_checkpoint
-        )
+        policy = buildCustomOrRayPolicy(config_or_path=policy_config_or_checkpoint)
 
         # Initialize trial_result as a dict with one entry, where the key is the
         # trial name. The entry is a list (length = num_episodes) of the final
@@ -396,13 +392,14 @@ class MonteCarloRunner:
         # Args to pool.starmap must be pickleable, meaning simple structures
         # (e.g. dicts). Args to starmap must be in a list in the expected order.
 
-        # Duplicate env config in a list if there is only 1 env config.
-        if len(self.env_configs) == 1:
-            env_configs = [
-                deepcopy(self.env_configs[0]) for a in range(self.num_trials)
-            ]
-        else:
-            env_configs = deepcopy(self.env_configs)
+        # Get all combinations of env-policy pairs. Will be list with
+        # len = num_trials = num_policies * num_envs
+        env_pol_pairs = list(itertools.product(self.env_configs, self.policy_configs))
+        env_configs = []
+        policy_configs = []
+        for ec, pc in env_pol_pairs:
+            env_configs.append(ec)
+            policy_configs.append(pc)
 
         print_list = [copy(print_status) for a in range(self.num_trials)]
         pool_args = [
@@ -410,7 +407,7 @@ class MonteCarloRunner:
             for a in zip(
                 self.trial_names,
                 env_configs,
-                self.policy_configs,
+                policy_configs,
                 print_list,
             )
         ]
@@ -558,9 +555,7 @@ class MonteCarloRunner:
         merged_df = concat(trial_df_list)
         return merged_df
 
-    def _splitPoolArgs(
-        self, pool_args: list[dict]
-    ) -> Tuple[list[dict], list[dict]]:
+    def _splitPoolArgs(self, pool_args: list[dict]) -> Tuple[list[dict], list[dict]]:
         """Split list of trial configs by custom or Ray policies.
 
         Args:
