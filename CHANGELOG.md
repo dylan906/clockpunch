@@ -18,6 +18,7 @@ I'm trying to get better about that.
 ### Changed
 - Experiment names now have a random string appended to manual name (#89).
 - `SSASchedulerParams` now has defaults for all args except horizon (#97).
+- `MonteCarloRunner` now allows for multiple env configs to be passed in (#99).
 
 ### Deprecated
 
