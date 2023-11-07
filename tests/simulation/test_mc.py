@@ -34,7 +34,7 @@ print("\nTest runTrial...")
 mcr2 = deepcopy(mcr)
 mcr2.runTrial(
     trial_name=mcr2.trial_names[0],
-    env_config=deepcopy(mcr2.env_config),
+    env_config=deepcopy(mcr2.env_configs[0]),
     policy_config_or_checkpoint=deepcopy(mcr2.policy_configs[0]),
 )
 print(f"active children: {active_children()}")

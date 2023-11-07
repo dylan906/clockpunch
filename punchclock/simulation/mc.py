@@ -35,41 +35,45 @@ class MonteCarloRunner:
         self,
         num_episodes: int,
         policy_configs: list[dict | str],
-        env_config: dict,
         results_dir: str,
+        env_configs: list[dict] | dict = None,
         trial_names: list = None,
         print_status: bool = False,
         num_cpus: int = None,
         multiprocess: bool = True,
         single_sim_mode: bool = False,
         save_format: str = "pkl",
+        env_config: dict = None,
     ):
         """Initialize MonteCarloRunner. Does not run a simulation.
 
         Args:
-            num_episodes (`int`): Number of episodes per trial.
-            policy_configs (`list[dict | str]`): One trial will be run for each
+            num_episodes (int): Number of episodes per trial.
+            policy_configs (list[dict | str]): One trial will be run for each
                 entry in policies. If entry is a dict, must conform to buildCustomPolicy
                 (see policy_utils module). If entry is a str, a RayPolicy will be
                 loaded from the checkpoint specified by the arg.
-            env_config (`dict`): See buildEnv.
-            results_dir (`str`): Where to save trial results. One DataFrame per
+            results_dir (str): Where to save trial results. One DataFrame per
                 trial will be saved here. Each file will have a unique name.
-            trial_names (`list`, optional): Names of trials. If not specified,
+            env_configs (list[dict] | dict): List of env configs to be paired with
+                policy configs. If len > 1, must be same length as policy_configs.
+                See buildEnv.
+            trial_names (list, optional): Names of trials. If not specified,
                 trials are assigned integer names starting at 0.
-            print_status (`bool`, optional): Set to True to have status print while
+            print_status (bool, optional): Set to True to have status print while
                 running simulations. Defaults to False.
-            num_cpus (`int`, optional): Number of cpus to make available when running
+            num_cpus (int, optional): Number of cpus to make available when running
                 MC. Defaults to max available.
-            multiprocess (`bool`, optional): Whether or not to multiprocess trials
+            multiprocess (bool, optional): Whether or not to multiprocess trials
                 during sim run. Used for debugging. Defaults to True.
-            single_sim_mode (`bool`, optional): Whether or not to use
+            single_sim_mode (bool, optional): Whether or not to use
                 identical initial conditions between trials. If True, num_episodes
                 must be 1, and all steps from all trials will be saved. Defaults
                 to False.
-            save_format (`str`, optional): ["pkl" | "csv"] Only change from default
+            save_format (str, optional): ["pkl" | "csv"] Only change from default
                 for debugging. Saving as csv is not guaranteed to retain all sim
                 data. Defaults to "pkl".
+            env_config (dict, optional): Here for backward compatibility.
         """
         # Assertions and warnings
         assert num_episodes > 0, "num_episodes must be > 0"
@@ -100,10 +104,23 @@ class MonteCarloRunner:
                     trials will be saved, which may result in large file sizes."""
                 )
 
+        assert isinstance(policy_configs, list)
+
+        # TODO: Delete env_config after a version or two.
+        if env_config is not None:
+            warn(
+                "The arg 'env_config' is deprecated. Replace with 'env_configs'."
+            )
+            env_configs = [env_config]
+        assert env_configs is not None
+        if isinstance(env_configs, dict):
+            env_configs = [env_configs]
+        if len(env_configs) > 1:
+            assert len(env_configs) == len(policy_configs)
+
         # Deepcopy args to prevent MCR from modifying args at higher scope.
         self.num_episodes = deepcopy(num_episodes)
-        self.env_config = deepcopy(env_config)
-        self.episode_horizon = self.env_config["horizon"]
+        self.env_configs = deepcopy(env_configs)
         self.policy_configs = deepcopy(policy_configs)
         self.num_trials = len(self.policy_configs)
         self.print_status = deepcopy(print_status)
@@ -117,7 +134,7 @@ class MonteCarloRunner:
         self.config = {
             "num_episodes": deepcopy(num_episodes),
             "policy_configs": deepcopy(policy_configs),
-            "env_config": deepcopy(env_config),
+            "env_configs": deepcopy(env_configs),
             "results_dir": deepcopy(results_dir),
             "trial_names": deepcopy(trial_names),
             "print_status": deepcopy(print_status),
@@ -156,9 +173,9 @@ class MonteCarloRunner:
     ) -> dict:
         """Run a Monte Carlo experiment.
 
-        print_status (`bool`, optional): Set to override initialization value.
+        print_status (bool, optional): Set to override initialization value.
             Defaults to None.
-        multiprocess (`bool`, optional): Set to override initialization value.
+        multiprocess (bool, optional): Set to override initialization value.
             Defaults to None.
 
         Returns data from the final time steps of all episodes. Does not retain
@@ -222,13 +239,13 @@ class MonteCarloRunner:
         """Run trials with multiprocessing.
 
         Args:
-            pool_args (`list`): List of arguments for Pool.starmap() and/or
+            pool_args (list): List of arguments for Pool.starmap() and/or
                 ray.util.multiprocessing.Pool.starmap(). Same args as using serial
                 processing.
-            print_status (`bool`): Whether or not to print status.
+            print_status (bool): Whether or not to print status.
 
         Returns:
-            `list[Tuple]`: Each Tuple entry is 2-long, where 1st entry is trial
+            list[Tuple]: Each Tuple entry is 2-long, where 1st entry is trial
                 results and 2nd entry is trial name.
         """
         # Split pool args into list for regular multiprocessing and another for
@@ -269,12 +286,12 @@ class MonteCarloRunner:
         """Run trials serially (one-by-one).
 
         Args:
-            pool_args (`list`): List of arguments for self.runTrial(), where each
+            pool_args (list): List of arguments for self.runTrial(), where each
                 entry is the ordered args expected by runTrial(). Same args as
                 using multiprocessing.
 
         Returns:
-            `list[Tuple]`: Each Tuple entry is 2-long, where 1st entry is trial
+            list[Tuple]: Each Tuple entry is 2-long, where 1st entry is trial
                 results and 2nd entry is trial name.
         """
         # Loop through trials sequentially.
@@ -302,18 +319,18 @@ class MonteCarloRunner:
         Saves a file in a specified format and directory (see __init__()).
 
         Args:
-            trial_name (`Any`): Trial name.
-            env_config (`dict`): See buildEnv.
-            policy_config_or_checkpoint (`dict | str`): A CustomPolicy config or
+            trial_name (Any): Trial name.
+            env_config (dict): See buildEnv.
+            policy_config_or_checkpoint (dict | str): A CustomPolicy config or
                 a path to a Ray checkpoint. See buildCustomRayPolicy and
                 buildCustomPolicy for interface details.
-            print_status (`bool`, optional): Set to True to print trial name and
+            print_status (bool, optional): Set to True to print trial name and
                 run time. Defaults to False.
 
         Returns:
-            trial_results (`list[DataFrame]`): A num_episodes-long list of DataFrames.
+            trial_results (list[DataFrame]): A num_episodes-long list of DataFrames.
                 Each DataFrame is the results of the final step of a single episode.
-            trial_name (`Any`): Same as argument. Primarily as a check to associate
+            trial_name (Any): Same as argument. Primarily as a check to associate
                 results with a name.
         """
         # Prints
@@ -342,7 +359,7 @@ class MonteCarloRunner:
             sim_runner = SimRunner(
                 env=env,
                 policy=policy,
-                max_steps=self.episode_horizon,
+                max_steps=env_config["horizon"],
             )
 
             sim_runner.reset()
@@ -378,9 +395,15 @@ class MonteCarloRunner:
         """Assemble arguments for multiprocessing.Pool() into a list."""
         # Args to pool.starmap must be pickleable, meaning simple structures
         # (e.g. dicts). Args to starmap must be in a list in the expected order.
-        env_configs = [
-            deepcopy(self.env_config) for a in range(self.num_trials)
-        ]
+
+        # Duplicate env config in a list if there is only 1 env config.
+        if len(self.env_configs) == 1:
+            env_configs = [
+                deepcopy(self.env_configs[0]) for a in range(self.num_trials)
+            ]
+        else:
+            env_configs = deepcopy(self.env_configs)
+
         print_list = [copy(print_status) for a in range(self.num_trials)]
         pool_args = [
             (a)
@@ -429,8 +452,8 @@ class MonteCarloRunner:
         """Generate config directory string and create directory if necessary.
 
         Returns:
-            `pathlib.PosixPath`: Directory for experiment.
-            `pathlib.PosixPath`: Directory for config file.
+            pathlib.PosixPath: Directory for experiment.
+            pathlib.PosixPath: Directory for config file.
         """
         # Create results directory if it doesn't already exist. Each call of runMC()
         # creates a new directory within results_dir. Each subdirectory is time-stamped.
@@ -457,12 +480,12 @@ class MonteCarloRunner:
         directory (1 level up).
 
         Args:
-            trial_result (`list`): Results from a trial
-            trial_name (`str`): Name of trial
-            file_format (`str`): 'pkl' | 'csv'
+            trial_result (list): Results from a trial
+            trial_name (str): Name of trial
+            file_format (str): 'pkl' | 'csv'
 
         Returns:
-            `str`: Path result file was saved to
+            str: Path result file was saved to
         """
         trial_df = self._convertResults2DF(trial_result, trial_name)
         if hasattr(self, "exp_dir"):
@@ -491,13 +514,13 @@ class MonteCarloRunner:
         Adds come Monte Carlo-specific info to the standard sim DataFrame.
 
         Args:
-            trial_results (`list[DataFrame]`): A list of the DataFrames corresponding
+            trial_results (list[DataFrame]): A list of the DataFrames corresponding
                 to time steps of episodes.
-            trial_name (`Any`): Used as the entry in the "trial" column of the
+            trial_name (Any): Used as the entry in the "trial" column of the
                 returned DataFrame.
 
         Returns:
-            `DataFrame`: A DataFrame of the final time step of all episodes in
+            DataFrame: A DataFrame of the final time step of all episodes in
                 a trial. The "step" index from the input DataFrames is moved to
                 a column. Adds "trial" and "episode" columns.
         """
@@ -514,7 +537,7 @@ class MonteCarloRunner:
         """Get MC results as a DataFrame.
 
         Returns:
-            `DataFrame`: Return has hierarchical index, level 0 = "trial",
+            DataFrame: Return has hierarchical index, level 0 = "trial",
                 level 1 = "epsiode".
         """
         assert hasattr(self, "results"), "Monte Carlo has not been run yet."
@@ -541,11 +564,11 @@ class MonteCarloRunner:
         """Split list of trial configs by custom or Ray policies.
 
         Args:
-            pool_args (`list[dict]`): List of args for Pool().
+            pool_args (list[dict]): List of args for Pool().
 
         Returns:
-            normal_args (`list[dict]`): Args for multiprocessing.Pool.starmap().
-            ray_args (`list[dict]`): Args for ray.util.multiprocessing.Pool.starmap().
+            normal_args (list[dict]): Args for multiprocessing.Pool.starmap().
+            ray_args (list[dict]): Args for ray.util.multiprocessing.Pool.starmap().
         """
         normal_args = []
         ray_args = []
