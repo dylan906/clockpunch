@@ -8,7 +8,7 @@ from copy import copy, deepcopy
 from datetime import datetime
 from multiprocessing import Pool
 from os import cpu_count, makedirs, path
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import Any, Tuple
 from warnings import warn
 
@@ -162,6 +162,21 @@ class MonteCarloRunner:
         # to change between trials or episodes.
         self.fixed_seed = self.rng.integers(self.max_int)
 
+        env_pol_pairs = list(
+            itertools.product(self.config["env_configs"], self.config["policy_configs"])
+        )
+        self.trial_configs = []
+        for i, tn in enumerate(self.trial_names):
+            ec = env_pol_pairs[i][0]
+            pc = env_pol_pairs[i][1]
+            self.trial_configs.append(
+                {
+                    "trial_name": tn,
+                    "env_config": ec,
+                    "policy_config": pc,
+                }
+            )
+
         return
 
     def runMC(
@@ -198,7 +213,12 @@ class MonteCarloRunner:
         [exp_dir, config_name] = self._makeDirs()
 
         # Save config to results_dir for traceability
-        saveJSONFile(str(config_name), self.config)
+        self._saveConfigs(
+            exp_config_path=config_name,
+            exp_config=self.config,
+            trial_configs=self.trial_configs,
+        )
+        # saveJSONFile(str(config_name), self.config)
 
         # Initialize results dict; one entry per trial.
         self.results = {k: None for k in self.trial_names}
@@ -445,25 +465,51 @@ class MonteCarloRunner:
 
     def _makeDirs(
         self,
-    ) -> str:
+    ) -> Tuple[PosixPath, PosixPath]:
         """Generate config directory string and create directory if necessary.
 
         Returns:
-            pathlib.PosixPath: Directory for experiment.
-            pathlib.PosixPath: Directory for config file.
+            exp_dir (PosixPath): Experiment path.
+            config_file_path (PosixPath): Config file path.
         """
         # Create results directory if it doesn't already exist. Each call of runMC()
         # creates a new directory within results_dir. Each subdirectory is time-stamped.
         # Trial results will be saved to each subdirectory.
         if not path.exists(self.results_dir):
-            makedirs(self.results_dir)
+            # makedirs(self.results_dir)
+            self.results_dir.mkdir()
+
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
         rand_str = "".join(random.choices(string.ascii_uppercase, k=3))
         self.exp_dir = deepcopy(self.results_dir)
         self.exp_dir = self.exp_dir.joinpath("exp_" + ts + "_" + rand_str)
-        config_file_name = self.exp_dir.joinpath("config").with_suffix(".json")
+        self.exp_dir.mkdir()
+        print(f"Experiment dir created at: {str(self.exp_dir)}")
 
-        return self.exp_dir, config_file_name
+        self._makeTrialDirs(exp_dir=self.exp_dir)
+
+        config_file_path = self.exp_dir.joinpath("exp_config").with_suffix(".json")
+
+        return self.exp_dir, config_file_path
+
+    def _makeTrialDirs(self, exp_dir: PosixPath):
+        self.trial_dirs = []
+        for tname in self.trial_names:
+            trial_path = exp_dir.joinpath("trial_" + str(tname))
+            trial_path.mkdir()
+            self.trial_dirs.append(trial_path)
+            print(f"Trial dir created at: {str(trial_path)}")
+
+        return
+
+    def _saveConfigs(
+        self, exp_config_path: PosixPath, exp_config: dict, trial_configs: list[dict]
+    ):
+        saveJSONFile(str(exp_config_path), exp_config)
+
+        for td, tc in zip(self.trial_dirs, trial_configs):
+            trial_config_path = td.joinpath("trial_config").with_suffix(".json")
+            saveJSONFile(str(trial_config_path), tc)
 
     def _saveTrialResults(
         self,
@@ -484,13 +530,18 @@ class MonteCarloRunner:
         Returns:
             str: Path result file was saved to
         """
-        trial_df = self._convertResults2DF(trial_result, trial_name)
+        trial_df = self._convertResults2DF(trial_result, str(trial_name))
         if hasattr(self, "exp_dir"):
-            fpath = self.exp_dir.joinpath(str(trial_name)).with_suffix(
+            trial_path = self.lookupTrialPath(str(trial_name), self.trial_dirs)
+            # fpath = self.exp_dir.joinpath(str(trial_name)).with_suffix(
+            #     "." + file_format
+            # )
+            fpath = trial_path.joinpath("results_" + str(trial_name)).with_suffix(
                 "." + file_format
             )
         else:
-            fpath = self.results_dir.joinpath(str(trial_name)).with_suffix(
+            # This used for debugging the method alone, not a regular use case.
+            fpath = self.results_dir.joinpath("results_" + str(trial_name)).with_suffix(
                 "." + file_format
             )
 
@@ -500,6 +551,13 @@ class MonteCarloRunner:
             trial_df.to_csv(fpath)
 
         return fpath
+
+    def lookupTrialPath(self, trial_name: str, trial_dirs: list[PosixPath]):
+        for td in trial_dirs:
+            if trial_name in td.name:
+                return td
+
+        return
 
     def _convertResults2DF(
         self,
