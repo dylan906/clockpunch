@@ -29,6 +29,9 @@ env_config_path = fpath + "/data/config_env.json"
 env_config = loadJSONFile(env_config_path)
 # env_config["seed"] = 9793741
 env_config["horizon"] = 2
+
+env_config2 = deepcopy(env_config)
+env_config2["horizon"] = 4
 # %% Build policy configs
 print("\nBuild policy configs...")
 
@@ -68,7 +71,7 @@ print("\nInitialize MCConfig...")
 mc_config = MonteCarloConfig(
     num_episodes=1,
     policy_configs=policy_configs,
-    env_configs=[env_config],
+    env_configs=[env_config, env_config2],
     results_dir=results_dir,
     print_status=True,
 )

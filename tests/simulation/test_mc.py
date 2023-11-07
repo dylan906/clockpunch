@@ -46,8 +46,8 @@ exp_dir, mc_results = mcr3.runMC(multiprocess=False)
 print(f"Monte Carlo results = {mc_results}")
 print(f"active children: {active_children()}")
 combined_df = DataFrame()
-for i in range(3):
-    loaded_df = read_pickle(exp_dir.joinpath(str(i)).with_suffix(".pkl"))
+for path in exp_dir.glob("*/*.pkl"):
+    loaded_df = read_pickle(path)
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
@@ -62,8 +62,8 @@ mc_config4["print_status"] = False
 mcr4 = MonteCarloRunner(**mc_config4)
 exp_dir, results = mcr4.runMC()
 combined_df = DataFrame()
-for i in range(3):
-    loaded_df = read_pickle(exp_dir.joinpath(str(i)).with_suffix(".pkl"))
+for path in exp_dir.glob("*/*.pkl"):
+    loaded_df = read_pickle(path)
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
@@ -75,8 +75,8 @@ mc_config4b["save_format"] = "csv"
 mcr4b = MonteCarloRunner(**mc_config4b)
 exp_dir, results = mcr4b.runMC()
 combined_df = DataFrame()
-for i in range(3):
-    loaded_df = read_csv(exp_dir.joinpath(str(i)).with_suffix(".csv"))
+for path in exp_dir.glob("*/*.csv"):
+    loaded_df = read_csv(path)
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
