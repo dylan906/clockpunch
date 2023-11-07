@@ -68,7 +68,7 @@ print("\nInitialize MCConfig...")
 mc_config = MonteCarloConfig(
     num_episodes=1,
     policy_configs=policy_configs,
-    env_config=env_config,
+    env_configs=[env_config],
     results_dir=results_dir,
     print_status=True,
 )
