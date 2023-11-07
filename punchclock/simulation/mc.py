@@ -398,8 +398,8 @@ class MonteCarloRunner:
         env_configs = []
         policy_configs = []
         for ec, pc in env_pol_pairs:
-            env_configs.append(ec)
-            policy_configs.append(pc)
+            env_configs.append(deepcopy(ec))
+            policy_configs.append(deepcopy(pc))
 
         print_list = [copy(print_status) for a in range(self.num_trials)]
         pool_args = [
