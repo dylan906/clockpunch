@@ -39,10 +39,11 @@ with open(config_path, "r", encoding="UTF-8") as f:
 print("\nBuilding Monte Carlo runner...")
 mcr = MonteCarloRunner(**config)
 
-print(f"  saving files to: {mcr.results_dir}")
-print(f"  number of trials = {mcr.num_trials}")
-print(f"  episodes per trial = {mcr.num_episodes}")
-print(f"  time steps per episode = {mcr.episode_horizon}")
+print(
+    f"  saving files to: {mcr.results_dir}"
+    f"  number of trials = {mcr.num_trials}"
+    f"  episodes per trial = {mcr.num_episodes}"
+)
 
 print("\nRunning Monte Carlo simulation...")
 results = mcr.runMC()
