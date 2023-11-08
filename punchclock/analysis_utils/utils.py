@@ -186,7 +186,7 @@ def countMaskViolations(x: ndarray[int], mask: ndarray[int]) -> int:
     return sum(violations_mat)
 
 
-def truncatePDColNames(df: DataFrame, char_lim: int = 18) -> DataFrame:
+def truncateDFColNames(df: DataFrame, char_lim: int = 18) -> DataFrame:
     """Truncate the column names of a DataFrame.
 
     Useful for printing DFs with long column names.
