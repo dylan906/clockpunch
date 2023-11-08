@@ -1,4 +1,4 @@
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 # Third Party Imports
 # from gymnasium.envs.registration import register

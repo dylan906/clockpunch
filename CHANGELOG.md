@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that.
 
-## [unreleased] - 20YY-MM-DD
+## [0.8.2] - 20YY-11-08
 
 ### Added
 - ezUKF now has option for random Q, R, p_init (#86).
