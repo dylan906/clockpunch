@@ -22,7 +22,7 @@ from ray.rllib.policy import Policy
 from ray.rllib.utils.annotations import override
 
 # Punch Clock Imports
-from punchclock.common.utilities import chainedGet, findNearest
+from punchclock.common.utilities import chainedGet, findNearest, updateRecursive
 from punchclock.ray.build_env import buildEnv
 
 
@@ -162,9 +162,7 @@ class CustomCallbacks(DefaultCallbacks):
         last_info1 = list(last_info.values())[1]
         # pprint(f"\n {last_info1=}")
         episode.custom_metrics["last_custody_sum"] = last_info1["custody_sum"]
-        episode.custom_metrics["last_custody_percent"] = last_info1[
-            "custody_percent"
-        ]
+        episode.custom_metrics["last_custody_percent"] = last_info1["custody_percent"]
 
 
 # %% ConfigurableCirriculumEnv
@@ -212,7 +210,8 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
         task = self.cur_task
         print(f"{self.cur_task=}")
 
-        new_config.update(task)
+        # Use special update function that can handle nested dict tasks
+        new_config = updateRecursive(new_config, task)
         # prevents error in buildEnv caused by unrecognized arg
         new_config.pop("start_task", None)
 

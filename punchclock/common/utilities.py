@@ -1,6 +1,7 @@
 """Utility functions."""
 # %% Imports
 # Standard Library Imports
+import collections.abc
 import json
 import os
 import os.path
@@ -9,8 +10,10 @@ from copy import deepcopy
 from itertools import groupby
 from operator import ge, gt, le, lt
 from pathlib import Path
+from typing import Any, Callable
 
 # Third Party Imports
+from gymnasium import Env
 from gymnasium.spaces import Box, MultiDiscrete
 from gymnasium.spaces.utils import flatten, unflatten
 from numpy import (
@@ -484,3 +487,15 @@ def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
             return default
 
     return dict_chain
+
+
+# %% Recursively update a dict
+def updateRecursive(d: dict, u: dict) -> dict:
+    """Recursively update nested dict d with dict u."""
+    # https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = updateRecursive(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d

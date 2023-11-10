@@ -24,7 +24,7 @@ print("\nTest base env...")
 # then test with CurriculumCustodyEnv.
 env_config = {
     "horizon": 10,
-    "agent_params": {"num_targets": 4},
+    "agent_params": {"num_targets": 4, "num_sensors": 1},
     "constructor_params": {
         "wrappers": [
             {
@@ -63,6 +63,10 @@ env.set_task({"horizon": 42})
 env.reset()
 task = env.get_task()
 print(f"{task=}")
+
+# Set with nested dict task
+env.set_task({"agent_params": {"num_targets": 42}})
+env.reset()
 
 # %% Test ConfigurableCurriculumFn
 task_map = [{"horizon": 10}, {"horizon": 20}]
