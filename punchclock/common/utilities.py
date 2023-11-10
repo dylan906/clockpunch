@@ -1,7 +1,5 @@
 """Utility functions."""
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 import json
 import os
@@ -42,15 +40,15 @@ def loadJSONFile(file_name: str | Path) -> dict:
     """Load in a JSON file into a Python dictionary.
 
     Args:
-        file_name (``str``): name of JSON file to load
+        file_name (str): name of JSON file to load
     Raises:
-        ``FileNotFoundError``: helps with debugging bad filenames
+        FileNotFoundError: helps with debugging bad filenames
 
-        ``json.decoder.JSONDecodeError``: error parsing JSON file (bad syntax)
+        json.decoder.JSONDecodeError: error parsing JSON file (bad syntax)
 
-        ``IOError``: valid JSON file is empty
+        IOError: valid JSON file is empty
     Returns:
-        ``dict``: documents loaded from the JSON file
+        dict: documents loaded from the JSON file
     """
     if isinstance(file_name, Path):
         file_name = str(file_name)
@@ -77,11 +75,11 @@ def saveJSONFile(file_name: str, a_dict: dict) -> str:
     """Save a Python dict as a JSON file.
 
     Args:
-        file_name (`str`): Absolute path and file name (excluding ".json")
-        jsonable (`dict`): A dictionary.
+        file_name (str): Absolute path and file name (excluding ".json")
+        jsonable (dict): A dictionary.
 
     Returns:
-        `str`: The output of json.dumps.
+        str: The output of json.dumps.
     """
     json_object = json.dumps(a_dict)
 
@@ -126,18 +124,18 @@ def actionSpace2Array(
     num_sensors: int,
     num_targets: int,
 ) -> ndarray[int]:
-    """Convert actions in `MultiDiscrete` (1d array) format to 2D array.
+    """Convert actions in MultiDiscrete (1d array) format to 2D array.
 
     M = number of sensors
     N = number of targets
 
     Args:
-        actions (`ndarray[int]`): (M, ) Valued 0 to N, where N indicates inaction.
-        num_sensors (`int`): Number of sensors.
-        num_targets (`int`): Number of targets.
+        actions (ndarray[int]): (M, ) Valued 0 to N, where N indicates inaction.
+        num_sensors (int): Number of sensors.
+        num_targets (int): Number of targets.
 
     Returns:
-        `ndarray[int]`: (N+1, M) array of 0s and 1s. A 1 in the [m, n] position
+        ndarray[int]: (N+1, M) array of 0s and 1s. A 1 in the [m, n] position
             indicates the m-th sensor is tasked to the n-th target (or if the 1
             is in the last row, inaction by the sensor).
     """
@@ -275,12 +273,12 @@ def calcVisMap(
     """Calculate visibility map between M sensors and N targets.
 
     Args:
-        sensor_states (`ndarray`): (6, M) Sensor states.
-        target_states (`ndarray`): (6, N) Target states.
-        body_radius (`float`): Radius of celestial body (km).
+        sensor_states (ndarray): (6, M) Sensor states.
+        target_states (ndarray): (6, N) Target states.
+        body_radius (float): Radius of celestial body (km).
 
     Returns:
-        `ndarray[int]`: (N, M) Mapping of 1s/0s for sensor-target pairs that can see each
+        ndarray[int]: (N, M) Mapping of 1s/0s for sensor-target pairs that can see each
             other. A 1 indicates that the m-n sensor target pair can see each other.
     """
     # Check that 0th dimension of state arrays is 6-long.
@@ -302,7 +300,7 @@ def calcVisMap(
 
     # initialize visibility map
     vis_map = zeros((num_targets, num_sensors))
-    # Loop through sensors and targets, record visibility in `vis_map`.
+    # Loop through sensors and targets, record visibility in vis_map.
     for col, sens in enumerate(sensor_states.T):
         for row, targ in enumerate(target_states.T):
             # isVis outputs a bool, but is converted to float by assigning to vis_map
@@ -330,8 +328,8 @@ def isActionValid(mask: ndarray, action: ndarray) -> bool:
     """Return True if all actions are valid.
 
     Args:
-        mask (`ndarray`): 2d binary array.
-        action (`ndarray`): 1d array where length == number of cols in mask, and
+        mask (ndarray): 2d binary array.
+        action (ndarray): 1d array where length == number of cols in mask, and
             values are 0 to number of rows in mask.
     """
     valid = [None] * len(action)
@@ -402,7 +400,7 @@ def recursivelyConvertDictToPrimitive(in_dict: dict) -> dict:
     out = {}
     # Loop through key-value pairs of in_dict. If a value is a dict, then recurse.
     # Otherwise, convert value to a JSON-able type. Special handling if the
-    # value is a `list`. Lists of dicts are recursed; lists of non-dicts and
+    # value is a list. Lists of dicts are recursed; lists of non-dicts and
     # empty lists are converted to JSON-able as normal.
     for k, v in in_dict.items():
         if isinstance(v, dict):
