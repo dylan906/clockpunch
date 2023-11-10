@@ -169,12 +169,8 @@ class MaskConverter:
 
     def __init__(self, num_targets: int, num_sensors: int):
         """Initializer MaskConverter."""
-        self.vis_mask_space = Box(
-            0, 1, shape=[num_targets, num_sensors], dtype=int
-        )
-        self.mask2d_space = Box(
-            0, 1, shape=[num_targets + 1, num_sensors], dtype=int
-        )
+        self.vis_mask_space = Box(0, 1, shape=[num_targets, num_sensors], dtype=int)
+        self.mask2d_space = Box(0, 1, shape=[num_targets + 1, num_sensors], dtype=int)
         self.mask2d_transpose_space = Box(
             0, 1, shape=[num_sensors, num_targets + 1], dtype=int
         )
@@ -214,9 +210,7 @@ class MaskConverter:
         flat_mask = flatten(self.mask2d_space, mask2d.transpose())
         return flat_mask
 
-    def convert2dVisMaskTo1dActionMask(
-        self, vis_mask: ndarray[int]
-    ) -> ndarray[int]:
+    def convert2dVisMaskTo1dActionMask(self, vis_mask: ndarray[int]) -> ndarray[int]:
         """Convert a 2d visibility mask to a flat action mask (includes inaction).
 
         in = [
@@ -268,9 +262,7 @@ class MaskConverter:
         """
         null_action_idx = self.num_targets
         # Get all indices to remove; skip 0th entry because it is always 0
-        indices_to_remove = arange(
-            null_action_idx, mask1d.size, null_action_idx + 1
-        )
+        indices_to_remove = arange(null_action_idx, mask1d.size, null_action_idx + 1)
         mask_no_nullaction = delete(mask1d, indices_to_remove)
         return mask_no_nullaction
 
@@ -484,9 +476,7 @@ def findNearest(
 
 # %% Chained get
 def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
-    """
-    Get a value nested in a dictionary by its nested path.
-    """
+    """Get a value nested in a dictionary by its nested path."""
     value_path = list(args)
     dict_chain = dictionary
     while value_path:
