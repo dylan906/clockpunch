@@ -1,8 +1,7 @@
 """Load experiment files."""
 # %% Imports
 # Standard Library Imports
-import os
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import Tuple
 
 # Third Party Imports
@@ -81,40 +80,28 @@ def loadExpResults(
 
 # %% Load Env and/or Trial Configs
 def loadTrialConfigs(
-    local_dir: str,
-    exp_names: list[str],
-) -> Tuple[list[dict], list[str], list[str], list[str]]:
+    local_dir: str | PosixPath,
+    exp_names: list[str | PosixPath],
+) -> Tuple[list[dict], list[PosixPath], list[PosixPath], list[PosixPath]]:
     """Load trial configs from experiment directories.
 
     Args:
-        local_dir (str): Directory containing all experiments.
-        exp_names (list[str]): Directories of experiments
+        local_dir (str | PosixPath): Directory containing all experiments.
+        exp_names (list[str | PosixPath]): Directories of experiments
 
     Returns:
         trial_configs (list[dict]): Trial configs
-        trial_paths (list[str]): Trial paths
-        checkpoint_paths (list[str]): Policy checkpoint paths
-        config_paths (list[str]): Trial config paths
+        trial_paths (list[PosixPath]): Trial paths
+        checkpoint_paths (list[PosixPath]): Policy checkpoint paths
+        config_paths (list[PosixPath]): Trial config paths
     """
-    experiment_paths = [f"{local_dir}/{exp_name}" for exp_name in exp_names]
+    experiment_paths = [Path(a) for a in exp_names]
     trial_paths = []
     checkpoint_paths = []
     for exp_path in experiment_paths:
-        for subdir, dirs, files in os.walk(exp_path):
-            print(subdir)
-            print(dirs)
-            print(files)
-            if len(dirs) == 0:
-                # Bottom layer empty folder
-                continue
-            elif "default_policy" in dirs[0]:
-                path_str = subdir + "/" + dirs[0]
-                # Append to list of checkpoint paths.
-                checkpoint_paths.append(path_str)
-                # Convert to Path object to go 2 levels up to trial dir
-                path = Path(path_str)
-                trial_path = str(path.parents[2])
-                trial_paths.append(trial_path)
+        for name in exp_path.rglob("*/default_policy"):
+            trial_paths.append(name.parents[2])
+            checkpoint_paths.append(name)
 
     print("\n")
 
@@ -124,12 +111,12 @@ def loadTrialConfigs(
     for x in trial_paths:
         print(f"  {x}")
 
-    print("Checkpoint paths:")
-    for x in checkpoint_paths:
-        print(f"  {x}")
-
     print("Trial config paths:")
     for x in config_paths:
+        print(f"  {x}")
+
+    print("Checkpoint paths:")
+    for x in checkpoint_paths:
         print(f"  {x}")
 
     assert len(trial_configs) == len(trial_paths)
@@ -139,9 +126,16 @@ def loadTrialConfigs(
     return trial_configs, trial_paths, checkpoint_paths, config_paths
 
 
-def loadTrialConfigFilesAndPaths(trial_paths: list[str]) -> list[str]:
+def loadTrialConfigFilesAndPaths(
+    trial_paths: list[str | PosixPath],
+) -> Tuple[list[dict], list[PosixPath]]:
     """Load trial configs from list of trial paths."""
-    config_paths = [tp + "/params.json" for tp in trial_paths]
+    trial_paths = [Path(a) for a in trial_paths]
+    config_paths = []
+    for tp in trial_paths:
+        for name in tp.glob("*params.json"):
+            config_paths.append(name)
+
     trial_configs = []
     for cp in config_paths:
         try:
