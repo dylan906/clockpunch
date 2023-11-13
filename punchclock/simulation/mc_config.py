@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # Standard Library Imports
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 # Punch Clock Imports
 from punchclock.common.utilities import saveJSONFile
@@ -17,7 +17,7 @@ class MonteCarloConfig:
     def __init__(
         self,
         num_episodes: int,
-        policy_configs: list[dict | str],
+        policy_configs: list[dict | str | PosixPath],
         env_configs: list[dict],
         results_dir: str,
         trial_names: list = None,
@@ -30,7 +30,7 @@ class MonteCarloConfig:
 
         Args:
         num_episodes (int): Number of episodes per trial.
-        policy_configs (list[dict | str]): One trial will be run for each
+        policy_configs (list[dict | str | PosixPath]): One trial will be run for each
             entry in policies. If entry is a dict, must conform to buildCustomPolicy
             (see policy_builder.py). If entry is a str, a RayPolicy will be
             loaded from the checkpoint specified by the arg.
@@ -54,7 +54,7 @@ class MonteCarloConfig:
         assert isinstance(policy_configs, list), "policy_configs must be a list"
 
         assert all(
-            isinstance(pc, (str, dict)) for pc in policy_configs
+            isinstance(pc, (str, dict, PosixPath)) for pc in policy_configs
         ), "All entries of policy_configs must be either a dict or str."
         assert isinstance(env_configs, list)
         assert all(isinstance(ec, dict) for ec in env_configs)
@@ -63,6 +63,10 @@ class MonteCarloConfig:
         if trial_names is not None:
             assert isinstance(trial_names, list)
             assert len(trial_names) == len(policy_configs)
+
+        for i, pc in enumerate(policy_configs):
+            if isinstance(pc, PosixPath):
+                policy_configs[i] = str(pc)
 
         self.config = {
             "num_episodes": num_episodes,
