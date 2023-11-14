@@ -1,6 +1,5 @@
 """Propagator module."""
-from __future__ import annotations
-
+# %% Imports
 # Standard Library Imports
 from typing import Callable
 
@@ -24,8 +23,8 @@ def simplePropagate(
 
     Args:
         func (`Callable`): Dynamics function.
-        x0 (`ndarray`): (N, ) | (N, M) State initial condition(s). If only propagating one
-            state vector, dimensions of input array can be 1D (N,) or 2D (N,1).
+        x0 (`ndarray`): (N, ) | (N, M) State initial condition(s). If only propagating
+            one state vector, dimensions of input array can be 1D (N,) or 2D (N,1).
         t0 (`float`): Initial time (s)
         tf (`float`): Final time (s)
 
@@ -34,7 +33,8 @@ def simplePropagate(
         ValueError: If `x0` is poorly conditioned
 
     Returns:
-        `ndarray`: (N, ) | (N, M) State(s) after propagation. Returns in same shape as input.
+        `ndarray`: (N, ) | (N, M) State(s) after propagation. Returns in same shape
+            as input.
     """
     # Prevents IVP solver (and simplePropagate) from returning empty list.
     if t0 == tf:
