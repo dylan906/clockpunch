@@ -22,7 +22,7 @@ from ray.rllib.policy import Policy
 from ray.rllib.utils.annotations import override
 
 # Punch Clock Imports
-from punchclock.common.utilities import chainedGet, findNearest, updateRecursive
+from punchclock.common.utilities import chainedGet, updateRecursive
 from punchclock.ray.build_env import buildEnv
 
 
@@ -98,24 +98,21 @@ class ConfigurableCurriculumFn:
             dict: The task to set the env to. This may be the same as the
                 current one.
         """
-        pprint(f"{train_results}")
+        pprint(train_results)
         cur_task = task_settable_env.get_task()
         print(f"current task (via curriculum_fn) = {cur_task}")
-
         metric_val = self.getMetricValue(train_results)
-        closest_level, idx = findNearest(
-            x=self.metric_levels,
-            val=metric_val,
-            round="down",
-            return_index=True,
-        )
-        task = self.task_map[idx]
+        if cur_task not in self.task_map:
+            # Current task can be outside of task map if env was just initialized
+            task = self.task_map[0]
+        else:
+            task = self.incrementTask(cur_task, metric_val)
+
         print(
             f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
             f"\nR={train_results['episode_reward_mean']}"
-            f"\nSetting env to task={task}"
+            f"\nSetting env to task {task}"
             f"\nMetric value = {metric_val}"
-            f"\nNearest metric level = {closest_level}"
         )
         return task
 
@@ -132,6 +129,29 @@ class ConfigurableCurriculumFn:
         # This seems like a lot of code for a 1-liner function, but the 1 functional
         # line is not self-explanatory.
         return chainedGet(train_results, *self.metric, default=None)
+
+    def incrementTask(self, cur_task: dict, metric_val: float) -> dict:
+        """Increment a task forward in the task map if metric meets threshold.
+
+        If metric_val doesn't meet threshold, then repeat current task.
+
+        If cur_task is at the end of the curriculum, repeat the current task.
+        """
+        cur_task_idx = self.task_map.index(cur_task)
+        if cur_task_idx == len(self.task_map) - 1:
+            # repeat current task if at end of curriculum
+            print("End of curriculum reached")
+            task = cur_task
+        else:
+            next_metric_val = self.metric_levels[cur_task_idx + 1]
+            if metric_val > next_metric_val:
+                # increment task up
+                task = self.task_map[cur_task_idx + 1]
+            else:
+                # repeat task if metric threshold not met
+                task = self.task_map[cur_task_idx]
+
+        return task
 
 
 # %% Custom callback

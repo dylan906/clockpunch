@@ -82,8 +82,16 @@ results = {
     "episode_reward_mean": 1,
 }
 env_ctx = EnvContext(env_config=env_config, worker_index=0)
+
+# Test with env not on curriculum (just initialized)
 task = c(train_results=results, task_settable_env=env, env_ctx=env_ctx)
 print(f"{task=}")
+# Test with env on curriculum (subsequent calls)
+env.set_task(task_map[0])
+task = c(train_results=results, task_settable_env=env, env_ctx=env_ctx)
+# Test with env at end of curriculum
+env.set_task(task_map[-1])
+task = c(train_results=results, task_settable_env=env, env_ctx=env_ctx)
 
 # %% Test Fit
 ray.init(num_cpus=3, num_gpus=0)
