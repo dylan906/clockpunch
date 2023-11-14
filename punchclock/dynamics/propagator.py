@@ -67,7 +67,8 @@ def simplePropagate(
             rtol=1e-10,
         )
 
-        if sol.y == []:
+        # if sol.y == []:
+        if sol.y.size == 0:
             raise ValueError(
                 "solve_ivp did not converge, likely due to a bad initial condition."
             )
