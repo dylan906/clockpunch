@@ -286,8 +286,6 @@ def entropyDiff(
         print(ex)
         print(f"{sigma_num=}")
         print(f"{sigma_den=}")
-        print(f"det(sigma_num) = {det_num}")
-        print(f"det(sigma_den) = {det_den}")
 
     warnings.resetwarnings()
     return entropy

@@ -11,7 +11,16 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
-from numpy import asarray, bool_, insert, isnan, ndarray, where, zeros
+from numpy import (
+    array_equal,
+    asarray,
+    bool_,
+    insert,
+    isnan,
+    ndarray,
+    where,
+    zeros,
+)
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
@@ -63,9 +72,7 @@ class InfoWrapper(ABC, Wrapper):
 
         self.update_method = update_method
 
-    def _updateUnwrappedInfo(
-        self, unwrapped_info: dict, new_info: dict
-    ) -> dict:
+    def _updateUnwrappedInfo(self, unwrapped_info: dict, new_info: dict) -> dict:
         if self.update_method == "union":
             wrapped_info = deepcopy(unwrapped_info)
             wrapped_info.update(new_info)
@@ -74,9 +81,7 @@ class InfoWrapper(ABC, Wrapper):
 
         return wrapped_info
 
-    def reset(
-        self, seed: int | None = None, options: dict | None = None
-    ) -> tuple:
+    def reset(self, seed: int | None = None, options: dict | None = None) -> tuple:
         """Reset environment."""
         obs, info = super().reset(seed=seed, options=options)
 
@@ -122,9 +127,7 @@ class InfoWrapper(ABC, Wrapper):
             action=action,
         )
 
-        infos = self._updateUnwrappedInfo(
-            unwrapped_info=infos, new_info=new_info
-        )
+        infos = self._updateUnwrappedInfo(unwrapped_info=infos, new_info=new_info)
 
         self.info = deepcopy(infos)
 
@@ -1017,9 +1020,9 @@ class EntropyDiff(InfoWrapper):
         for i in range(self.k):
             cd = new_info[self.cov_den][i, :, :]
             cn = new_info[self.cov_num][i, :, :]
-            e = entropyDiff(
-                sigma_den=cd,
+            e = self.entropyDiffSafe(
                 sigma_num=cn,
+                sigma_den=cd,
                 logbase=self.logbase,
             )
             entropy[i] = e
@@ -1029,6 +1032,18 @@ class EntropyDiff(InfoWrapper):
         new_info[self.new_key] = entropy
 
         return new_info
+
+    def entropyDiffSafe(self, sigma_num: ndarray, sigma_den: ndarray, logbase: int):
+        """Safely calculate entropy diff, even for very large covariance matrices.
+
+        If input arrays are equal, skip manual entropy calculation and return 0.
+        """
+        if array_equal(sigma_num, sigma_den):
+            return 0
+        else:
+            return entropyDiff(
+                sigma_num=sigma_num, sigma_den=sigma_den, logbase=self.logbase
+            )
 
 
 # %% TransformInfoWithNumpy
@@ -1111,9 +1126,7 @@ class CombineInfoItems(InfoWrapper):
         """
         super().__init__(env)
         info = getInfo(env)
-        assert all(
-            [k in info for k in keys]
-        ), "All entries of keys must be in info."
+        assert all([k in info for k in keys]), "All entries of keys must be in info."
 
         self.keys = keys
         self.new_key = new_key
