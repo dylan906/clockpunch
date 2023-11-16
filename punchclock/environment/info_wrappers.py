@@ -855,6 +855,7 @@ class LogisticTransformInfo(InfoWrapper):
         self,
         env: Env,
         key: str,
+        new_key: str = None,
         x0: float = 0.0,
         k: float = 1.0,
         L: float = 1.0,
@@ -864,6 +865,8 @@ class LogisticTransformInfo(InfoWrapper):
         Args:
             env (Env): A Gymnasium environment.
             key (str): Key to item in info to transform.
+            new_key (str, optional): New key to assign to info. If None, overrides
+                key. Defaults to None.
             x0 (float, optional): Value of x at sigmoid's midpoint. Defaults to 0.0.
             k (float, optional): Steepness parameter. Defaults to 1.0.
             L (float, optional): Max value of output. Defaults to 1.0.
@@ -874,6 +877,9 @@ class LogisticTransformInfo(InfoWrapper):
 
         self.logisticPartial = partial(logistic, x0=x0, k=k, L=L)
         self.key = key
+        if new_key is None:
+            new_key = key
+        self.new_key = new_key
 
     def updateInfo(
         self, observations, rewards, terminations, truncations, infos, action
@@ -881,7 +887,7 @@ class LogisticTransformInfo(InfoWrapper):
         """Transform infos[self.key] by logistic function."""
         x = infos[self.key]
         x_transform = self.logisticPartial(x)
-        new_info = {self.key: x_transform}
+        new_info = {self.new_key: x_transform}
         return new_info
 
 
