@@ -144,7 +144,7 @@ class ConfigurableCurriculumFn:
             task = cur_task
         else:
             next_metric_val = self.metric_levels[cur_task_idx + 1]
-            if metric_val > next_metric_val:
+            if metric_val >= next_metric_val:
                 # increment task up
                 task = self.task_map[cur_task_idx + 1]
             else:
