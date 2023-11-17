@@ -161,12 +161,12 @@ class NumWindows(InfoWrapper):
 
     The names of the new info items are overridable via the new_keys arg.
 
-    Has two modes: recalculate on step (default) and open loop forecast, setable
-    via the `open_loop` arg on instantiation. In recalculate on step mode, a new
+    Has two modes: recalculate-on-step (default) and open loop forecast, setable
+    via the `open_loop` arg on instantiation. In recalculate-on-step mode, a new
     forecast of visibility windows is generated on every call of updateInfo().
     In open loop mode, visibility windows are calculated once, at instantiation;
     calls to updateInfo() use the lookup table generated on instantiation to calculate
-    number of windows left on horizon. Recalculate on step mode is computationally
+    number of windows left on horizon. Recalculate-on-step mode is computationally
     expensive because it propagates dynamics repeatedly.
 
     For details on access window definitions, see AccessWindowCalculator.
@@ -206,8 +206,9 @@ class NumWindows(InfoWrapper):
                 to False.
             new_keys (list[str], optional): Override default names to be appended
                 to info. The 0th value will override "num_windows_left"; the 1st
-                value will override "vis_forecast". Defaults to None, meaning
-                "num_windows_left" and "vis_forecast" are used.
+                value will override "vis_forecast"; the 2nd value will override
+                "next_window". Defaults to None, meaning "num_windows_left",
+                "vis_forecast", and "next_window" are used.
         """
         super().__init__(env)
         # Type checking
@@ -228,14 +229,15 @@ class NumWindows(InfoWrapper):
             dt = env.time_step
 
         if new_keys is None:
-            new_keys = ["num_windows_left", "vis_forecast"]
+            new_keys = ["num_windows_left", "vis_forecast", "next_window"]
         else:
-            assert len(new_keys) == 2, "len(new_keys) != 2."
+            assert len(new_keys) == 3, "len(new_keys) != 3."
             print(
                 f"""Default keys for NumWindows wrapper overridden. Using following
                 map for new info key names: {{
                     'num_windows_left': {new_keys[0]},
                     'vis_forecast': {new_keys[1]},
+                    'next_window': {new_keys[2]},
                 }}
                 """
             )
@@ -253,6 +255,7 @@ class NumWindows(InfoWrapper):
         self.new_keys_map = {
             "num_windows_left": new_keys[0],
             "vis_forecast": new_keys[1],
+            "next_window": new_keys[2],
         }
         self.use_estimates = use_estimates
         self.open_loop = open_loop
@@ -285,6 +288,7 @@ class NumWindows(InfoWrapper):
             self.vis_forecast,
             self.vis_forecast_pertarget,
             self.time_vec,
+            self.time_to_window_hist,
         ] = self._propagateForecast(
             x_sensors=calc_window_inputs["x_sensors"],
             x_targets=calc_window_inputs["x_targets"],
@@ -297,11 +301,13 @@ class NumWindows(InfoWrapper):
         vis_forecast = self.prependZeros(self.vis_forecast)
         vis_forecast_pertarget = self.prependZeros(self.vis_forecast_pertarget)
         time_vec = self.prependZeros(self.time_vec)
+        time_to_window_hist = self.prependZeros(self.time_to_window_hist)
 
         self.forecast_table = {
             "vis_forecast": deepcopy(vis_forecast),
             "vis_forecast_pertarget": deepcopy(vis_forecast_pertarget),
             "time_vec": deepcopy(time_vec),
+            "time_to_window_hist": deepcopy(time_to_window_hist),
         }
 
         return
@@ -370,6 +376,7 @@ class NumWindows(InfoWrapper):
                 self.vis_forecast,
                 self.vis_forecast_pertarget,
                 self.time_vec,
+                self.time_to_window_hist,
             ] = self._propagateForecast(
                 x_sensors=calc_window_inputs["x_sensors"],
                 x_targets=calc_window_inputs["x_targets"],
@@ -381,11 +388,15 @@ class NumWindows(InfoWrapper):
                 self.vis_forecast,
                 self.vis_forecast_pertarget,
                 self.time_vec,
+                self.time_to_window_hist,
             ] = self._openLoopForecast(time_now=calc_window_inputs["t0"])
+
+        time_to_next_window = self.time_to_window_hist[0, :]
 
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
             self.new_keys_map["vis_forecast"]: self.vis_forecast,
+            self.new_keys_map["next_window"]: time_to_next_window,
         }
 
         return new_info
@@ -395,7 +406,13 @@ class NumWindows(InfoWrapper):
         x_sensors: ndarray[float],
         x_targets: ndarray[float],
         time_now: float,
-    ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
+    ) -> Tuple[
+        ndarray[int],
+        ndarray[int],
+        ndarray[int],
+        ndarray[float],
+        ndarray[float],
+    ]:
         """Get number of windows left in horizon and associated data.
 
         Propagates motion of all agents.
@@ -414,12 +431,16 @@ class NumWindows(InfoWrapper):
                 number of windows left in time period for the n'th target.
             time_vec (ndarray[float]): (T, ) Time history (sec) corresponding
                 to 0th dimensions of vis_forecast and vis_forecast_pertarget.
+            time_to_window_hist(ndarray[float]): (T, N) The absolute difference
+                between time t and the next access window (sec) for target n. If
+                there are no upcoming windows, (t, n) is Inf.
         """
         (
             num_windows_left,
             vis_forecast,
             vis_forecast_pertarget,
             time_vec,
+            time_to_window_hist,
         ) = self.awc.calcNumWindows(
             x_sensors=x_sensors,
             x_targets=x_targets,
@@ -427,12 +448,24 @@ class NumWindows(InfoWrapper):
             return_vis_hist=True,
         )
 
-        return num_windows_left, vis_forecast, vis_forecast_pertarget, time_vec
+        return (
+            num_windows_left,
+            vis_forecast,
+            vis_forecast_pertarget,
+            time_vec,
+            time_to_window_hist,
+        )
 
     def _openLoopForecast(
         self,
         time_now: float,
-    ) -> Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
+    ) -> Tuple[
+        ndarray[int],
+        ndarray[int],
+        ndarray[int],
+        ndarray[float],
+        ndarray[float],
+    ]:
         """Get number of windows left in horizon and associated data.
 
         Uses lookup table to to calculate windows.
@@ -449,10 +482,13 @@ class NumWindows(InfoWrapper):
                 number of windows left in time period for the n'th target.
             time_vec (ndarray[float]): (T, ) Time history (sec) corresponding
                 to 0th dimensions of vis_forecast and vis_forecast_pertarget.
+            time_to_next_window(ndarray[float]): (N, ) Time to next access window,
+                per target (sec).
         """
         time_vec = self.forecast_table["time_vec"]
         vis_forecast = self.forecast_table["vis_forecast"]
         vis_forecast_pertarget = self.forecast_table["vis_forecast_pertarget"]
+        time_to_window_hist = self.forecast_table["time_to_window_hist"]
 
         # Crop the schedule variables, then recalculate the total sum
         t_index = where(time_vec == time_now)[0][0]
@@ -461,13 +497,21 @@ class NumWindows(InfoWrapper):
         vis_forecast_pertarget = vis_forecast_pertarget[t_index + 1 :, :]
         vis_forecast = vis_forecast[t_index + 1 :, :, :]
 
+        time_to_window_hist = time_to_window_hist[(t_index + 1) :, :]
+
         num_windows_left = self.awc.sumWindows(
             vis_hist=vis_forecast,
             vis_hist_targets=vis_forecast_pertarget,
             merge_windows=True,
         )
 
-        return num_windows_left, vis_forecast, vis_forecast_pertarget, time_vec
+        return (
+            num_windows_left,
+            vis_forecast,
+            vis_forecast_pertarget,
+            time_vec,
+            time_to_window_hist,
+        )
 
     def _getCalcWindowInputs(self) -> dict:
         """Get sensor/target states and current time.

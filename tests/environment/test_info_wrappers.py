@@ -44,9 +44,7 @@ class NumWindowsEnv(Env):
         self.observation_space = Dict({"a": Box(low=0, high=1)})
         self.action_space = MultiDiscrete([1])
         agents = [buildRandomAgent(agent_type="sensor") for ag in range(2)]
-        agents.extend(
-            [buildRandomAgent(agent_type="target") for ag in range(3)]
-        )
+        agents.extend([buildRandomAgent(agent_type="target") for ag in range(3)])
         self.agents = agents
         self.agents_backup = deepcopy(agents)
         self.horizon = 10
@@ -94,9 +92,7 @@ print(f"vis_forcast.shape = {info['vis_forecast'].shape}")
 print("\n")
 print("  Case 2: Use lookup table for forecasts after initialization")
 
-nwo_env = NumWindows(
-    env=deepcopy(dummy_env), use_estimates=False, open_loop=True
-)
+nwo_env = NumWindows(env=deepcopy(dummy_env), use_estimates=False, open_loop=True)
 obs, info = nwo_env.reset()
 print("reset")
 print(f"num windows = {info['num_windows_left']}")
@@ -171,7 +167,7 @@ constructor_params = {
             "wrapper": "NumWindows",
             "wrapper_config": {
                 "use_estimates": False,
-                "new_keys": ["num_windows_alt", "vis_forecast"],
+                "new_keys": ["num_windows_alt", "vis_forecast", "num_windows_left"],
             },
         }
     ]
@@ -278,9 +274,7 @@ thresh_env = ThresholdInfo(
     new_key="meets_threshold",
     threshold=0.5,
 )
-(obs, reward, term, trunc, info) = thresh_env.step(
-    thresh_env.action_space.sample()
-)
+(obs, reward, term, trunc, info) = thresh_env.step(thresh_env.action_space.sample())
 print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
 
@@ -297,9 +291,7 @@ rand_env = RandomInfo(
 thresh_env = ThresholdInfo(
     rand_env, info_key="a", new_key="meets_threshold", threshold=0.5
 )
-(obs, reward, term, trunc, info) = thresh_env.step(
-    thresh_env.action_space.sample()
-)
+(obs, reward, term, trunc, info) = thresh_env.step(thresh_env.action_space.sample())
 print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
 
@@ -321,9 +313,7 @@ thresh_env = ThresholdInfo(
     threshold_reward=-1.1,
     inequality=">",
 )
-(obs, reward, term, trunc, info) = thresh_env.step(
-    thresh_env.action_space.sample()
-)
+(obs, reward, term, trunc, info) = thresh_env.step(thresh_env.action_space.sample())
 print(f"threshold = {thresh_env.threshold}")
 print(f"info = {info}")
 
@@ -331,9 +321,7 @@ print(f"info = {info}")
 print("\nTest LogisticTransformInfo...")
 
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    )
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])})
 )
 log_env = LogisticTransformInfo(rand_env, key=0)
 
@@ -348,9 +336,7 @@ print(f"info (via step) = {info}")
 # %% Test CovKLD
 print("\nTest CovKLD...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict(
         {
             "sigma0": Box(
@@ -377,9 +363,7 @@ print(f"info (via step) = {info}")
 # %% Test EntropyDiff
 print("\nTest EntropyDiff...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict(
         {
             "sigma0": Box(
@@ -406,9 +390,7 @@ print(f"info (via step) = {info}")
 # %% TransformInfoWith Numpy
 print("\nTest TransformInfoWithNumpy...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict({"a": Box(low=0, high=2, shape=(2, 2))}),
 )
 
@@ -423,9 +405,7 @@ print(f"info (via step) = {info}")
 # %% Test CombineInfoItems
 print("\nTest CombineInfoItems...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict(
         {
             "a": Box(low=0, high=2, shape=(2, 2)),
@@ -442,9 +422,7 @@ print(f"info (via step) = {info}")
 # %% Test GetNonZeroElements
 print("\nTest GetNonZeroElements...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict(
         {
             "a": Box(low=0, high=2, shape=(2, 2)),
@@ -461,9 +439,7 @@ for k in ["a", "b", "c"]:
 # %% Test ConfigrableLogicGate
 print("\nTest ConfigrableLogicGate...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict(
         {
             "a": Box(low=0, high=2, shape=(2, 2)),
@@ -486,9 +462,7 @@ print(f"info (via step) = {info}")
 # %% FilterInfo
 print("\nTest FilterInfo...")
 rand_env = RandomInfo(
-    RandomEnv(
-        {"observation_space": Dict({}), "action_space": MultiDiscrete([1])}
-    ),
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
     info_space=Dict(
         {
             "a": Discrete(2),
