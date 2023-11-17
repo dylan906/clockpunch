@@ -1,11 +1,20 @@
 """Calculate access windows."""
 # %% Imports
 # Standard Library Imports
-from copy import deepcopy
+from copy import copy, deepcopy
 from typing import Tuple
 
 # Third Party Imports
-from numpy import arange, asarray, ndarray, sum, zeros
+from numpy import (
+    Inf,
+    arange,
+    argmax,
+    asarray,
+    count_nonzero,
+    ndarray,
+    sum,
+    zeros,
+)
 from satvis.visibility_func import isVis
 
 # Punch Clock Imports
@@ -191,10 +200,7 @@ class AccessWindowCalculator:
         x_targets: ndarray,
         t: float,
         return_vis_hist: bool = False,
-    ) -> (
-        ndarray[int]
-        | Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]
-    ):
+    ) -> ndarray[int] | Tuple[ndarray[int], ndarray[int], ndarray[int], ndarray[float]]:
         """Get number of visibility windows per target from current time to horizon.
 
         Optionally return detailed data (time history of access windows).
@@ -210,12 +216,16 @@ class AccessWindowCalculator:
             num_windows (ndarray[int]): (N,) Number of windows per target.
             vis_hist (ndarray[int], optional): (T, N, M) Same as return from
                 self.calcVisHist(). Outputs if return_vis_hist == True on input.
-            vis_hist_targets (ndarray[int], optional): (T, N) Each row has the
-                number of windows left in time period for the n'th target. Outputs
-                if return_vis_hist == True on input.
-            time (ndarray[float], optional): (T, ) Time history (sec) corresponding
+            vis_hist_targets (ndarray[int], optional): (T, N) Binary matrix. Each
+                entry indicates whether a target can be seen by ANY sensor at that
+                time. Outputs if return_vis_hist == True on input.
+            time_hist (ndarray[float], optional): (T, ) Time history (sec) corresponding
                 to 0th dimensions of vis_hist and vis_hist_targets. Outputs if
                 return_vis_hist == True on input.
+            time_to_next_window (ndarray[float]): (T, N) The absolute difference
+                between time t and the next access window (sec) for target n. If
+                there are no upcoming windows, (t, n) is Inf. Outputs if return_vis_hist
+                == True on input
         """
         vis_hist = self.calcVisHist(
             x_sensors=x_sensors,
@@ -231,11 +241,67 @@ class AccessWindowCalculator:
             merge_windows=self.merge_windows,
         )
 
+        time_to_next_window = self._calcTimeToWindowHist(
+            t_now=t, vis_hist_targets=vis_hist_targets
+        )
+
         if return_vis_hist is False:
             return num_windows
         else:
             time_hist = deepcopy(self.time_vec)
-            return num_windows, vis_hist, vis_hist_targets, time_hist
+            return (
+                num_windows,
+                vis_hist,
+                vis_hist_targets,
+                time_hist,
+                time_to_next_window,
+            )
+
+    def _calcTimeToWindowHist(
+        self, t_now: float, vis_hist_targets: ndarray[int]
+    ) -> ndarray[float]:
+        """Calculate the forecast for time until next window for all targets.
+
+        Args:
+            t_now (float): Current time (must be in self.time_vec).
+            vis_hist_targets (ndarray[int]): (T, N) Binary array where the (t, n)'th
+                element indicates whether (1) or not (0) target n is visible to
+                any sensor at time t.
+
+        Returns:
+            ndarray[float]: (T, N) The absolute difference between time t and the
+                next access window for target n. Units are the same as self.time_vec.
+                If there are no upcoming windows, (t, n) is Inf.
+        """
+        steps_to_next_window = zeros(vis_hist_targets.shape, dtype=int)
+        for i, col in enumerate(vis_hist_targets.T):
+            steps_to_next_window[:, i] = self.calcStepsToWindow(col)
+
+        time_to_next_window = self.dt * steps_to_next_window
+
+        return time_to_next_window
+
+    def calcStepsToWindow(self, A: ndarray[int]) -> ndarray[float]:
+        """Counts the number of steps to a 1 in a 1d binary array.
+
+        If there are no 1s left in array, the rest of the return is Inf.
+
+        Example:
+            A = [1, 0, 0, 1, 0, 1, 0, 0]
+            out = [0, 2, 1, 0, 1, 0, Inf, Inf]
+        """
+        outarray = zeros(len(A), dtype=float)
+        for i in range(len(A)):
+            a = A[i::]
+            if count_nonzero(a) == 0:
+                # Return early if the rest of A is 0s
+                outarray[i::] = Inf
+                break
+            else:
+                idx = argmax(a == 1)
+                outarray[i] = idx
+
+        return outarray
 
     def sumWindows(
         self,
