@@ -1,7 +1,7 @@
 """Calculate access windows."""
 # %% Imports
 # Standard Library Imports
-from copy import copy, deepcopy
+from copy import deepcopy
 from typing import Tuple
 
 # Third Party Imports

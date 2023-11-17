@@ -152,12 +152,15 @@ class InfoWrapper(ABC, Wrapper):
 class NumWindows(InfoWrapper):
     """Calculate number of target access windows over a time period.
 
-    Wraps `info` returned from env.step(). Appends 2 items to info:
+    Wraps `info` returned from env.step(). Appends items to info:
         "num_windows_left": ndarray[int] (N, ) Each entry is the number of access
             windows to the n'th target from now to the horizon.
         "vis_forecast" : ndarray[int] (T, N, M) Binary array where a 1 in the
             (t, n, m) position indicates that sensor m has access to target n at
             time step t.
+        "time_to_next_window": ndarray[float] (N, ) The absolute difference
+            between current time and the next access window (sec) for all targets.
+            If there are no upcoming windows, n = Inf.
 
     The names of the new info items are overridable via the new_keys arg.
 
@@ -207,8 +210,8 @@ class NumWindows(InfoWrapper):
             new_keys (list[str], optional): Override default names to be appended
                 to info. The 0th value will override "num_windows_left"; the 1st
                 value will override "vis_forecast"; the 2nd value will override
-                "next_window". Defaults to None, meaning "num_windows_left",
-                "vis_forecast", and "next_window" are used.
+                "time_to_next_window". Defaults to None, meaning "num_windows_left",
+                "vis_forecast", and "time_to_next_window" are used.
         """
         super().__init__(env)
         # Type checking
@@ -229,7 +232,7 @@ class NumWindows(InfoWrapper):
             dt = env.time_step
 
         if new_keys is None:
-            new_keys = ["num_windows_left", "vis_forecast", "next_window"]
+            new_keys = ["num_windows_left", "vis_forecast", "time_to_next_window"]
         else:
             assert len(new_keys) == 3, "len(new_keys) != 3."
             print(
@@ -237,7 +240,7 @@ class NumWindows(InfoWrapper):
                 map for new info key names: {{
                     'num_windows_left': {new_keys[0]},
                     'vis_forecast': {new_keys[1]},
-                    'next_window': {new_keys[2]},
+                    'time_to_next_window': {new_keys[2]},
                 }}
                 """
             )
@@ -255,7 +258,7 @@ class NumWindows(InfoWrapper):
         self.new_keys_map = {
             "num_windows_left": new_keys[0],
             "vis_forecast": new_keys[1],
-            "next_window": new_keys[2],
+            "time_to_next_window": new_keys[2],
         }
         self.use_estimates = use_estimates
         self.open_loop = open_loop
@@ -280,8 +283,9 @@ class NumWindows(InfoWrapper):
 
         # Get initial num_windows and associated data; store as static lookups
         # for use in open-loop mode.
-        # self.vis_forecast, vis_forecast_pertarget, time_vec change sizes every
-        # update. the forecast_table versions of these variables do not change sizes.
+        # self.vis_forecast, vis_forecast_pertarget, time_vec, time_to_window_hist
+        # change sizes every update. the forecast_table versions of these variables
+        # do not change sizes.
         calc_window_inputs = self._getCalcWindowInputs()
         [
             self.num_windows_left,
@@ -367,6 +371,10 @@ class NumWindows(InfoWrapper):
                     "vis_forecast" : ndarray[int] (T, N, M) Binary array where
                         a 1 in the (t, n, m) position indicates that sensor m has
                         access to target n at time step t.
+                    "time_to_next_window": ndarray[float] (N, ) The absolute difference
+                        between current time and the next access window (sec)
+                        for all targets. If there are no upcoming windows,
+                        n = Inf.
                 }
         """
         calc_window_inputs = self._getCalcWindowInputs()
@@ -396,7 +404,7 @@ class NumWindows(InfoWrapper):
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
             self.new_keys_map["vis_forecast"]: self.vis_forecast,
-            self.new_keys_map["next_window"]: time_to_next_window,
+            self.new_keys_map["time_to_next_window"]: time_to_next_window,
         }
 
         return new_info
