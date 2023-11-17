@@ -222,7 +222,7 @@ class AccessWindowCalculator:
             time_hist (ndarray[float], optional): (T, ) Time history (sec) corresponding
                 to 0th dimensions of vis_hist and vis_hist_targets. Outputs if
                 return_vis_hist == True on input.
-            time_to_next_window (ndarray[float]): (T, N) The absolute difference
+            time_to_window_hist (ndarray[float]): (T, N) The absolute difference
                 between time t and the next access window (sec) for target n. If
                 there are no upcoming windows, (t, n) is Inf. Outputs if return_vis_hist
                 == True on input
@@ -241,7 +241,7 @@ class AccessWindowCalculator:
             merge_windows=self.merge_windows,
         )
 
-        time_to_next_window = self._calcTimeToWindowHist(
+        time_to_window_hist = self._calcTimeToWindowHist(
             t_now=t, vis_hist_targets=vis_hist_targets
         )
 
@@ -254,7 +254,7 @@ class AccessWindowCalculator:
                 vis_hist,
                 vis_hist_targets,
                 time_hist,
-                time_to_next_window,
+                time_to_window_hist,
             )
 
     def _calcTimeToWindowHist(
@@ -277,9 +277,9 @@ class AccessWindowCalculator:
         for i, col in enumerate(vis_hist_targets.T):
             steps_to_next_window[:, i] = self.calcStepsToWindow(col)
 
-        time_to_next_window = self.dt * steps_to_next_window
+        time_to_window_hist = self.dt * steps_to_next_window
 
-        return time_to_next_window
+        return time_to_window_hist
 
     def calcStepsToWindow(self, A: ndarray[int]) -> ndarray[float]:
         """Counts the number of steps to a 1 in a 1d binary array.
