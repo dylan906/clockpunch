@@ -401,10 +401,12 @@ class NumWindows(InfoWrapper):
 
         time_to_next_window = self.time_to_window_hist[0, :]
 
+        # TODO: Uncomment this line after fixing bug in time to next window calc
+        # #102
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
             self.new_keys_map["vis_forecast"]: self.vis_forecast,
-            self.new_keys_map["time_to_next_window"]: time_to_next_window,
+            # self.new_keys_map["time_to_next_window"]: time_to_next_window,
         }
 
         return new_info
