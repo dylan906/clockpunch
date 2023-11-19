@@ -216,12 +216,15 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
             self.switch_env = False
             self._makeEnv(self.backup_config)
         self._timesteps = 0
-        return self.env.reset(seed=seed, options=options)
+        obs, info = self.env.reset(seed=seed, options=options)
+        info = self._appendTaskToInfo(info)
+        return obs, info
 
     def step(self, action):
         """Step env."""
         self._timesteps += 1
         obs, rew, terminated, truncated, info = self.env.step(action)
+        info = self._appendTaskToInfo(info)
         return obs, rew, terminated, truncated, info
 
     def _makeEnv(self, config: dict):
@@ -236,6 +239,16 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
         new_config.pop("start_task", None)
 
         self.env = buildEnv(new_config)
+
+    def _appendTaskToInfo(self, info: dict) -> dict:
+        """Append task data to info."""
+        task_dict = {
+            "cur_task": self.cur_task,
+        }
+        new_info = deepcopy(info)
+        new_info.update(task_dict)
+
+        return new_info
 
     @override(TaskSettableEnv)
     def sample_tasks(self, n_tasks):
