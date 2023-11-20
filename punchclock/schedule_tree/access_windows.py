@@ -273,7 +273,7 @@ class AccessWindowCalculator:
                 next access window for target n. Units are the same as self.time_vec.
                 If there are no upcoming windows, (t, n) is Inf.
         """
-        steps_to_next_window = zeros(vis_hist_targets.shape, dtype=int)
+        steps_to_next_window = zeros(vis_hist_targets.shape, dtype=float)
         for i, col in enumerate(vis_hist_targets.T):
             steps_to_next_window[:, i] = self.calcStepsToWindow(col)
 
@@ -285,6 +285,8 @@ class AccessWindowCalculator:
         """Counts the number of steps to a 1 in a 1d binary array.
 
         If there are no 1s left in array, the rest of the return is Inf.
+
+        Returns array with dtype == float because Inf may be in array.
 
         Example:
             A = [1, 0, 0, 1, 0, 1, 0, 0]
