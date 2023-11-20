@@ -24,7 +24,11 @@ from numpy import (
     asarray,
     delete,
     diag,
+    finfo,
     float32,
+    float64,
+    iinfo,
+    int32,
     int64,
     ndarray,
     ones,
@@ -36,6 +40,16 @@ from satvis.visibility_func import isVis
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent
+
+# %% Constants
+MAX_FLOAT32 = finfo("float32").max
+MAX_FLOAT64 = finfo("float64").max
+MAX_INT32 = iinfo("int32").max
+MAX_INT64 = iinfo("int64").max
+MIN_FLOAT32 = finfo("float32").min
+MIN_FLOAT64 = finfo("float64").min
+MIN_INT32 = iinfo("int32").min
+MIN_INT64 = iinfo("int64").min
 
 
 # %% Functions
@@ -499,3 +513,22 @@ def updateRecursive(d: dict, u: dict) -> dict:
         else:
             d[k] = v
     return d
+
+
+# %% Saturate Inf
+def saturateInf(x: ndarray, dtype: type = float) -> ndarray:
+    """Replace Inf with max float."""
+    dtype_map = {
+        float: [finfo(float).min, finfo(float).max],
+        float32: [MIN_FLOAT32, MAX_FLOAT32],
+        float64: [MIN_FLOAT64, MAX_FLOAT64],
+        int: [iinfo(int).max, iinfo(int).max],
+        int32: [MIN_INT32, MAX_INT32],
+        int64: [MIN_INT64, MAX_INT64],
+    }
+
+    x_new = deepcopy(x)
+    x_new[x_new == -Inf] = dtype_map[dtype][0]
+    x_new[x_new == Inf] = dtype_map[dtype][1]
+
+    return x_new
