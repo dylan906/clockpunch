@@ -70,7 +70,7 @@ dummy_env = NumWindowsEnv()
 print("\nTest NumWindows...")
 print("  Case 1: Forecast every time step")
 # test in default mode (forecast every step)
-nw_env = NumWindows(env=deepcopy(dummy_env), use_estimates=False)
+nw_env = NumWindows(env=deepcopy(dummy_env), use_estimates=False, saturate_inf=True)
 
 obs, info = nw_env.reset()
 print("reset")

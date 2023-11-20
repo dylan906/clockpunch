@@ -29,6 +29,7 @@ from punchclock.common.utilities import (
     actionSpace2Array,
     getInequalityFunc,
     getInfo,
+    saturateInf,
 )
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
@@ -185,6 +186,7 @@ class NumWindows(InfoWrapper):
         use_estimates: bool = True,
         open_loop: bool = False,
         new_keys: list[str] = None,
+        saturate_inf: bool = False,
     ):
         """Wrap environment with NumWindows InfoWrapper.
 
@@ -212,6 +214,8 @@ class NumWindows(InfoWrapper):
                 value will override "vis_forecast"; the 2nd value will override
                 "time_to_next_window". Defaults to None, meaning "num_windows_left",
                 "vis_forecast", and "time_to_next_window" are used.
+            saturate_inf (bool, optional): If True, saturates "num_windows_left"
+                returned in info to largest possible numpy float. Defaults to False.
         """
         super().__init__(env)
         # Type checking
@@ -262,6 +266,7 @@ class NumWindows(InfoWrapper):
         }
         self.use_estimates = use_estimates
         self.open_loop = open_loop
+        self.saturate_inf = saturate_inf
 
         # Separate sensors from targets and dynamics
         sensors, targets = self._getAgents()
@@ -400,13 +405,13 @@ class NumWindows(InfoWrapper):
             ] = self._openLoopForecast(time_now=calc_window_inputs["t0"])
 
         time_to_next_window = self.time_to_window_hist[0, :]
+        if self.saturate_inf is True:
+            time_to_next_window = saturateInf(x=time_to_next_window, dtype=float)
 
-        # TODO: Uncomment this line after fixing bug in time to next window calc
-        # #102
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
             self.new_keys_map["vis_forecast"]: self.vis_forecast,
-            # self.new_keys_map["time_to_next_window"]: time_to_next_window,
+            self.new_keys_map["time_to_next_window"]: time_to_next_window,
         }
 
         return new_info
