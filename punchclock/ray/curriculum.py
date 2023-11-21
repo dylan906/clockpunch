@@ -61,9 +61,9 @@ class ConfigurableCurriculumFn:
         """Initialize curriculum to later call via __call__().
 
         Args:
-            results_metric (list[str] | str): The path of keys to get to the desired
-                value in a training results dict. If accessing top level of dict,
-                can input a str.
+            results_metric (list[str] | str): The path of dict keys to get to the
+                desired value in a training results dict. If accessing top level
+                of dict, can input a str.
             metric_levels (list[int  |  float]): The levels of the curriculum
                 that the value of the results metric is measured against. Must
                 be same length as task_map.
@@ -228,8 +228,10 @@ class CustomCallbacks(DefaultCallbacks):
         # is info returned from env.
         last_info1 = list(last_info.values())[1]
         # pprint(f"\n {last_info1=}")
-        episode.custom_metrics["last_custody_sum"] = last_info1["custody_sum"]
-        episode.custom_metrics["last_custody_percent"] = last_info1["custody_percent"]
+        episode.custom_metrics["last_custody_sum"] = last_info1.get("custody_sum", None)
+        episode.custom_metrics["last_custody_percent"] = last_info1.get(
+            "custody_percent", None
+        )
 
 
 # %% ConfigurableCirriculumEnv
@@ -329,14 +331,19 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
 
         Args:
             config (EnvContext): Env config plus some extra items (see Ray documentation
-                for EnvContext).
+                for EnvContext). Must include
+                    "curriculum_config": (CurriculumConfig | dict)
+                See CurriculumConfig for details.
         """
-        self.cur_task = config.get("start_task", {})
-        assert isinstance(self.cur_task, dict)
         assert "curriculum_config" in config
         cur_config = config.get("curriculum_config")
-        assert isinstance(cur_config, CurriculumConfig)
-        self.cur_config = cur_config.__dict__
+        assert isinstance(cur_config, (CurriculumConfig, dict))
+        if isinstance(cur_config, CurriculumConfig):
+            cur_config = cur_config.__dict__
+        self.cur_config = cur_config
+
+        self.cur_task = config.get("start_task", cur_config["task_map"][0])
+        assert isinstance(self.cur_task, dict)
 
         self.backup_config = deepcopy(config)
         self.env = None
@@ -361,6 +368,7 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         self._timesteps += 1
         obs, rew, terminated, truncated, info = self.env.step(action)
         info = self._appendTaskToInfo(info)
+        rew = self._transformReward(rew)
         return obs, rew, terminated, truncated, info
 
     def _makeEnv(self, config: dict):
@@ -376,6 +384,15 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         new_config.pop("curriculum_config", None)
 
         self.env = buildEnv(new_config)
+
+    def _transformReward(self, rew: float) -> float:
+        """Optionally transform reward based on curriculum level."""
+        if self.cur_config["transform_reward"] is True:
+            cur_level = self.cur_config["task_map"].index(self.cur_task)
+            new_reward = rew * (cur_level + 1)
+        else:
+            new_reward = rew
+        return new_reward
 
     def _appendTaskToInfo(self, info: dict) -> dict:
         """Append task data to info."""
@@ -411,11 +428,26 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
 
 @dataclass
 class CurriculumConfig:
-    """Class for standardizing curriculum inputs."""
+    """Class for standardizing curriculum inputs that are dicts.
+
+    Args:
+        results_metric (list[str]): The path of dict keys to get to the desired
+            value in a training results dict. If accessing top level of dict, can
+            input a str.
+        metric_levels (list[int | float]): The levels of the curriculum
+            that the value of the results metric is measured against. Must
+            be same length as task_map.
+        task_map (list[dict]): The map between levels and tasks. Each entry
+            must have at least 1 item that is used in the env config. Must
+            be same length as metric_levels.
+        transform_reward (bool, optional): If True, base reward from environment
+            will be transformed. Defaults to False.
+    """
 
     results_metric: list[str] | str
     metric_levels: list[int | float]
     task_map: list[dict]
+    transform_reward: bool = False
 
     def __post_init__(self):
         """Check args."""
@@ -430,7 +462,9 @@ def getMetricValue(train_results: dict, metric: list[str]) -> float | None:
 
     Args:
         train_results (dict): The train results returned by Algorithm.train().
-        metric (list[str]):
+        metric (list[str]): The path of dict keys to get to the desired value in
+            a training results dict. If accessing top level of dict, can input a
+            str.
 
     Returns:
         float | None: If key path into multi-level dict is faulty, returns
@@ -447,8 +481,15 @@ def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) ->
     If metric_val doesn't meet threshold, then repeat current task.
 
     If cur_task is at the end of the curriculum, repeat the current task.
+
+    Args:
+        cur_task (dict): Current task from a TaskSettableEnv.
+        metric_val (float): Value of metric from train results.
+        curriculum_config (dict): See CurriculumConfig for details.
+
+    Returns:
+        dict: New task to assign to a TaskSettableEnv.
     """
-    # task_map = curriculum_config["task_map"]
     task_map, metric_levels = itemgetter("task_map", "metric_levels")(curriculum_config)
 
     cur_task_idx = task_map.index(cur_task)
