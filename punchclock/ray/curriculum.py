@@ -8,6 +8,8 @@
 # Standard Library Imports
 import random
 from copy import deepcopy
+from dataclasses import dataclass
+from operator import itemgetter
 from pprint import pprint
 
 # Third Party Imports
@@ -154,6 +156,51 @@ class ConfigurableCurriculumFn:
         return task
 
 
+# %% ConfigurableCurriculumFnV2
+def configurableCurriculumFnV2(
+    train_results: dict,
+    task_settable_env: TaskSettableEnv,
+    env_ctx: EnvContext,
+) -> dict:
+    """Function returning a possibly new task to set `task_settable_env` to.
+
+    Args:
+        train_results: The train results returned by Algorithm.train().
+        task_settable_env: A single TaskSettableEnv object
+            used inside any worker and at any vector position. Use `env_ctx`
+            to get the worker_index, vector_index, and num_workers.
+        env_ctx: The env context object (i.e. env's config dict
+            plus properties worker_index, vector_index and num_workers) used
+            to setup the `task_settable_env`.
+
+    Returns:
+        dict: The task to set the env to. This may be the same as the
+            current one.
+    """
+    pprint(train_results)
+    curriculum = task_settable_env.getCurriculum()
+    metric_val = getMetricValue(
+        train_results=train_results, metric=curriculum["results_metric"]
+    )
+
+    cur_task = task_settable_env.get_task()
+    print(f"current task (via curriculum_fn) = {cur_task}")
+
+    if cur_task not in curriculum["task_map"]:
+        # Current task can be outside of task map if env was just initialized
+        task = curriculum["task_map"][0]
+    else:
+        task = incrementTask(cur_task, metric_val, curriculum)
+
+    print(
+        f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
+        f"\nR={train_results['episode_reward_mean']}"
+        f"\nSetting env to task {task}"
+        f"\nMetric value = {metric_val}"
+    )
+    return task
+
+
 # %% Custom callback
 class CustomCallbacks(DefaultCallbacks):
     """Functions to be called throughout training."""
@@ -266,3 +313,156 @@ class ConfigurableCurriculumEnv(TaskSettableEnv):
         assert isinstance(task, dict)
         self.cur_task = task
         self.switch_env = True
+
+
+# %% ConfigurableCirriculumEnvV2
+class ConfigurableCurriculumEnvV2(TaskSettableEnv):
+    """Curriculum learning wrapper around SSAScheduler.
+
+    Stores curriculum.
+
+    Task is a dict that is operated on by env_config.update(task).
+    """
+
+    def __init__(self, config: EnvContext):
+        """Wrap taskable environment.
+
+        Args:
+            config (EnvContext): Env config plus some extra items (see Ray documentation
+                for EnvContext).
+        """
+        self.cur_task = config.get("start_task", {})
+        assert isinstance(self.cur_task, dict)
+        assert "curriculum_config" in config
+        cur_config = config.get("curriculum_config")
+        assert isinstance(cur_config, CurriculumConfig)
+        self.cur_config = cur_config.__dict__
+
+        self.backup_config = deepcopy(config)
+        self.env = None
+        self._makeEnv(config)  # create self.env
+        self.observation_space = self.env.observation_space
+        self.action_space = self.env.action_space
+        self.switch_env = False
+        self._timesteps = 0
+
+    def reset(self, *, seed=None, options=None):
+        """Reset env with possibly new task."""
+        if self.switch_env:
+            self.switch_env = False
+            self._makeEnv(self.backup_config)
+        self._timesteps = 0
+        obs, info = self.env.reset(seed=seed, options=options)
+        info = self._appendTaskToInfo(info)
+        return obs, info
+
+    def step(self, action):
+        """Step env."""
+        self._timesteps += 1
+        obs, rew, terminated, truncated, info = self.env.step(action)
+        info = self._appendTaskToInfo(info)
+        return obs, rew, terminated, truncated, info
+
+    def _makeEnv(self, config: dict):
+        """Make environment from backup config with updates from cur_task."""
+        new_config = deepcopy(config)
+        task = self.cur_task
+        print(f"{self.cur_task=}")
+
+        # Use special update function that can handle nested dict tasks
+        new_config = updateRecursive(new_config, task)
+        # prevents error in buildEnv caused by unrecognized arg
+        new_config.pop("start_task", None)
+        new_config.pop("curriculum_config", None)
+
+        self.env = buildEnv(new_config)
+
+    def _appendTaskToInfo(self, info: dict) -> dict:
+        """Append task data to info."""
+        task_dict = {
+            "cur_task": self.cur_task,
+        }
+        new_info = deepcopy(info)
+        new_info.update(task_dict)
+
+        return new_info
+
+    def getCurriculum(self):
+        """Return curriculum config."""
+        return self.cur_config
+
+    @override(TaskSettableEnv)
+    def sample_tasks(self, n_tasks):
+        """Implement this to sample n random tasks."""
+        return [random.randint(1, 10) for _ in range(n_tasks)]
+
+    @override(TaskSettableEnv)
+    def get_task(self):
+        """Implement this to get the current task (curriculum level)."""
+        return self.cur_task
+
+    @override(TaskSettableEnv)
+    def set_task(self, task):
+        """Implement this to set the task (curriculum level) for this env."""
+        assert isinstance(task, dict)
+        self.cur_task = task
+        self.switch_env = True
+
+
+@dataclass
+class CurriculumConfig:
+    """Class for standardizing curriculum inputs."""
+
+    results_metric: list[str] | str
+    metric_levels: list[int | float]
+    task_map: list[dict]
+
+    def __post_init__(self):
+        """Check args."""
+        assert isinstance(self.results_metric, (list, str))
+        assert len(self.metric_levels) == len(self.task_map)
+        if isinstance(self.results_metric, str):
+            self.results_metric = [self.results_metric]
+
+
+def getMetricValue(train_results: dict, metric: list[str]) -> float | None:
+    """Get value of metric from possibly multi-level dict.
+
+    Args:
+        train_results (dict): The train results returned by Algorithm.train().
+        metric (list[str]):
+
+    Returns:
+        float | None: If key path into multi-level dict is faulty, returns
+            None. Otherwise, should return a single numerical value.
+    """
+    # This seems like a lot of code for a 1-liner function, but the 1 functional
+    # line is not self-explanatory.
+    return chainedGet(train_results, *metric, default=None)
+
+
+def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) -> dict:
+    """Increment a task forward in the task map if metric meets threshold.
+
+    If metric_val doesn't meet threshold, then repeat current task.
+
+    If cur_task is at the end of the curriculum, repeat the current task.
+    """
+    # task_map = curriculum_config["task_map"]
+    task_map, metric_levels = itemgetter("task_map", "metric_levels")(curriculum_config)
+
+    cur_task_idx = task_map.index(cur_task)
+    if cur_task_idx == len(task_map) - 1:
+        # repeat current task if at end of curriculum
+        print("End of curriculum reached")
+        task = cur_task
+    else:
+        next_metric_val = metric_levels[cur_task_idx + 1]
+        if metric_val >= next_metric_val:
+            # increment task up
+            task = task_map[cur_task_idx + 1]
+        else:
+            # repeat task if metric threshold not met
+            task = task_map[cur_task_idx]
+
+    return task

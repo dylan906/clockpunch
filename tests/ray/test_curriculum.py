@@ -14,8 +14,11 @@ from ray.tune.registry import get_trainable_cls
 from punchclock.ray.build_env import buildEnv
 from punchclock.ray.curriculum import (
     ConfigurableCurriculumEnv,
+    ConfigurableCurriculumEnvV2,
     ConfigurableCurriculumFn,
+    CurriculumConfig,
     CustomCallbacks,
+    configurableCurriculumFnV2,
 )
 
 # %% Test Env
@@ -48,6 +51,45 @@ env = buildEnv(env_config)
 env.reset()
 env.step(env.action_space.sample())
 check_env(env)
+# %% Test CurriculumConfig
+print("Test CurriculumConfig...")
+cur = CurriculumConfig(
+    results_metric=["custom_metrics", "last_custody_sum_mean"],
+    metric_levels=[0, 1, 2, 3],
+    task_map=[{"horizon": i} for i in range(4)],
+)
+
+# %% Test ConfigurableCurriculumEnvV2
+print("Test ConfigurableCurriculumEnvV2...")
+env_config.update({"curriculum_config": cur})
+env = ConfigurableCurriculumEnvV2(config=env_config)
+obs, info = env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+obs, rew, _, _, info = env.step(env.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
+
+# %% Test ConfigurableCurriculumFnV2
+results = {
+    "custom_metrics": {
+        "last_custody_sum_mean": 1.2,
+    },
+    "episode_reward_mean": 1,
+}
+env_ctx = EnvContext(env_config=env_config, worker_index=0)
+
+task = configurableCurriculumFnV2(
+    train_results=results, task_settable_env=env, env_ctx=env_ctx
+)
+print(f"{task=}")
+
+env.set_task({"horizon": 1})
+task = configurableCurriculumFnV2(
+    train_results=results, task_settable_env=env, env_ctx=env_ctx
+)
+print(f"{task=}")
 
 # %% Test ConfigurableCurriculumEnv
 env = ConfigurableCurriculumEnv(config=env_config)
