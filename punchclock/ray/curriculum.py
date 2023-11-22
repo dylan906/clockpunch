@@ -185,8 +185,6 @@ def configurableCurriculumFnV2(
         train_results=train_results, metric=curriculum_config["results_metric"]
     )
 
-    print(f"current task (via curriculum_fn) = {cur_task}")
-
     # if cur_task not in curriculum["task_map"]:
     #     # Current task can be outside of task map if env was just initialized
     #     task = curriculum[0][2]
@@ -200,6 +198,7 @@ def configurableCurriculumFnV2(
         f"\nR={train_results['episode_reward_mean']}"
         f"\nMetric value = {metric_val}"
         f"\nMetric threshold = {metric_threshold}"
+        f"\nPrior task {cur_task}"
         f"\nSetting env to task {task}"
         f"\nTask config = {task_config}"
     )
