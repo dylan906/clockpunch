@@ -191,12 +191,13 @@ def configurableCurriculumFnV2(
         # Current task can be outside of task map if env was just initialized
         task = curriculum["task_map"][0]
     else:
-        task = incrementTask(cur_task, metric_val, curriculum)
+        task, level = incrementTask(cur_task, metric_val, curriculum)
 
     print(
         f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
         f"\nR={train_results['episode_reward_mean']}"
         f"\nSetting env to task {task}"
+        f"\nTask level = {level}"
         f"\nMetric value = {metric_val}"
     )
     return task
@@ -493,7 +494,12 @@ def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) ->
     """
     task_map, metric_levels = itemgetter("task_map", "metric_levels")(curriculum_config)
 
-    cur_task_idx = task_map.index(cur_task)
+    # cur_task_idx = task_map.index(cur_task)
+    cur_task_idx = getTaskLevel(
+        task=cur_task,
+        metric_val=metric_val,
+        curriculum_config=curriculum_config,
+    )
     if cur_task_idx == len(task_map) - 1:
         # repeat current task if at end of curriculum
         print("End of curriculum reached")
@@ -502,17 +508,18 @@ def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) ->
         next_metric_val = metric_levels[cur_task_idx + 1]
         if metric_val >= next_metric_val:
             # increment task up
-            task = task_map[cur_task_idx + 1]
+            cur_task_idx += 1
+            task = task_map[cur_task_idx]
         else:
             # repeat task if metric threshold not met
             task = task_map[cur_task_idx]
 
-    return task
+    return task, cur_task_idx
 
 
 def getTaskLevel(task: dict, metric_val: float, curriculum_config: dict) -> int:
     task_map, metric_levels = itemgetter("task_map", "metric_levels")(curriculum_config)
-    indices = [i for i in task_map if i == task]
+    indices = [i for i, t in enumerate(task_map) if t == task]
     if len(indices) == 1:
         task_level = indices[0]
     else:
