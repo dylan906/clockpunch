@@ -342,19 +342,20 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         assert "curriculum_config" in config
         cur_config = config.get("curriculum_config")
         assert isinstance(cur_config, (CurriculumConfig, dict))
-        if isinstance(cur_config, CurriculumConfig):
-            cur_config = cur_config.__dict__
-        self.curriculum_config = cur_config
-        # Create curriculum map: list of tuples (index, metric level, task)
-        self.curriculum_map = [
-            (t, metric, task_config)
-            for t, (metric, task_config) in enumerate(
-                zip(cur_config["metric_levels"], cur_config["task_map"])
-            )
-        ]
 
-        # Always start at level/task 0
-        self.cur_task = self.curriculum_map[0][0]
+        # Create curriculum map: list of tuples (index, metric level, task)
+        # Convert cur_config to dict if not already
+        if isinstance(cur_config, CurriculumConfig):
+            self.curriculum_map = cur_config.genCurriculumMap()
+            cur_config = cur_config.__dict__
+        else:
+            self.curriculum_map = CurriculumConfig(**cur_config).genCurriculumMap()
+
+        self.curriculum_config = cur_config
+
+        # Start at task 0 if not provided in config
+        self.cur_task = config.get("start_task", self.curriculum_map[0][0])
+        # self.cur_task = self.curriculum_map[0][0]
         self.cur_metric_level = self.curriculum_map[0][1]
         self.cur_task_config = self.curriculum_map[0][2]
 
@@ -395,7 +396,7 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         # Use special update function that can handle nested dict tasks
         new_config = updateRecursive(new_config, task_config)
         # prevents error in buildEnv caused by unrecognized arg
-        # new_config.pop("start_task", None)
+        new_config.pop("start_task", None)
         new_config.pop("curriculum_config", None)
 
         self.env = buildEnv(new_config)
@@ -454,7 +455,8 @@ class CurriculumConfig:
             input a str.
         metric_levels (list[int | float]): The levels of the curriculum
             that the value of the results metric is measured against. Must
-            be same length as task_map.
+            be same length as task_map. Each value is the value that must be met
+            or exceeded to move from current task.
         task_map (list[dict]): The map between levels and tasks. Each entry
             must have at least 1 item that is used in the env config. Must
             be same length as metric_levels.
@@ -473,6 +475,21 @@ class CurriculumConfig:
         assert len(self.metric_levels) == len(self.task_map)
         if isinstance(self.results_metric, str):
             self.results_metric = [self.results_metric]
+
+    def genCurriculumMap(self) -> list[tuple[int, float, dict]]:
+        """Generate curriculum map.
+
+        Curriculum map is list of tuples defining the sequence of tasks associated
+        with their metric threshold and a unique index.
+        """
+        curriculum_map = [
+            (t, metric, task_config)
+            for t, (metric, task_config) in enumerate(
+                zip(self.metric_levels, self.task_map)
+            )
+        ]
+
+        return curriculum_map
 
 
 def getMetricValue(train_results: dict, metric: list[str]) -> float | None:
@@ -494,6 +511,20 @@ def getMetricValue(train_results: dict, metric: list[str]) -> float | None:
 
 
 def updateTask(cur_task: int, metric_val: float, curriculum_map: list[tuple]) -> int:
+    """Update task based on metric value and threshold.
+
+    Increments task if metric_val >= threshold. Otherwise, new task is same as
+    current. If current task is final in sequence, task is repeated.
+
+    Args:
+        cur_task (int): Index of task in curriculum map.
+        metric_val (float): Value of evaluation metric. See CurriculumConfig.
+        curriculum_map (list[tuple]): Map of task indices, metric thresholds, and
+            task configs. See CurriculumConfig.
+
+    Returns:
+        int: Index of new task.
+    """
     if cur_task == curriculum_map[-1][0]:
         new_task = cur_task
     else:

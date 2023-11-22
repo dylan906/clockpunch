@@ -19,7 +19,6 @@ from punchclock.ray.curriculum import (
     CurriculumConfig,
     CustomCallbacks,
     configurableCurriculumFnV2,
-    getTaskLevel,
 )
 
 # %% Test Env
