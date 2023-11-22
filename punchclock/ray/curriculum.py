@@ -518,6 +518,10 @@ def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) ->
 
 
 def getTaskLevel(task: dict, metric_val: float, curriculum_config: dict) -> int:
+    """Get the level of the input task, even if curriculum has identical tasks.
+
+    Curriculum must have unique metric levels.
+    """
     task_map, metric_levels = itemgetter("task_map", "metric_levels")(curriculum_config)
     indices = [i for i, t in enumerate(task_map) if t == task]
     if len(indices) == 1:
