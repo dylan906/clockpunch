@@ -13,6 +13,7 @@ from operator import itemgetter
 from pprint import pprint
 
 # Third Party Imports
+from numpy import array
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
 # %% Imports
@@ -507,3 +508,17 @@ def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) ->
             task = task_map[cur_task_idx]
 
     return task
+
+
+def getTaskLevel(task: dict, metric_val: float, curriculum_config: dict) -> int:
+    task_map, metric_levels = itemgetter("task_map", "metric_levels")(curriculum_config)
+    indices = [i for i in task_map if i == task]
+    if len(indices) == 1:
+        task_level = indices[0]
+    else:
+        metric_levels = array(metric_levels)
+        # get nearest metric level that is less than metric val
+        nearest_metric_level = metric_levels[metric_levels < metric_val].max()
+        metric_indices = metric_levels.index(nearest_metric_level)
+
+    return task_level
