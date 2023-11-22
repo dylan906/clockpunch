@@ -19,6 +19,7 @@ from punchclock.ray.curriculum import (
     CurriculumConfig,
     CustomCallbacks,
     configurableCurriculumFnV2,
+    getTaskLevel,
 )
 
 # %% Test Env
@@ -59,7 +60,19 @@ cur = CurriculumConfig(
     task_map=[{"horizon": i} for i in range(4)],
     transform_reward=True,
 )
-
+# %% Test getTaskLevel
+print("\nTest getTaskLevel...")
+cur_tasklvl = CurriculumConfig(
+    results_metric="a",
+    metric_levels=[0, 1, 2, 3],
+    task_map=[{"b": i} for i in [10, 10, 20, 30]],
+).__dict__
+task_level = getTaskLevel(
+    task={"b": 10},
+    metric_val=1.2,
+    curriculum_config=cur_tasklvl,
+)
+print(f"{task_level=}")
 # %% Test ConfigurableCurriculumEnvV2
 print("Test ConfigurableCurriculumEnvV2...")
 env_config.update({"curriculum_config": cur.__dict__})
