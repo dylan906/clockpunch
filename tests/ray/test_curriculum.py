@@ -56,23 +56,24 @@ check_env(env)
 print("Test CurriculumConfig...")
 cur = CurriculumConfig(
     results_metric=["custom_metrics", "last_custody_sum_mean"],
-    metric_levels=[0, 1, 2, 3],
+    metric_levels=[1.1, 2.2, 3.3, 4.4],
     task_map=[{"horizon": i} for i in range(4)],
     transform_reward=True,
 )
-# %% Test getTaskLevel
-print("\nTest getTaskLevel...")
-cur_tasklvl = CurriculumConfig(
-    results_metric="a",
-    metric_levels=[0, 1, 2, 3],
-    task_map=[{"b": i} for i in [10, 10, 20, 30]],
-).__dict__
-task_level = getTaskLevel(
-    task={"b": 10},
-    metric_val=1.2,
-    curriculum_config=cur_tasklvl,
-)
-print(f"{task_level=}")
+# # %% Test getTaskLevel
+# print("\nTest getTaskLevel...")
+# cur_tasklvl = CurriculumConfig(
+#     results_metric="a",
+#     metric_levels=[0, 1, 2, 3],
+#     task_map=[{"b": i} for i in [10, 10, 20, 30]],
+# ).__dict__
+# task_level = getTaskLevel(
+#     task={"b": 10},
+#     metric_val=1.2,
+#     curriculum_config=cur_tasklvl,
+# )
+# print(f"{task_level=}")
+
 # %% Test ConfigurableCurriculumEnvV2
 print("Test ConfigurableCurriculumEnvV2...")
 env_config.update({"curriculum_config": cur.__dict__})
@@ -99,7 +100,7 @@ task = configurableCurriculumFnV2(
 )
 print(f"{task=}")
 
-env.set_task({"horizon": 1})
+env.set_task(2)
 task = configurableCurriculumFnV2(
     train_results=results, task_settable_env=env, env_ctx=env_ctx
 )

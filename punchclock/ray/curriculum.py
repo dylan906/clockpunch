@@ -162,7 +162,7 @@ def configurableCurriculumFnV2(
     train_results: dict,
     task_settable_env: TaskSettableEnv,
     env_ctx: EnvContext,
-) -> dict:
+) -> int:
     """Function returning a possibly new task to set `task_settable_env` to.
 
     Args:
@@ -175,30 +175,33 @@ def configurableCurriculumFnV2(
             to setup the `task_settable_env`.
 
     Returns:
-        dict: The task to set the env to. This may be the same as the
+        int: The task to set the env to. This may be the same as the
             current one.
     """
     pprint(train_results)
-    curriculum = task_settable_env.getCurriculum()
+    curriculum_config, curriculum_map = task_settable_env.getCurriculum()
+    cur_task = task_settable_env.get_task()
     metric_val = getMetricValue(
-        train_results=train_results, metric=curriculum["results_metric"]
+        train_results=train_results, metric=curriculum_config["results_metric"]
     )
 
-    cur_task = task_settable_env.get_task()
     print(f"current task (via curriculum_fn) = {cur_task}")
 
-    if cur_task not in curriculum["task_map"]:
-        # Current task can be outside of task map if env was just initialized
-        task = curriculum["task_map"][0]
-    else:
-        task, level = incrementTask(cur_task, metric_val, curriculum)
+    # if cur_task not in curriculum["task_map"]:
+    #     # Current task can be outside of task map if env was just initialized
+    #     task = curriculum[0][2]
+    # else:
+    task = updateTask(cur_task, metric_val, curriculum_map=curriculum_map)
+    task_config = curriculum_map[task][2]
+    metric_threshold = curriculum_map[task][1]
 
     print(
         f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
         f"\nR={train_results['episode_reward_mean']}"
-        f"\nSetting env to task {task}"
-        f"\nTask level = {level}"
         f"\nMetric value = {metric_val}"
+        f"\nMetric threshold = {metric_threshold}"
+        f"\nSetting env to task {task}"
+        f"\nTask config = {task_config}"
     )
     return task
 
@@ -342,10 +345,19 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         assert isinstance(cur_config, (CurriculumConfig, dict))
         if isinstance(cur_config, CurriculumConfig):
             cur_config = cur_config.__dict__
-        self.cur_config = cur_config
+        self.curriculum_config = cur_config
+        # Create curriculum map: list of tuples (index, metric level, task)
+        self.curriculum_map = [
+            (t, metric, task_config)
+            for t, (metric, task_config) in enumerate(
+                zip(cur_config["metric_levels"], cur_config["task_map"])
+            )
+        ]
 
-        self.cur_task = config.get("start_task", cur_config["task_map"][0])
-        assert isinstance(self.cur_task, dict)
+        # Always start at level/task 0
+        self.cur_task = self.curriculum_map[0][0]
+        self.cur_metric_level = self.curriculum_map[0][1]
+        self.cur_task_config = self.curriculum_map[0][2]
 
         self.backup_config = deepcopy(config)
         self.env = None
@@ -377,21 +389,23 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         """Make environment from backup config with updates from cur_task."""
         new_config = deepcopy(config)
         task = self.cur_task
-        print(f"{self.cur_task=}")
+        task_config = self.curriculum_map[task][2]
+        print(f"{task=}")
+        print(f"{task_config=}")
 
         # Use special update function that can handle nested dict tasks
-        new_config = updateRecursive(new_config, task)
+        new_config = updateRecursive(new_config, task_config)
         # prevents error in buildEnv caused by unrecognized arg
-        new_config.pop("start_task", None)
+        # new_config.pop("start_task", None)
         new_config.pop("curriculum_config", None)
 
         self.env = buildEnv(new_config)
 
     def _transformReward(self, rew: float) -> float:
-        """Optionally transform reward based on curriculum level."""
-        if self.cur_config["transform_reward"] is True:
-            cur_level = self.cur_config["task_map"].index(self.cur_task)
-            new_reward = rew * (cur_level + 1)
+        """Optionally transform reward based on curriculum task level."""
+        if self.curriculum_config["transform_reward"] is True:
+            # cur_level = self.curriculum_config["task_map"].index(self.cur_task)
+            new_reward = rew * (self.cur_task + 1)
         else:
             new_reward = rew
         return new_reward
@@ -400,15 +414,16 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         """Append task data to info."""
         task_dict = {
             "cur_task": self.cur_task,
+            "cur_task_config": self.cur_task_config,
         }
         new_info = deepcopy(info)
         new_info.update(task_dict)
 
         return new_info
 
-    def getCurriculum(self):
+    def getCurriculum(self) -> tuple[dict, list[tuple]]:
         """Return curriculum config."""
-        return self.cur_config
+        return self.curriculum_config, self.curriculum_map
 
     @override(TaskSettableEnv)
     def sample_tasks(self, n_tasks):
@@ -416,15 +431,17 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         return [random.randint(1, 10) for _ in range(n_tasks)]
 
     @override(TaskSettableEnv)
-    def get_task(self):
+    def get_task(self) -> int:
         """Implement this to get the current task (curriculum level)."""
         return self.cur_task
 
     @override(TaskSettableEnv)
-    def set_task(self, task):
+    def set_task(self, task: int):
         """Implement this to set the task (curriculum level) for this env."""
-        assert isinstance(task, dict)
+        assert isinstance(task, int)
         self.cur_task = task
+        self.cur_task_config = self.curriculum_map[task][2]
+        # self.cur_task = task
         self.switch_env = True
 
 
@@ -475,6 +492,23 @@ def getMetricValue(train_results: dict, metric: list[str]) -> float | None:
     # This seems like a lot of code for a 1-liner function, but the 1 functional
     # line is not self-explanatory.
     return chainedGet(train_results, *metric, default=None)
+
+
+def updateTask(cur_task: int, metric_val: float, curriculum_map: list[tuple]) -> int:
+    if cur_task == curriculum_map[-1][0]:
+        new_task = cur_task
+    else:
+        # metric_threshold: value metric must meet/exceed to exit current task
+        metric_threshold = curriculum_map[cur_task][1]
+
+        if metric_val >= metric_threshold:
+            # increment new_task up
+            new_task = cur_task + 1
+        else:
+            # repeat new_task if metric threshold not met
+            new_task = cur_task
+
+    return new_task
 
 
 def incrementTask(cur_task: dict, metric_val: float, curriculum_config: dict) -> dict:
