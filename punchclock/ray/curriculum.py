@@ -107,6 +107,61 @@ def configurableCurriculumFnV2(
     return task
 
 
+class SequentialCurriculumFn:
+    """Increment tasks in a sequential curriculum."""
+
+    def __init__(self, patience: int = 0):
+        self.patience = patience
+        self.call_counter = 0
+
+        return self
+
+    def __call__(
+        self,
+        train_results: dict,
+        task_settable_env: TaskSettableEnv,
+        env_ctx: EnvContext,
+    ):
+        """Function returning a possibly new task to set `task_settable_env` to.
+
+        Args:
+            train_results: The train results returned by Algorithm.train().
+            task_settable_env: A single TaskSettableEnv object
+                used inside any worker and at any vector position. Use `env_ctx`
+                to get the worker_index, vector_index, and num_workers.
+            env_ctx: The env context object (i.e. env's config dict
+                plus properties worker_index, vector_index and num_workers) used
+                to setup the `task_settable_env`.
+
+        Returns:
+            int: The task to set the env to. This may be the same as the
+                current one.
+        """
+        curriculum_config, curriculum_map = task_settable_env.getCurriculum()
+        cur_task = task_settable_env.get_task()
+        metric_val = getMetricValue(
+            train_results=train_results, metric=curriculum_config["results_metric"]
+        )
+        if self.patience_counter <= self.patience:
+            task = updateTask(cur_task, metric_val, curriculum_map=curriculum_map)
+        else:
+            # force task to increment
+            task = incrementTaskSafely()
+        task_config = curriculum_map[task][2]
+        metric_threshold = curriculum_map[task][1]
+
+        print(
+            f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
+            f"\nR={train_results['episode_reward_mean']}"
+            f"\nMetric value = {metric_val}"
+            f"\nMetric threshold = {metric_threshold}"
+            f"\nPrior task {cur_task}"
+            f"\nSetting env to task {task}"
+            f"\nTask config = {task_config}"
+        )
+        return task
+
+
 # %% ConfigurableCirriculumEnvV2
 class ConfigurableCurriculumEnvV2(TaskSettableEnv):
     """Curriculum learning wrapper around SSAScheduler.
@@ -311,17 +366,28 @@ def updateTask(cur_task: int, metric_val: float, curriculum_map: list[tuple]) ->
     Returns:
         int: Index of new task.
     """
+    # if cur_task == curriculum_map[-1][0]:
+    #     new_task = cur_task
+    # else:
+    # metric_threshold: value metric must meet/exceed to exit current task
+    metric_threshold = curriculum_map[cur_task][1]
+
+    if metric_val >= metric_threshold:
+        # increment new_task up
+        # new_task = cur_task + 1
+        new_task = incrementTaskSafely(cur_task=cur_task, curriculum_map=curriculum_map)
+    else:
+        # repeat new_task if metric threshold not met
+        new_task = cur_task
+
+    return new_task
+
+
+def incrementTaskSafely(cur_task: int, curriculum_map: list[tuple]) -> int:
+    """Increment task if current task is not final in curriculum, otherwise repeat."""
     if cur_task == curriculum_map[-1][0]:
         new_task = cur_task
     else:
-        # metric_threshold: value metric must meet/exceed to exit current task
-        metric_threshold = curriculum_map[cur_task][1]
-
-        if metric_val >= metric_threshold:
-            # increment new_task up
-            new_task = cur_task + 1
-        else:
-            # repeat new_task if metric threshold not met
-            new_task = cur_task
+        new_task = cur_task + 1
 
     return new_task
