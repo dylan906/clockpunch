@@ -112,9 +112,7 @@ class SequentialCurriculumFn:
 
     def __init__(self, patience: int = 0):
         self.patience = patience
-        self.call_counter = 0
-
-        return self
+        self.patience_ctr = 0
 
     def __call__(
         self,
@@ -142,23 +140,35 @@ class SequentialCurriculumFn:
         metric_val = getMetricValue(
             train_results=train_results, metric=curriculum_config["results_metric"]
         )
-        if self.patience_counter <= self.patience:
+
+        if self.patience_ctr < self.patience:
+            # Do regular task update check if patience threshold not reached
             task = updateTask(cur_task, metric_val, curriculum_map=curriculum_map)
+            if task == cur_task:
+                self.patience_ctr += 1
+            else:
+                self.patience_ctr = 0
         else:
-            # force task to increment
-            task = incrementTaskSafely()
+            # force task to increment if patience threshold reached
+            print("\nPatience limit for current task reached; inrementing task.")
+            task = incrementTaskSafely(cur_task=cur_task, curriculum_map=curriculum_map)
+            self.patience_ctr = 0
+
         task_config = curriculum_map[task][2]
         metric_threshold = curriculum_map[task][1]
+        prior_metric_threshold = curriculum_map[task - 1][1]
 
         print(
-            f"Worker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
+            f"\nWorker #{env_ctx.worker_index} vec-idx={env_ctx.vector_index}"
             f"\nR={train_results['episode_reward_mean']}"
             f"\nMetric value = {metric_val}"
+            f"\nPrior metric threshold = {prior_metric_threshold}"
             f"\nMetric threshold = {metric_threshold}"
             f"\nPrior task {cur_task}"
             f"\nSetting env to task {task}"
             f"\nTask config = {task_config}"
         )
+
         return task
 
 
@@ -366,15 +376,10 @@ def updateTask(cur_task: int, metric_val: float, curriculum_map: list[tuple]) ->
     Returns:
         int: Index of new task.
     """
-    # if cur_task == curriculum_map[-1][0]:
-    #     new_task = cur_task
-    # else:
-    # metric_threshold: value metric must meet/exceed to exit current task
     metric_threshold = curriculum_map[cur_task][1]
 
     if metric_val >= metric_threshold:
         # increment new_task up
-        # new_task = cur_task + 1
         new_task = incrementTaskSafely(cur_task=cur_task, curriculum_map=curriculum_map)
     else:
         # repeat new_task if metric threshold not met

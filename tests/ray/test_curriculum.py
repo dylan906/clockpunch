@@ -16,6 +16,7 @@ from punchclock.ray.curriculum import (
     ConfigurableCurriculumEnvV2,
     CurriculumConfig,
     CustomCallbacks,
+    SequentialCurriculumFn,
     configurableCurriculumFnV2,
 )
 
@@ -50,7 +51,7 @@ env.reset()
 env.step(env.action_space.sample())
 check_env(env)
 # %% Test CurriculumConfig
-print("Test CurriculumConfig...")
+print("\nTest CurriculumConfig...")
 cur = CurriculumConfig(
     results_metric=["custom_metrics", "last_custody_sum_mean"],
     metric_levels=[1.1, 2.2, 3.3, 4.4],
@@ -59,7 +60,7 @@ cur = CurriculumConfig(
 )
 
 # %% Test ConfigurableCurriculumEnvV2
-print("Test ConfigurableCurriculumEnvV2...")
+print("\nTest ConfigurableCurriculumEnvV2...")
 env_config.update({"curriculum_config": cur.__dict__})
 env = ConfigurableCurriculumEnvV2(config=env_config)
 obs, info = env.reset()
@@ -71,6 +72,8 @@ print(f"obs (step) = {obs}")
 print(f"info (step) = {info}")
 
 # %% Test ConfigurableCurriculumFnV2
+print("\nTest ConfigurableCurriculumFnV2...")
+
 results = {
     "custom_metrics": {
         "last_custody_sum_mean": 1.2,
@@ -90,7 +93,18 @@ task = configurableCurriculumFnV2(
 )
 print(f"{task=}")
 
+# %% Test SequentialCurriculumFn
+print("\nTest SequenctialCurriculumFn...")
+env.set_task(0)
+scf = SequentialCurriculumFn(patience=1)
+for _ in range(6):
+    task = scf(train_results=results, task_settable_env=env, env_ctx=env_ctx)
+    env.set_task(task)
+    print(f"{scf.patience_ctr=}")
+    print(f"{task=}")
+
 # %% Test Fit
+print("\nTest with fit...")
 ray.init(num_cpus=3, num_gpus=0)
 
 algo_config = (
