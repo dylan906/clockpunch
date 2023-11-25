@@ -82,7 +82,7 @@ class CustomCallbacks(DefaultCallbacks):
             "curriculum_metric_threshold_min",
             "curriculum_metric_threshold_max",
         ]:
-            result.pop(["custom_metrics"][k], None)
+            result["custom_metrics"].pop(k, None)
 
 
 # %% ConfigurableCurriculumFnV2
