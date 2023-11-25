@@ -236,6 +236,7 @@ class CustomCallbacks(DefaultCallbacks):
         episode.custom_metrics["last_custody_percent"] = last_info1.get(
             "custody_percent", None
         )
+        episode.custom_metrics["curriculum_task"] = last_info1.get("cur_task", None)
 
 
 # %% ConfigurableCirriculumEnv
