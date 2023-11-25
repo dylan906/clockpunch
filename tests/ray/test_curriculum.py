@@ -13,9 +13,7 @@ from ray.tune.registry import get_trainable_cls
 # Punch Clock Imports
 from punchclock.ray.build_env import buildEnv
 from punchclock.ray.curriculum import (
-    ConfigurableCurriculumEnv,
     ConfigurableCurriculumEnvV2,
-    ConfigurableCurriculumFn,
     CurriculumConfig,
     CustomCallbacks,
     configurableCurriculumFnV2,
@@ -59,19 +57,6 @@ cur = CurriculumConfig(
     task_map=[{"horizon": i} for i in range(4)],
     transform_reward=True,
 )
-# # %% Test getTaskLevel
-# print("\nTest getTaskLevel...")
-# cur_tasklvl = CurriculumConfig(
-#     results_metric="a",
-#     metric_levels=[0, 1, 2, 3],
-#     task_map=[{"b": i} for i in [10, 10, 20, 30]],
-# ).__dict__
-# task_level = getTaskLevel(
-#     task={"b": 10},
-#     metric_val=1.2,
-#     curriculum_config=cur_tasklvl,
-# )
-# print(f"{task_level=}")
 
 # %% Test ConfigurableCurriculumEnvV2
 print("Test ConfigurableCurriculumEnvV2...")
@@ -105,50 +90,6 @@ task = configurableCurriculumFnV2(
 )
 print(f"{task=}")
 
-# # %% Test ConfigurableCurriculumEnv
-# env = ConfigurableCurriculumEnv(config=env_config)
-# obs, info = env.reset()
-# print(f"obs (reset) = {obs}")
-# print(f"info (reset) = {info}")
-
-# obs, rew, _, _, info = env.step(env.action_space.sample())
-# print(f"obs (step) = {obs}")
-# print(f"info (step) = {info}")
-
-# env.set_task({"horizon": 42})
-# env.reset()
-# task = env.get_task()
-# print(f"{task=}")
-
-# # Set with nested dict task
-# env.set_task({"agent_params": {"num_targets": 42}})
-# env.reset()
-
-# # %% Test ConfigurableCurriculumFn
-# task_map = [{"horizon": 10}, {"horizon": 20}]
-# c = ConfigurableCurriculumFn(
-#     results_metric=["custom_metrics", "last_custody_sum_mean"],
-#     metric_levels=[0.2, 0.5],
-#     task_map=task_map,
-# )
-# results = {
-#     "custom_metrics": {
-#         "last_custody_sum_mean": 1.2,
-#     },
-#     "episode_reward_mean": 1,
-# }
-# env_ctx = EnvContext(env_config=env_config, worker_index=0)
-
-# # Test with env not on curriculum (just initialized)
-# task = c(train_results=results, task_settable_env=env, env_ctx=env_ctx)
-# print(f"{task=}")
-# # Test with env on curriculum (subsequent calls)
-# env.set_task(task_map[0])
-# task = c(train_results=results, task_settable_env=env, env_ctx=env_ctx)
-# # Test with env at end of curriculum
-# env.set_task(task_map[-1])
-# task = c(train_results=results, task_settable_env=env, env_ctx=env_ctx)
-
 # %% Test Fit
 ray.init(num_cpus=3, num_gpus=0)
 
@@ -164,11 +105,7 @@ algo_config = (
     .framework("torch")
 )
 
-stop = {
-    "training_iteration": 1,
-    # "timesteps_total": 10,
-    # "episode_reward_mean": 1,
-}
+stop = {"training_iteration": 1}
 
 tuner = tune.Tuner(
     "PPO",
