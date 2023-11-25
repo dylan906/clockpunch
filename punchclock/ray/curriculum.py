@@ -9,11 +9,9 @@
 import random
 from copy import deepcopy
 from dataclasses import dataclass
-from operator import itemgetter
 from pprint import pprint
 
 # Third Party Imports
-from numpy import array, where
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
 # %% Imports
@@ -48,6 +46,8 @@ class CustomCallbacks(DefaultCallbacks):
         Metrics:
             custody_sum (int):
             custody_percent (float):
+            curriculum_task (int):
+            curriculum_metric_threshold (float):
         """
         pprint(f"episode vars = {vars(episode)}")
         last_info = episode._last_infos
@@ -64,6 +64,25 @@ class CustomCallbacks(DefaultCallbacks):
         episode.custom_metrics["curriculum_metric_threshold"] = last_info1.get(
             "cur_metric_threshold", None
         )
+
+    def on_train_result(self, *, algorithm, result: dict, **kwargs):
+        """Rename and cleanup spurious metrics added by on_episode_end callback."""
+        result["custom_metrics"]["curriculum_task"] = result["custom_metrics"][
+            "curriculum_task_mean"
+        ]
+        result["custom_metrics"]["curriculum_metric_threshold"] = result[
+            "custom_metrics"
+        ]["curriculum_metric_threshold_mean"]
+
+        for k in [
+            "curriculum_task_mean",
+            "curriculum_task_min",
+            "curriculum_task_max",
+            "curriculum_metric_threshold_mean",
+            "curriculum_metric_threshold_min",
+            "curriculum_metric_threshold_max",
+        ]:
+            del result[k]
 
 
 # %% ConfigurableCurriculumFnV2
@@ -114,6 +133,12 @@ class SequentialCurriculumFn:
     """Increment tasks in a sequential curriculum."""
 
     def __init__(self, patience: int = 0):
+        """Build curriculum function.
+
+        Args:
+            patience (int, optional): Number of iterations to wait before forcing
+                task increment. Defaults to 0.
+        """
         self.patience = patience
         self.patience_ctr = 0
 
