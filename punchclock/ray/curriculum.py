@@ -185,10 +185,6 @@ def configurableCurriculumFnV2(
         train_results=train_results, metric=curriculum_config["results_metric"]
     )
 
-    # if cur_task not in curriculum["task_map"]:
-    #     # Current task can be outside of task map if env was just initialized
-    #     task = curriculum[0][2]
-    # else:
     task = updateTask(cur_task, metric_val, curriculum_map=curriculum_map)
     task_config = curriculum_map[task][2]
     metric_threshold = curriculum_map[task][1]
