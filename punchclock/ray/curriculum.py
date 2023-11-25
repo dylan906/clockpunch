@@ -61,6 +61,9 @@ class CustomCallbacks(DefaultCallbacks):
             "custody_percent", None
         )
         episode.custom_metrics["curriculum_task"] = last_info1.get("cur_task", None)
+        episode.custom_metrics["curriculum_metric_threshold"] = last_info1.get(
+            "cur_metric_threshold", None
+        )
 
 
 # %% ConfigurableCurriculumFnV2
@@ -207,7 +210,7 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         # Start at task 0 if not provided in config
         self.cur_task = config.get("start_task", self.curriculum_map[0][0])
         # self.cur_task = self.curriculum_map[0][0]
-        self.cur_metric_level = self.curriculum_map[0][1]
+        self.cur_metric_threshold = self.curriculum_map[0][1]
         self.cur_task_config = self.curriculum_map[0][2]
 
         self.backup_config = deepcopy(config)
@@ -266,6 +269,7 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         task_dict = {
             "cur_task": self.cur_task,
             "cur_task_config": self.cur_task_config,
+            "cur_metric_threshold": self.cur_metric_threshold,
         }
         new_info = deepcopy(info)
         new_info.update(task_dict)
