@@ -29,6 +29,40 @@ from punchclock.common.utilities import chainedGet, updateRecursive
 from punchclock.ray.build_env import buildEnv
 
 
+# %% Custom callback
+class CustomCallbacks(DefaultCallbacks):
+    """Functions to be called throughout training."""
+
+    def on_episode_end(
+        self,
+        *,
+        worker: "RolloutWorker",  # noqa
+        base_env: BaseEnv,
+        policies: dict[str, Policy],
+        episode: Episode,
+        env_index: int,
+        **kwargs,
+    ):
+        """Record last values of some custom metrics in every episode.
+
+        Metrics:
+            custody_sum (int):
+            custody_percent (float):
+        """
+        pprint(f"episode vars = {vars(episode)}")
+        last_info = episode._last_infos
+        pprint(f"\n {last_info=}")
+        # last_info is a 2-item dict, where the 0th item is empty and the 1st item
+        # is info returned from env.
+        last_info1 = list(last_info.values())[1]
+        # pprint(f"\n {last_info1=}")
+        episode.custom_metrics["last_custody_sum"] = last_info1.get("custody_sum", None)
+        episode.custom_metrics["last_custody_percent"] = last_info1.get(
+            "custody_percent", None
+        )
+        episode.custom_metrics["curriculum_task"] = last_info1.get("cur_task", None)
+
+
 # %% ConfigurableCurriculumFnV2
 def configurableCurriculumFnV2(
     train_results: dict,
@@ -71,40 +105,6 @@ def configurableCurriculumFnV2(
         f"\nTask config = {task_config}"
     )
     return task
-
-
-# %% Custom callback
-class CustomCallbacks(DefaultCallbacks):
-    """Functions to be called throughout training."""
-
-    def on_episode_end(
-        self,
-        *,
-        worker: "RolloutWorker",  # noqa
-        base_env: BaseEnv,
-        policies: dict[str, Policy],
-        episode: Episode,
-        env_index: int,
-        **kwargs,
-    ):
-        """Record last values of some custom metrics in every episode.
-
-        Metrics:
-            custody_sum (int):
-            custody_percent (float):
-        """
-        pprint(f"episode vars = {vars(episode)}")
-        last_info = episode._last_infos
-        pprint(f"\n {last_info=}")
-        # last_info is a 2-item dict, where the 0th item is empty and the 1st item
-        # is info returned from env.
-        last_info1 = list(last_info.values())[1]
-        # pprint(f"\n {last_info1=}")
-        episode.custom_metrics["last_custody_sum"] = last_info1.get("custody_sum", None)
-        episode.custom_metrics["last_custody_percent"] = last_info1.get(
-            "custody_percent", None
-        )
-        episode.custom_metrics["curriculum_task"] = last_info1.get("cur_task", None)
 
 
 # %% ConfigurableCirriculumEnvV2
