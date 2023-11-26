@@ -235,8 +235,8 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         # Start at task 0 if not provided in config
         self.cur_task = config.get("start_task", self.curriculum_map[0][0])
         # self.cur_task = self.curriculum_map[0][0]
-        self.cur_metric_threshold = self.curriculum_map[0][1]
-        self.cur_task_config = self.curriculum_map[0][2]
+        self.cur_metric_threshold = self.curriculum_map[self.cur_task][1]
+        self.cur_task_config = self.curriculum_map[self.cur_task][2]
 
         self.backup_config = deepcopy(config)
         self.env = None
@@ -321,6 +321,7 @@ class ConfigurableCurriculumEnvV2(TaskSettableEnv):
         assert isinstance(task, int)
         self.cur_task = task
         self.cur_task_config = self.curriculum_map[task][2]
+        self.cur_metric_threshold = self.curriculum_map[task][1]
         # self.cur_task = task
         self.switch_env = True
 
