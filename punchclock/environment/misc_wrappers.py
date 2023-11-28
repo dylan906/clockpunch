@@ -112,9 +112,7 @@ class ModifyObsOrInfo(Wrapper):
         self.obs_info = obs_info
 
     @abstractmethod
-    def modifyOI(
-        self, obs: OrderedDict, info: dict
-    ) -> Tuple[OrderedDict, dict]:
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
         """Child classes require this function.
 
         Args:
@@ -130,14 +128,10 @@ class ModifyObsOrInfo(Wrapper):
         return new_obs, new_info  # noqa
 
     @final
-    def reset(
-        self, seed: int | None = None, options=None
-    ) -> Tuple[OrderedDict, dict]:
+    def reset(self, seed: int | None = None, options=None) -> Tuple[OrderedDict, dict]:
         """Reset env."""
         obs, info = super().reset(seed=seed, options=options)
-        new_obs, new_info = self.modifyOI(
-            obs=deepcopy(obs), info=deepcopy(info)
-        )
+        new_obs, new_info = self.modifyOI(obs=deepcopy(obs), info=deepcopy(info))
         self.info = deepcopy(info)
         return new_obs, new_info
 
@@ -219,9 +213,7 @@ class CopyObsInfoItem(ModifyObsOrInfo):
         elif copy_to == "obs":
             copy_destination = deepcopy(env.observation_space)
 
-        assert (
-            from_key in copy_source
-        ), f"{from_key} is not a key in {copy_from}."
+        assert from_key in copy_source, f"{from_key} is not a key in {copy_from}."
 
         if to_key is None:
             # default key
@@ -246,18 +238,14 @@ class CopyObsInfoItem(ModifyObsOrInfo):
         if self.copy_to == "obs":
             new_obs_space = deepcopy(env.observation_space)
             if self.copy_from == "info":
-                self.info_item_space = buildSpace(
-                    space_config=info_space_config
-                )
+                self.info_item_space = buildSpace(space_config=info_space_config)
                 new_obs_space[self.to_key] = self.info_item_space
             elif self.copy_from == "obs":
                 new_obs_space[self.to_key] = copy_source[self.from_key]
 
             self.observation_space = new_obs_space
 
-    def modifyOI(
-        self, obs: OrderedDict, info: dict
-    ) -> Tuple[OrderedDict, dict]:
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
         """Modify unwrapped obs/info, output wrapped obs/info.
 
         Args:
@@ -370,9 +358,7 @@ class OperatorWrapper(ModifyObsOrInfo):
             b_key = ""
         self.b_key = b_key
 
-    def modifyOI(
-        self, obs: OrderedDict, info: dict
-    ) -> Tuple[OrderedDict, dict]:
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
         """Modify observation or info.
 
         Args:
@@ -463,14 +449,13 @@ class MaskViolationChecker(Wrapper):
                 num_sensors=self.num_sensors,
                 num_targets=self.num_targets,
             )
-            num_violations = countMaskViolations(
-                x=action_2d, mask=self.previous_mask
-            )
+            num_violations = countMaskViolations(x=action_2d, mask=self.previous_mask)
             if num_violations > 0:
                 warn(
                     f"""Action mask violated.
                      action = {action}
-                     action_mask = {self.previous_mask}"""
+                     """
+                    #  action_mask = {self.previous_mask}
                 )
                 make_log = True
 
@@ -599,9 +584,7 @@ class CustodyWrapper(ModifyObsOrInfo):
             new_space["custody"] = MultiBinary(num_targets)
             self.observation_space = Dict(new_space)
 
-    def modifyOI(
-        self, obs: OrderedDict, info: dict
-    ) -> Tuple[OrderedDict, dict]:
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
         """Append custody entry to observation or info dict.
 
         Custody is a (N,) binary array where 1 indicates the n-th target is in
@@ -802,9 +785,7 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
         elif obs_info == "info":
             assert key in info_sample, f"{key} must be in info."
             if new_key in info_sample:
-                warn(
-                    f"{new_key} is already in info. Values will be overwritten."
-                )
+                warn(f"{new_key} is already in info. Values will be overwritten.")
 
         self.key = key
         self.new_key = new_key
@@ -816,9 +797,7 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
             self.num_targets = len(info_sample[key])
 
         # mask space used for debugging/development
-        self.mask2d_space = MultiBinary(
-            [self.num_targets + 1, self.num_sensors]
-        )
+        self.mask2d_space = MultiBinary([self.num_targets + 1, self.num_sensors])
 
         # convert num_targets from numpy dtype to Python int
         self.sdp = SelectiveDictProcessor(
@@ -831,9 +810,7 @@ class ConvertCustody2ActionMask(ModifyObsOrInfo):
             self.observation_space = deepcopy(env.observation_space)
             self.observation_space[new_key] = self.mask2d_space
 
-    def modifyOI(
-        self, obs: OrderedDict, info: dict
-    ) -> Tuple[OrderedDict, dict]:
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
         """Convert custody observation to action mask.
 
         Value is converted from custody array to action mask.
@@ -987,9 +964,7 @@ class VisMap2ActionMask(ModifyObsOrInfo):
             self.observation_space = deepcopy(env.observation_space)
             self.observation_space[new_key] = self.mask_space
 
-    def modifyOI(
-        self, obs: OrderedDict, info: dict
-    ) -> Tuple[OrderedDict, dict]:
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
         """Generate wrapped observation.
 
         Either obs or info (depending on value of self.obs_info) must contain
