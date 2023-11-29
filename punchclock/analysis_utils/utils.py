@@ -193,7 +193,7 @@ def truncateDFColNames(df: DataFrame, char_lim: int = 18) -> DataFrame:
 
     Set char_lim to the number of characters to keep in column name.
 
-    Set char_lim to negative to get truncate from end instead of beginning.
+    Set char_lim to negative to truncate from end instead of beginning.
     """
     if char_lim < 0:
         df_new = df.rename(columns=lambda x: x[char_lim:])
