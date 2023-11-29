@@ -5,6 +5,7 @@ from pathlib import Path, PosixPath
 from typing import Tuple
 
 # Third Party Imports
+from pandas import read_csv
 from pandas.core.frame import DataFrame
 from ray import tune
 from ray.air.result import Result
@@ -156,3 +157,37 @@ def loadEnvConfigs(
     env_configs = [tc["env_config"] for tc in trial_configs]
 
     return env_configs
+
+
+def loadExpProgress(
+    exp_path: PosixPath,
+) -> tuple[list[DataFrame], list[dict]]:
+    """Load experiment progress and config files.
+
+    Ignores trials with empty folders. Returned list entries correspond to each
+        other.
+
+    Args:
+        exp_path (PosixPath): Experiment directory.
+
+    Returns:
+        progress (list[DataFrame]): The trial's progress.csv file as a DataFrame.
+            Each DataFrame corresponds to a trial in the experiment.
+        params (list[dict]]): The trial configuration, as gotten from params.json.
+            Each dict corresponds to a trial in the experiment.
+    """
+    progress = []
+    params = []
+    for name in exp_path.glob("*/*.csv"):
+        # skips empty dirs
+        trial_path = name.parent
+        progress_path = next(trial_path.glob("*.csv"))
+        params_path = next(trial_path.glob("params.json"))
+
+        progress_dat = read_csv(progress_path)
+        params_dat = loadJSONFile(params_path)
+
+        progress.append(progress_dat)
+        params.append(params_dat)
+
+    return progress, params
