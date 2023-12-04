@@ -130,7 +130,10 @@ def configurableCurriculumFnV2(
 
 
 class SequentialCurriculumFn:
-    """Increment tasks in a sequential curriculum."""
+    """Increment tasks in a sequential curriculum.
+
+    Patience attribute forces task advancement regardless of metric.
+    """
 
     def __init__(self, patience: int = 0):
         """Build curriculum function.
