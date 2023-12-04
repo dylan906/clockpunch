@@ -4,22 +4,12 @@
 import gymnasium as gym
 from numpy import array
 from ray.rllib.examples.env.random_env import RandomEnv
+from ray.rllib.models.torch.attention_net import GTrXLNet
 from torch import tensor
 
 # Punch Clock Imports
 from punchclock.nets.gtrxl import MaskedGTrXL
-
-
-# %% Preprocess function for obs
-def preprocessObs(obs: dict) -> dict:
-    """Convert components of observation to Tensors."""
-    # Obs into .forward() are expected in a slightly different format than the
-    # raw env's observation space at instantiation.
-    for k, v in obs.items():
-        obs[k] = tensor(v)
-    obs = {"obs": obs}
-    return obs
-
+from punchclock.nets.utils import preprocessDictObs
 
 # %% Make test Env
 print("\nBuild test env...")
@@ -37,6 +27,31 @@ env = RandomEnv(env_config)
 print(f"observation_space = {env.observation_space}")
 print(f"action_space = {env.action_space}")
 env.reset()
+
+# # %% Ray example model
+# env2 = RandomEnv(
+#     {
+#         "observation_space": gym.spaces.Box(0, 1, shape=[4]),
+#         "action_space": gym.spaces.MultiDiscrete([2]),
+#     }
+# )
+# env2.reset()
+# model = GTrXLNet(
+#     observation_space=env2.observation_space,
+#     action_space=env2.action_space,
+#     num_outputs=2,
+#     model_config={"max_seq_len": 10},
+#     name="derp",
+# )
+
+# obs = preprocessDictObs(obs=env2.observation_space.sample())
+# obs = env2.observation_space.sample()
+# obs = {"obs": tensor(obs)}
+# [logits, state] = model.forward(
+#     input_dict=obs,
+#     state=model.get_initial_state(),
+#     seq_lens=tensor(array([1])),
+# )
 
 # %% Model
 model = MaskedGTrXL(
@@ -56,10 +71,10 @@ obs = env.observation_space.sample()
 obs["action_mask"][0] = 0
 obs["action_mask"][1] = 1
 print(f"obs (raw) = {obs}")
-obs = preprocessObs(obs)
+obs = preprocessDictObs(obs)
 print(f"obs (preprocessed) = {obs}")
 
-seq_lens = tensor(array([0]))
+seq_lens = tensor(array([1]))
 init_state = model.get_initial_state()
 [logits, state] = model.forward(input_dict=obs, state=init_state, seq_lens=seq_lens)
 print(f"logits = {logits}")

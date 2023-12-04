@@ -7,8 +7,10 @@ import torch
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 from ray.rllib.utils.typing import TensorType
 from torch import all as tensorall
+from torch import tensor
 
 
+# %% maskLogits
 def maskLogits(logits: TensorType, mask: TensorType):
     """Apply mask over raw logits."""
     # Resolve edge case where Policy.build() can pass in mask values <0 and
@@ -26,3 +28,26 @@ def maskLogits(logits: TensorType, mask: TensorType):
     inf_mask = torch.clamp(torch.log(mask_binary), min=FLOAT_MIN)
     masked_logits = logits + inf_mask
     return masked_logits
+
+
+# %% PreprocessDictObs
+def preprocessDictObs(obs: dict) -> dict:
+    """Convert components of observation to Tensors.
+
+    Useful in testing. Example:
+
+        dict_obs = {
+            "a": 1,
+            "b": 2,
+        }
+        processed_obs = {
+            "a": tensor([1]),
+            "b": tensor([1]),
+        }
+    """
+    # Obs into .forward() are expected in a slightly different format than the
+    # raw env's observation space at instantiation.
+    for k, v in obs.items():
+        obs[k] = tensor(v)
+    obs = {"obs": obs}
+    return obs
