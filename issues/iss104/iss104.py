@@ -11,7 +11,7 @@ from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
 # Punch Clock Imports
-from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
+from punchclock.common.dummy_env import MaskRepeatAfterMe
 from punchclock.nets.gtrxl import MaskedGTrXL
 
 # %% Script
@@ -39,12 +39,14 @@ config = (
 stop = {"training_iteration": 5}
 
 algo = config.build()
-tuner = tune.Tuner(
-    "PPO",
-    param_space=config.to_dict(),
-    run_config=air.RunConfig(stop=stop, verbose=3),
-)
-tuner.fit()
-ray.shutdown()
+algo.train()
+algo.stop()
+# tuner = tune.Tuner(
+#     "PPO",
+#     param_space=config.to_dict(),
+#     run_config=air.RunConfig(stop=stop, verbose=3),
+# )
+# tuner.fit()
+# ray.shutdown()
 # %% done
 print("done")

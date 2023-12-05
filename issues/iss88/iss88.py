@@ -8,7 +8,7 @@ from ray.rllib.examples.models.action_mask_model import TorchActionMaskModel
 from ray.rllib.models import ModelCatalog
 
 # Punch Clock Imports
-from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
+from punchclock.common.dummy_env import MaskRepeatAfterMe
 from punchclock.nets.lstm_mask import MaskedLSTM
 
 env = MaskRepeatAfterMe()

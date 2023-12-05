@@ -14,14 +14,12 @@ from ray import air, tune
 from ray.rllib.algorithms.ppo import PPOConfig
 
 # Punch Clock Imports
-from issues.iss88.mask_repeat_after_me import MaskRepeatAfterMe
+from punchclock.common.dummy_env import MaskRepeatAfterMe
 
 # %% Get paths
 fpath = Path(__file__).parent
 storage_path = fpath.joinpath("data")
-trained_state_dict_path = storage_path.joinpath("model_weights").with_suffix(
-    ".pth"
-)
+trained_state_dict_path = storage_path.joinpath("model_weights").with_suffix(".pth")
 
 # Change experiment_name to desired checkpoint dir name
 experiment_name = "training_run_ITP"
