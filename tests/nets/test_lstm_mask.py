@@ -1,6 +1,5 @@
 """Tests for lstm_mask.py."""
 # %% Imports
-
 # Third Party Imports
 import gymnasium as gym
 import ray
@@ -70,9 +69,7 @@ print(f"obs (preprocessed) = {obs}")
 
 seq_lens = tensor(array([0]))
 init_state = model.get_initial_state()
-[logits, state] = model.forward(
-    input_dict=obs, state=init_state, seq_lens=seq_lens
-)
+[logits, state] = model.forward(input_dict=obs, state=init_state, seq_lens=seq_lens)
 print(f"logits = {logits}")
 print(f"state = {state}")
 
