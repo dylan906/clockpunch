@@ -9,27 +9,38 @@ from ray.rllib.examples.env.repeat_after_me_env import RepeatAfterMeEnv
 
 
 class MaskRepeatAfterMe(Env):
-    def __init__(self, config={}):
+    """RepeatAfterMeEnv with action masking.
+
+    There are three options for mask_config:
+        "viable_random": The action mask is a random sample from the action space,
+            with the first action always available.
+        "full_random": The action mask is a random sample from the action space.
+        "off": All actions are available (the action mask is an array of ones).
+    """
+
+    def __init__(self, config=None):
+        """Instantiate MaskRepeatAfterMe."""
         self.internal_env = RepeatAfterMeEnv()
         self.observation_space = Dict(
             {
-                "observations": flatten_space(
-                    self.internal_env.observation_space
-                ),
+                "observations": flatten_space(self.internal_env.observation_space),
                 "action_mask": flatten_space(self.internal_env.action_space),
             }
         )
         self.action_space = self.internal_env.action_space
-
+        if config is None:
+            config = {}
         self.mask_config = config.get("mask_config", "viable_random")
 
     def reset(self, *, seed=None, options=None):
+        """Reset env."""
         obs, info = self.internal_env.reset()
         new_obs = self._wrapObs(obs)
         self.last_obs = new_obs
         return new_obs, info
 
     def step(self, action):
+        """Step env."""
         trunc = self._checkMaskViolation(action)
         obs, reward, done, _, info = self.internal_env.step(action)
         new_obs = self._wrapObs(obs)
@@ -43,14 +54,10 @@ class MaskRepeatAfterMe(Env):
         elif self.mask_config == "full_random":
             mask = self.observation_space.spaces["action_mask"].sample()
         elif self.mask_config == "off":
-            mask = ones(
-                self.observation_space.spaces["action_mask"].shape, dtype=int
-            )
+            mask = ones(self.observation_space.spaces["action_mask"].shape, dtype=int)
 
         wrapped_obs = {
-            "observations": flatten(
-                self.internal_env.observation_space, unwrapped_obs
-            ),
+            "observations": flatten(self.internal_env.observation_space, unwrapped_obs),
             "action_mask": mask,
         }
         return wrapped_obs
