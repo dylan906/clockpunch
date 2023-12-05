@@ -101,6 +101,9 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
 
     def get_initial_state(self):
         return [
-            torch.zeros(self.gtrxl.memory_training, self.gtrxl.attention_dim)
+            torch.zeros(
+                self.gtrxl.attention_dim,
+                self.gtrxl.memory_training,
+            )
             for i in range(self.gtrxl.num_transformer_units)
         ]

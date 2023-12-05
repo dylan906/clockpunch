@@ -5,7 +5,7 @@ import gymnasium as gym
 from numpy import array
 from ray.rllib.examples.env.random_env import RandomEnv
 from ray.rllib.models.torch.attention_net import GTrXLNet
-from torch import tensor
+from torch import reshape, tensor, transpose
 
 # Punch Clock Imports
 from punchclock.nets.gtrxl import MaskedGTrXL
@@ -32,7 +32,7 @@ env.reset()
 # env2 = RandomEnv(
 #     {
 #         "observation_space": gym.spaces.Box(0, 1, shape=[4]),
-#         "action_space": gym.spaces.MultiDiscrete([2]),
+#         "action_space": gym.spaces.Box(0, 1, dtype=float),
 #     }
 # )
 # env2.reset()
@@ -44,7 +44,6 @@ env.reset()
 #     name="derp",
 # )
 
-# obs = preprocessDictObs(obs=env2.observation_space.sample())
 # obs = env2.observation_space.sample()
 # obs = {"obs": tensor(obs)}
 # [logits, state] = model.forward(
@@ -53,11 +52,13 @@ env.reset()
 #     seq_lens=tensor(array([1])),
 # )
 
-# %% Model
+# # %% Model
 model = MaskedGTrXL(
     observation_space=env.observation_space,
     action_space=env.action_space,
     num_outputs=2,
+    # memory_training=4,
+    attention_dim=1,
     model_config={"max_seq_len": 10},
     name="derp",
 )
@@ -72,6 +73,7 @@ obs["action_mask"][0] = 0
 obs["action_mask"][1] = 1
 print(f"obs (raw) = {obs}")
 obs = preprocessDictObs(obs)
+# obs["obs"]["observations"] = reshape(obs["obs"]["observations"], (1, -1))
 print(f"obs (preprocessed) = {obs}")
 
 seq_lens = tensor(array([1]))
