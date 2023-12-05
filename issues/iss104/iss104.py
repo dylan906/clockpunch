@@ -7,6 +7,7 @@ import os
 import ray
 import ray.rllib.algorithms.ppo as ppo
 from ray import air, tune
+from ray.rllib.examples.env.action_mask_env import ActionMaskEnv
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
@@ -25,14 +26,14 @@ env_config = {"mask_config": "off"}
 
 config = (
     ppo.PPOConfig()
-    .environment(MaskRepeatAfterMe, env_config=env_config)
+    .environment(ActionMaskEnv, env_config={})
     .framework("torch")
     .training(
         model={
             # Specify our custom model from above.
             "custom_model": "MaskedGTrXL",
             # Extra kwargs to be passed to your model's c'tor.
-            "custom_model_config": {"max_seq_len": 10},
+            # "custom_model_config": {"max_seq_len": 10},
         }
     )
 )
