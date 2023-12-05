@@ -99,11 +99,20 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
 
         return masked_logits, state
 
+    @override(ModelV2)
     def get_initial_state(self):
         return [
             torch.zeros(
-                self.gtrxl.attention_dim,
-                self.gtrxl.memory_training,
+                (1, self.gtrxl.attention_dim)
+                # self.gtrxl.view_requirements["state_in_{}".format(i)].space.shape
+                # (self.gtrxl.attention_dim, self.gtrxl.memory_training),
             )
             for i in range(self.gtrxl.num_transformer_units)
         ]
+
+    @override(ModelV2)
+    def value_function(self) -> TensorType:
+        assert (
+            self._value_out is not None
+        ), "Must call forward first AND must have value branch!"
+        return torch.reshape(self._value_out, [-1])
