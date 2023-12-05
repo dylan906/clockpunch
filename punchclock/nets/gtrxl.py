@@ -84,6 +84,8 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
             init_gru_gate_bias=init_gru_gate_bias,
         )
 
+        self._value_out = None
+
     def forward(
         self, input_dict, state: List[TensorType], seq_lens: TensorType
     ) -> (TensorType, List[TensorType]):
@@ -96,6 +98,7 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
             seq_lens=seq_lens,
         )
         masked_logits = maskLogits(logits=logits, mask=action_mask)
+        self._value_out = self.gtrxl._value_out
 
         return masked_logits, state
 
@@ -115,4 +118,5 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
         assert (
             self._value_out is not None
         ), "Must call forward first AND must have value branch!"
-        return torch.reshape(self._value_out, [-1])
+        # return torch.reshape(self._value_out, [-1])
+        return self.gtrxl.value_function()
