@@ -3,12 +3,15 @@
 Ray implementation: https://github.com/ray-project/ray/blob/master/rllib/models/torch/attention_net.py#L261
 """
 # Standard Library Imports
+from copy import deepcopy
 from typing import Dict, Optional, Union
 
 # Third Party Imports
 import numpy as np
 import tree  # pip install dm_tree
 from gymnasium.spaces import Box, Dict, Discrete, MultiDiscrete, Space
+from gymnasium.spaces.utils import flatten
+from numpy import reshape
 from ray.rllib.models.modelv2 import ModelV2
 from ray.rllib.models.torch.attention_net import GTrXLNet
 from ray.rllib.models.torch.misc import SlimFC
@@ -57,6 +60,8 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
         # type. Happens during training.
         orig_space = getattr(observation_space, "original_space", observation_space)
         assert isinstance(orig_space, Dict)
+        self.orig_obs_space = orig_space
+
         assert "observations" in orig_space.spaces
         assert "action_mask" in orig_space.spaces
         # Check that required items are in model_config
@@ -68,6 +73,7 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
 
         nn.Module.__init__(self)
 
+        # Internal GTrXL model uses just "observations" portion of observation_space
         self.gtrxl = GTrXLNet(
             observation_space=orig_space["observations"],
             action_space=action_space,
@@ -89,11 +95,25 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
     def forward(
         self, input_dict, state: List[TensorType], seq_lens: TensorType
     ) -> (TensorType, List[TensorType]):
+        print("\n")
+        print(f"{input_dict=}")
+        print(f"{state=}")
+        print(f"{input_dict['obs']=}")
+        print(f"{input_dict['obs_flat'].shape=}")
+        print("\n")
+
         obs = input_dict["obs"]["observations"]
+        print(f"{obs.shape=}")
+        # assert obs.shape == self.gtrxl.obs_dim, f"{obs.shape=}, {self.gtrxl.obs_dim=}"
+        # obs = reshape(obs, newshape=(1, -1))
         action_mask = input_dict["obs"]["action_mask"]
 
+        new_input_dict = deepcopy(input_dict)
+        new_input_dict["obs"] = obs
+        new_input_dict["obs_flat"] = flatten(self.orig_obs_space["observations"], obs)
+
         logits, state = self.gtrxl.forward(
-            input_dict={"obs": obs},
+            input_dict=new_input_dict,
             state=state,
             seq_lens=seq_lens,
         )
@@ -104,14 +124,18 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
 
     @override(ModelV2)
     def get_initial_state(self):
-        return [
+        state = [
             torch.zeros(
+                # self.gtrxl.attention_dim
                 (1, self.gtrxl.attention_dim)
                 # self.gtrxl.view_requirements["state_in_{}".format(i)].space.shape
                 # (self.gtrxl.attention_dim, self.gtrxl.memory_training),
             )
             for i in range(self.gtrxl.num_transformer_units)
         ]
+        for si in state:
+            print(f"{si.shape=}")
+        return state
 
     @override(ModelV2)
     def value_function(self) -> TensorType:
