@@ -1,8 +1,9 @@
 # Third Party Imports
 import gymnasium as gym
+import torch
 from numpy import array
 from ray.rllib.examples.env.random_env import RandomEnv
-from ray.rllib.models.torch.attention_net import AttentionWrapper, GTrXLNet
+from ray.rllib.models.torch.attention_net import GTrXLNet
 from torch import tensor
 
 env2 = RandomEnv(
@@ -21,9 +22,16 @@ model = GTrXLNet(
     name="foo",
 )
 
-
+initial_state = [
+    torch.zeros(
+        1,
+        model.view_requirements["state_in_{}".format(i)].space.shape[0],
+    )
+    for i in range(model.num_transformer_units)
+]
 [logits, state] = model.forward(
     input_dict={"obs": tensor(env2.observation_space.sample())},
-    state=model.get_initial_state(),
+    # state=model.get_initial_state(),
+    state=initial_state,
     seq_lens=tensor(array([1])),
 )
