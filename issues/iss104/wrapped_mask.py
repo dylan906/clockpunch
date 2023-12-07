@@ -36,22 +36,26 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         model_config: ModelConfigDict,
         name: str,
     ):
-        orig_space = obs_space.original_space
+        print(f"Line {inspect.currentframe().f_lineno}: {obs_space=}")
+        orig_space = getattr(obs_space, "original_space", obs_space)
         assert isinstance(orig_space, gym.spaces.Dict)
         assert "action_mask" in orig_space.spaces
         assert "observations" in orig_space.spaces
 
-        print(f"{type(obs_space)=}")
-        print(f"{obs_space=}")
-        print(f"{getattr(obs_space, 'original_space', obs_space)=}")
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {getattr(obs_space, 'original_space', obs_space)=}"
+        )
         wrapped_obs_space = orig_space.spaces["observations"]
-        print(f"{wrapped_obs_space=}")
+        print(f"Line {inspect.currentframe().f_lineno}: {wrapped_obs_space=}")
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {getattr(model_config,'fcnet_hiddens', None)=}"
+        )
 
         nn.Module.__init__(self)
         super().__init__(
             obs_space=obs_space,
             action_space=action_space,
-            num_outputs=None,
+            num_outputs=num_outputs,
             model_config=model_config,
             name=name,
         )
@@ -73,9 +77,6 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         seq_lens: TensorType,
     ) -> Tuple[TensorType, list[TensorType]]:
         print("\n")
-        # print(f"{input_dict=}")
-        # print(f"{state=}")
-        # print(f"{input_dict['obs']=}")
         print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
         print(f"Line {inspect.currentframe().f_lineno}: {state=}")
         print(f"Line {inspect.currentframe().f_lineno}: {input_dict['obs'].keys()=}")
@@ -91,10 +92,10 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
 
         # Mask the output
         action_mask = input_dict["obs"]["action_mask"]
+        # action_mask = self.reshapeActionMask(action_mask, reference_tensor=logits)
         print(f"Line {inspect.currentframe().f_lineno}: {action_mask.shape=}")
         print(f"Line {inspect.currentframe().f_lineno}: {logits.shape=}")
         masked_logits = maskLogits(logits=logits, mask=action_mask)
-        # self._value_out = self.internal_model._value_out
 
         # Return the masked output and the new state
         return masked_logits, new_state
@@ -108,10 +109,9 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         modified_input_dict["obs_flat"] = flatten(
             self.obs_space, modified_input_dict["obs"]
         )
-        print(f"Line {inspect.currentframe().f_lineno}:" f" {modified_input_dict=}")
+        print(f"Line {inspect.currentframe().f_lineno}: {modified_input_dict=}")
         print(
-            f"Line {inspect.currentframe().f_lineno}: "
-            f"{modified_input_dict['obs'].shape=}"
+            f"Line {inspect.currentframe().f_lineno}: {modified_input_dict['obs'].shape=}"
         )
         print(
             f"Line {inspect.currentframe().f_lineno}: {modified_input_dict['obs_flat'].shape=}"
@@ -121,6 +121,15 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         )
 
         return modified_input_dict
+
+    def reshapeActionMask(
+        self, mask: TensorType, reference_tensor: TensorType
+    ) -> TensorType:
+        """Tile copy the action mask to match the output of the model."""
+        mask_shape = mask.shape
+        reference_shape = reference_tensor.shape
+        mask = mask.repeat(1, reference_shape[1] // mask_shape[1])
+        return mask
 
     @override(ModelV2)
     def get_initial_state(self) -> list[TensorType]:
@@ -135,6 +144,9 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
 
 
 if __name__ == "__main__":
+    env = MaskRepeatAfterMe()
+    print(f"{env.observation_space=}")
+    print(f"{env.action_space=}")
     # %% Initialization stuff
     ray.init(local_mode=True)
 
@@ -150,8 +162,6 @@ if __name__ == "__main__":
         .environment(
             "MaskRepeatAfterMe",
             env_config={"mask_config": "off"},
-            # This env_config is only used for the RepeatAfterMeEnv env.
-            # env_config={"repeat_delay": 2},
         )
         .training(
             gamma=0.99,
@@ -163,25 +173,13 @@ if __name__ == "__main__":
                 # "custom_model_config": {
                 #     "no_masking": True,
                 # },
-                # "fcnet_hiddens": [32, 32],
-                # Add any additional custom model parameters here
+                "fcnet_hiddens": [32, 2],
                 "use_attention": True,
-                # "max_seq_len": 10,
-                # "attention_num_transformer_units": 1,
-                # "attention_dim": 32,
-                # "attention_memory_inference": 10,
-                # "attention_memory_training": 10,
-                # "attention_num_heads": 1,
-                # "attention_head_dim": 32,
-                # "attention_position_wise_mlp_dim": 32,
             },
         )
         .framework("torch")
         .rollouts(num_envs_per_worker=20)
-        .resources(
-            # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
-            num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", 0))
-        )
+        .resources(num_gpus=int(os.environ.get("RLLIB_NUM_GPUS", 0)))
     )
 
     stop = {
