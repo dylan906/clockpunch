@@ -78,20 +78,23 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         # print(f"{input_dict['obs']=}")
         print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
         print(f"Line {inspect.currentframe().f_lineno}: {state=}")
-        print(f"Line {inspect.currentframe().f_lineno}: {input_dict['obs']=}")
+        print(f"Line {inspect.currentframe().f_lineno}: {input_dict['obs'].keys()=}")
 
         obs_only_dict = self.removeActionMask(input_dict)
 
         # Pass the observations and action mask to the internal model
         # and get the output and new state
-        logits, new_state = self.internal_model.forward(
-            input_dict=obs_only_dict, state=state, seq_lens=seq_lens
-        )
+        logits, new_state = self.internal_model(input_dict=obs_only_dict)
+        # logits, new_state = self.internal_model.forward(
+        #     input_dict=obs_only_dict, state=state, seq_lens=seq_lens
+        # )
 
         # Mask the output
         action_mask = input_dict["obs"]["action_mask"]
+        print(f"Line {inspect.currentframe().f_lineno}: {action_mask.shape=}")
+        print(f"Line {inspect.currentframe().f_lineno}: {logits.shape=}")
         masked_logits = maskLogits(logits=logits, mask=action_mask)
-        self._value_out = self.internal_model._value_out
+        # self._value_out = self.internal_model._value_out
 
         # Return the masked output and the new state
         return masked_logits, new_state
@@ -105,13 +108,25 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         modified_input_dict["obs_flat"] = flatten(
             self.obs_space, modified_input_dict["obs"]
         )
-        print(f"Line {inspect.currentframe().f_lineno}: {modified_input_dict=}")
+        print(f"Line {inspect.currentframe().f_lineno}:" f" {modified_input_dict=}")
+        print(
+            f"Line {inspect.currentframe().f_lineno}: "
+            f"{modified_input_dict['obs'].shape=}"
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {modified_input_dict['obs_flat'].shape=}"
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {getattr(modified_input_dict,'new_obs.shape', None)=}"
+        )
 
         return modified_input_dict
 
     @override(ModelV2)
-    def get_initial_state(self):
+    def get_initial_state(self) -> list[TensorType]:
         state = self.internal_model.get_initial_state()
+        for i in state:
+            print(f"Line {inspect.currentframe().f_lineno}: {i.shape=}")
         return state
 
     @override(ModelV2)
@@ -150,7 +165,7 @@ if __name__ == "__main__":
                 # },
                 # "fcnet_hiddens": [32, 32],
                 # Add any additional custom model parameters here
-                # "use_attention": True,
+                "use_attention": True,
                 # "max_seq_len": 10,
                 # "attention_num_transformer_units": 1,
                 # "attention_dim": 32,
