@@ -53,7 +53,7 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
 
         nn.Module.__init__(self)
         super().__init__(
-            obs_space=obs_space,
+            obs_space=wrapped_obs_space,
             action_space=action_space,
             num_outputs=num_outputs,
             model_config=model_config,
@@ -79,7 +79,12 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         print("\n")
         print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
         print(f"Line {inspect.currentframe().f_lineno}: {state=}")
-        print(f"Line {inspect.currentframe().f_lineno}: {input_dict['obs'].keys()=}")
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {getattr(input_dict['obs'],'keys()', None)=}"
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {getattr(input_dict['obs'],'shape', None)=}"
+        )
 
         obs_only_dict = self.removeActionMask(input_dict)
 
@@ -104,11 +109,17 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         self, input_dict: dict[str, TensorType]
     ) -> dict[str, TensorType]:
         """Remove the action mask from the input dict."""
+        print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {getattr(input_dict['obs'], 'shape', None)=}"
+        )
+
         modified_input_dict = input_dict.copy()
         modified_input_dict["obs"] = input_dict["obs"]["observations"]
         modified_input_dict["obs_flat"] = flatten(
             self.obs_space, modified_input_dict["obs"]
         )
+
         print(f"Line {inspect.currentframe().f_lineno}: {modified_input_dict=}")
         print(
             f"Line {inspect.currentframe().f_lineno}: {modified_input_dict['obs'].shape=}"
@@ -173,7 +184,7 @@ if __name__ == "__main__":
                 # "custom_model_config": {
                 #     "no_masking": True,
                 # },
-                "fcnet_hiddens": [32, 2],
+                "fcnet_hiddens": [32, 2],  # last layer must be size of action space
                 "use_attention": True,
             },
         )
