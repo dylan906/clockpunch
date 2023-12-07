@@ -127,8 +127,8 @@ class MaskedGTrXL(RecurrentNetwork, nn.Module):
         state = [
             torch.zeros(
                 # self.gtrxl.attention_dim
-                (1, self.gtrxl.attention_dim)
-                # self.gtrxl.view_requirements["state_in_{}".format(i)].space.shape
+                # (1, self.gtrxl.attention_dim)
+                self.gtrxl.view_requirements["state_in_{}".format(i)].space.shape
                 # (self.gtrxl.attention_dim, self.gtrxl.memory_training),
             )
             for i in range(self.gtrxl.num_transformer_units)
