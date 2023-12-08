@@ -3,13 +3,15 @@
 # Standard Library Imports
 import inspect
 import os
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 # Third Party Imports
 import gymnasium as gym
 import ray
 import ray.rllib.algorithms.ppo as ppo
+import torch
 import torch.nn as nn
+from gymnasium.spaces import Box, Dict, Discrete, Space
 from gymnasium.spaces.utils import flatten
 from ray.rllib.examples.env.repeat_after_me_env import RepeatAfterMeEnv
 from ray.rllib.models import ModelCatalog
@@ -17,6 +19,7 @@ from ray.rllib.models.modelv2 import ModelConfigDict, ModelV2
 from ray.rllib.models.torch.attention_net import AttentionWrapper
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
+from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.annotations import override
 from ray.tune import registry
 from torch import TensorType, reshape
@@ -47,6 +50,7 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
             f"Line {inspect.currentframe().f_lineno}:",
             f"{getattr(obs_space, 'original_space', obs_space)=}",
         )
+        self.orig_space = orig_space
         self.wrapped_obs_space = orig_space.spaces["observations"]
 
         print(f"Line {inspect.currentframe().f_lineno}: {self.wrapped_obs_space=}")
@@ -57,12 +61,14 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
 
         nn.Module.__init__(self)
         super().__init__(
-            obs_space=obs_space,
+            # obs_space=obs_space,
+            obs_space=self.wrapped_obs_space,
             action_space=action_space,
             num_outputs=num_outputs,
             model_config=model_config,
             name=name,
         )
+        print(f"Line {inspect.currentframe().f_lineno}: {self.wrapped_obs_space=}")
 
         self.internal_model = TorchFC(
             obs_space=self.wrapped_obs_space,
@@ -93,7 +99,9 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
             f"Line {inspect.currentframe().f_lineno}: {safeGetattr(input_dict,'new_obs.shape', None),=}"
         )
 
-        # Remove action mask from: 'obs', 'new_obs', and 'obs_flat'.
+        # Remove (if necessary) action mask from: 'obs', 'new_obs', and 'obs_flat'.
+        # Or crop 'new_obs' to be same shape as 'obs' if self.observation_space
+        # is a Box.
         obs_only_dict = self.removeActionMask(input_dict)
 
         # Pass the observations and action mask to the internal model
@@ -104,7 +112,10 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         # )
 
         # Mask the output
-        action_mask = input_dict["obs"]["action_mask"]
+        if isinstance(input_dict, SampleBatch):
+            action_mask = torch.zeros(self.orig_space.spaces["action_mask"].shape)
+        else:
+            action_mask = input_dict["obs"]["action_mask"]
         # action_mask = self.reshapeActionMask(action_mask, reference_tensor=logits)
         print(f"Line {inspect.currentframe().f_lineno}: {action_mask.shape=}")
         print(f"Line {inspect.currentframe().f_lineno}: {logits.shape=}")
@@ -141,12 +152,15 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         )
 
         modified_input_dict = input_dict.copy()
-        modified_input_dict["obs"] = input_dict["obs"]["observations"]
-        modified_input_dict["obs_flat"] = flatten(
-            self.wrapped_obs_space, modified_input_dict["obs"]
-        )
+        if isinstance(input_dict["obs"], dict):
+            modified_input_dict["obs"] = input_dict["obs"]["observations"]
+            modified_input_dict["obs_flat"] = flatten(
+                self.wrapped_obs_space, modified_input_dict["obs"]
+            )
+
         if "new_obs" in modified_input_dict:
-            # 'new_obs' is only present in the input dict when using attention wrapper
+            # 'new_obs' is only present in the input dict when using attention wrapper.
+            # Crop to be same size as modified obs.
             modified_input_dict["new_obs"] = modified_input_dict["new_obs"][
                 :, : modified_input_dict["obs"].shape[1]
             ]
