@@ -19,10 +19,11 @@ from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.utils.annotations import override
 from ray.tune import registry
-from torch import TensorType
+from torch import TensorType, reshape
 
 # Punch Clock Imports
 from punchclock.common.dummy_env import MaskRepeatAfterMe
+from punchclock.common.utilities import safeGetattr
 from punchclock.nets.action_mask_model import MyActionMaskModel
 from punchclock.nets.utils import maskLogits
 
@@ -43,17 +44,20 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         assert "observations" in orig_space.spaces
 
         print(
-            f"Line {inspect.currentframe().f_lineno}: {getattr(obs_space, 'original_space', obs_space)=}"
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{getattr(obs_space, 'original_space', obs_space)=}",
         )
-        wrapped_obs_space = orig_space.spaces["observations"]
-        print(f"Line {inspect.currentframe().f_lineno}: {wrapped_obs_space=}")
+        self.wrapped_obs_space = orig_space.spaces["observations"]
+
+        print(f"Line {inspect.currentframe().f_lineno}: {self.wrapped_obs_space=}")
         print(
-            f"Line {inspect.currentframe().f_lineno}: {getattr(model_config,'fcnet_hiddens', None)=}"
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{getattr(model_config,'fcnet_hiddens', None)=}",
         )
 
         nn.Module.__init__(self)
         super().__init__(
-            obs_space=wrapped_obs_space,
+            obs_space=obs_space,
             action_space=action_space,
             num_outputs=num_outputs,
             model_config=model_config,
@@ -61,7 +65,7 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         )
 
         self.internal_model = TorchFC(
-            obs_space=wrapped_obs_space,
+            obs_space=self.wrapped_obs_space,
             action_space=action_space,
             num_outputs=num_outputs,
             model_config=model_config,
@@ -80,12 +84,16 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
         print(f"Line {inspect.currentframe().f_lineno}: {state=}")
         print(
-            f"Line {inspect.currentframe().f_lineno}: {getattr(input_dict['obs'],'keys()', None)=}"
+            f"Line {inspect.currentframe().f_lineno}: {safeGetattr(input_dict['obs'],'keys()', None)=}"
         )
         print(
-            f"Line {inspect.currentframe().f_lineno}: {getattr(input_dict['obs'],'shape', None)=}"
+            f"Line {inspect.currentframe().f_lineno}: {safeGetattr(input_dict['obs'],'shape', None)=}"
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}: {safeGetattr(input_dict,'new_obs.shape', None),=}"
         )
 
+        # Remove action mask from: 'obs', 'new_obs', and 'obs_flat'.
         obs_only_dict = self.removeActionMask(input_dict)
 
         # Pass the observations and action mask to the internal model
@@ -109,26 +117,52 @@ class CustomAttentionWrapper(TorchModelV2, nn.Module):
         self, input_dict: dict[str, TensorType]
     ) -> dict[str, TensorType]:
         """Remove the action mask from the input dict."""
+        # Watch out for input_dict being a SampleBatch
         print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
         print(
-            f"Line {inspect.currentframe().f_lineno}: {getattr(input_dict['obs'], 'shape', None)=}"
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{getattr(input_dict['obs'], 'shape', None)=}",
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(input_dict['obs'],'observations.shape', None)=}",
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(input_dict['obs'],'action_mask.shape', None)=}",
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(input_dict['obs_flat'],'shape', None)=}",
+        )
+        print(
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(input_dict, 'new_obs.shape',None)=}",
         )
 
         modified_input_dict = input_dict.copy()
         modified_input_dict["obs"] = input_dict["obs"]["observations"]
         modified_input_dict["obs_flat"] = flatten(
-            self.obs_space, modified_input_dict["obs"]
+            self.wrapped_obs_space, modified_input_dict["obs"]
         )
+        if "new_obs" in modified_input_dict:
+            # 'new_obs' is only present in the input dict when using attention wrapper
+            modified_input_dict["new_obs"] = modified_input_dict["new_obs"][
+                :, : modified_input_dict["obs"].shape[1]
+            ]
 
         print(f"Line {inspect.currentframe().f_lineno}: {modified_input_dict=}")
         print(
-            f"Line {inspect.currentframe().f_lineno}: {modified_input_dict['obs'].shape=}"
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(modified_input_dict,'obs.shape', None)=}",
         )
         print(
-            f"Line {inspect.currentframe().f_lineno}: {modified_input_dict['obs_flat'].shape=}"
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(modified_input_dict,'obs_flat.shape',None)=}",
         )
         print(
-            f"Line {inspect.currentframe().f_lineno}: {getattr(modified_input_dict,'new_obs.shape', None)=}"
+            f"Line {inspect.currentframe().f_lineno}:",
+            f"{safeGetattr(modified_input_dict,'new_obs.shape', None)=}",
         )
 
         return modified_input_dict
@@ -158,6 +192,8 @@ if __name__ == "__main__":
     env = MaskRepeatAfterMe()
     print(f"{env.observation_space=}")
     print(f"{env.action_space=}")
+    # env.observation_space=Dict('action_mask': Box(0, 1, (2,), int64), 'observations': Box(0, 1, (2,), int64))
+    # env.action_space=Discrete(2)
     # %% Initialization stuff
     ray.init(local_mode=True)
 
