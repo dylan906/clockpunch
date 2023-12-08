@@ -489,20 +489,6 @@ def findNearest(
         return original[idx], idx
 
 
-# %% Chained get
-def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
-    """Get a value nested in a dictionary by its nested path."""
-    value_path = list(args)
-    dict_chain = dictionary
-    while value_path:
-        try:
-            dict_chain = dict_chain.get(value_path.pop(0))
-        except AttributeError:
-            return default
-
-    return dict_chain
-
-
 # %% Recursively update a dict
 def updateRecursive(d: dict, u: dict) -> dict:
     """Recursively update nested dict d with dict u."""
@@ -532,3 +518,53 @@ def saturateInf(x: ndarray, dtype: type = float) -> ndarray:
     x_new[x_new == Inf] = dtype_map[dtype][1]
 
     return x_new
+
+
+# %% Chained get
+def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
+    """
+    Get a value nested in a dictionary by its nested path.
+
+    Parameters:
+        dictionary (dict): The dictionary to search in.
+        *args: The nested path to the value.
+        default (Any, optional): The default value to return if the nested value is not found. Defaults to None.
+
+    Returns:
+        Any: The nested value if found, otherwise the default value.
+    """
+    value_path = list(args)
+    dict_chain = dictionary
+    while value_path:
+        try:
+            dict_chain = dict_chain.get(value_path.pop(0))
+        except AttributeError:
+            return default
+
+    return dict_chain
+
+
+# %% safeGetattr
+def safeGetattr(obj: Any, attr: str, default: Any = None) -> Any:
+    """
+    Safely retrieves the value of an attribute from an object, even if the attribute is nested.
+
+    Args:
+        obj (object): The object from which to retrieve the attribute.
+        attr (str): The name of the attribute to retrieve. It can be a nested attribute separated by dots.
+        default (optional): The default value to return if the attribute is not found. Defaults to None.
+
+    Returns:
+        The value of the attribute if found, otherwise the default value.
+
+    """
+    try:
+        parts = attr.split(".")
+        for part in parts:
+            if isinstance(obj, dict):
+                obj = obj.get(part, default)
+            else:
+                obj = getattr(obj, part, default)
+        return obj
+    except AttributeError:
+        return default
