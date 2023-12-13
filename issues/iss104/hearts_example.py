@@ -27,6 +27,7 @@ from ray.rllib.policy.view_requirement import ViewRequirement
 from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.utils.typing import ModelConfigDict, TensorType
 from ray.tune import registry
+from ray.tune.registry import RLLIB_MODEL, _global_registry
 
 # Punch Clock Imports
 from punchclock.common.dummy_env import MaskRepeatAfterMe
@@ -43,7 +44,10 @@ def get_registered_model(name: str) -> type:
     Returns:
         type: A model class.
     """
-    return _global_registry.get(RLLIB_MODEL, name)
+    print(f"Line {inspect.currentframe().f_lineno}: {name=}")
+    model = _global_registry.get(RLLIB_MODEL, name)
+    print(f"Line {inspect.currentframe().f_lineno}: {model=}")
+    return model
 
 
 def to_preprocessed_obs_space(obs_space: Space) -> Space:
@@ -136,6 +140,7 @@ def _process_model_class_surrogate(
         Type[ModelV2]: The model class.
 
     """
+    print(f"Line {inspect.currentframe().f_lineno}: {model_cls=}")
     if model_cls is None:
         model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
     elif isinstance(model_cls, str):
@@ -196,6 +201,7 @@ def _create_with_adjusted_obs(
     model_cls = _process_model_class_surrogate(
         obs_space, model_config, framework, model_cls
     )
+    print(f"Line {inspect.currentframe().f_lineno}: {model_cls=}")
 
     original_obs_space = _create_unmasked_action_space(obs_space, model_config)
 
@@ -273,7 +279,6 @@ class TorchMaskedActionsWrapper(
         *,
         model_cls: Type[ModelV2] | str | None = None,
         framework: str = "torch",
-        # action_mask_key: str = None,
     ) -> None:
         """Construct an action masking wrapper model around a given model class.
 
@@ -376,6 +381,9 @@ class TorchMaskedActionsAttentionWrapper(TorchMaskedActionsWrapper):
             framework=framework,
         )
 
+        model_cls = model_config["custom_model_config"].get("model_cls", None)
+        print(f"Line {inspect.currentframe().f_lineno}: {model_cls=}")
+
         self._wrapped = _create_wrapped(
             obs_space,
             action_space,
@@ -410,6 +418,7 @@ if __name__ == "__main__":
     ModelCatalog.register_custom_model(
         "TorchMaskedActionsAttentionWrapper", TorchMaskedActionsAttentionWrapper
     )
+    ModelCatalog.register_custom_model("GTrXLNet", GTrXLNet)
 
     # Make config
     config = (
@@ -427,8 +436,9 @@ if __name__ == "__main__":
                 "custom_model": "TorchMaskedActionsAttentionWrapper",
                 "custom_model_config": {
                     "action_mask_key": "action_mask",
-                    "model_class": "GTrXLNet",
+                    "model_cls": "GTrXLNet",
                 },
+                # "model_cls": "GTrXLNet",
             },
         )
         .framework("torch")
@@ -438,3 +448,5 @@ if __name__ == "__main__":
     # %% Build an train
     algo = config.build()
     algo.train()
+
+    print("done")
