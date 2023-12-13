@@ -19,6 +19,7 @@ from ray.rllib.models.preprocessors import Preprocessor, get_preprocessor
 from ray.rllib.models.torch.attention_net import (
     AttentionWrapper as TorchAttentionWrapper,
 )
+from ray.rllib.models.torch.attention_net import GTrXLNet
 from ray.rllib.models.torch.misc import SlimFC
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -139,6 +140,8 @@ def _process_model_class_surrogate(
         model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
     elif isinstance(model_cls, str):
         model_cls = get_registered_model(model_cls)
+
+    print(f"Line {inspect.currentframe().f_lineno}: {model_cls=}")
     return model_cls
 
 
@@ -424,6 +427,7 @@ if __name__ == "__main__":
                 "custom_model": "TorchMaskedActionsAttentionWrapper",
                 "custom_model_config": {
                     "action_mask_key": "action_mask",
+                    "model_class": "GTrXLNet",
                 },
             },
         )
