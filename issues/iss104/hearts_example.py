@@ -24,7 +24,7 @@ from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy.view_requirement import ViewRequirement
 from ray.rllib.utils.framework import try_import_torch
-from ray.rllib.utils.typing import Dict, ModelConfigDict, TensorType
+from ray.rllib.utils.typing import ModelConfigDict, TensorType
 from ray.tune import registry
 
 # Punch Clock Imports
@@ -92,11 +92,11 @@ def _split_input_dict(
     contains the flattened observations without the action mask.
 
     Args:
-        input_dict (Dict[str, Any]): Input dictionary containing
+        input_dict (dict[str, Any]): Input dictionary containing
             observations with support for action masking.
 
     Returns:
-        Dict[str, Any]: Input dictionary with the action mask removed
+        dict[str, Any]: Input dictionary with the action mask removed
             from its flattened observations.
         TensorType: The action mask removed from the input dictionary.
     """
@@ -110,6 +110,57 @@ def _split_input_dict(
     sans_action_mask = input_dict["obs_flat"][:, action_mask_len:]
     input_dict["obs_flat"] = sans_action_mask
     return input_dict, action_mask
+
+
+def _process_model_class_surrogate(
+    obs_space: Space,
+    model_config: ModelConfigDict,
+    framework: str,
+    model_cls: Type[ModelV2] | str | None,
+) -> Type[ModelV2]:
+    """Return the model class based on the provided model_cls.
+
+    If model_cls is None, the default model class is returned based on
+    the preprocessed observation space, model configuration, and
+    framework. If model_cls is a string, the registered model class
+    with that name is returned.
+
+    Args:
+        obs_space (Space): An already preprocessed observation space.
+        model_config (ModelConfigDict): Configuration for the model.
+        framework (str): Deep learning framework used.
+        model_cls (Type[ModelV2] | str | None]): Class of the model to construct.
+
+    Returns:
+        Type[ModelV2]: The model class.
+
+    """
+    if model_cls is None:
+        model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
+    elif isinstance(model_cls, str):
+        model_cls = get_registered_model(model_cls)
+    return model_cls
+
+
+def _create_unmasked_action_space(
+    obs_space: gym.spaces.Dict,
+    model_config: ModelConfigDict,
+) -> Space:
+    """Generate unmasked action space by removing action mask from obs space.
+
+    Args:
+        obs_space (gym.spaces.Dict): The original observation space (including the action
+            mask) of the environment.
+        model_config (ModelConfigDict): The model configuration dictionary.
+
+    Returns:
+        Space: The unmasked action space.
+    """
+    action_mask_key = model_config["custom_model_config"]["action_mask_key"]
+    obs_space_nomask = deepcopy(obs_space.original_space)
+    del obs_space_nomask.spaces[action_mask_key]
+    original_obs_space = to_preprocessed_obs_space(obs_space_nomask)
+    return original_obs_space
 
 
 def _create_with_adjusted_obs(
@@ -139,18 +190,11 @@ def _create_with_adjusted_obs(
     Returns:
         ModelV2: Model instance with an adjusted observation space.
     """
-    if model_cls is None:
-        model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
-    elif isinstance(model_cls, str):
-        model_cls = get_registered_model(model_cls)
+    model_cls = _process_model_class_surrogate(
+        obs_space, model_config, framework, model_cls
+    )
 
-    action_mask_key = model_config["custom_model_config"]["action_mask_key"]
-    print(f"Line {inspect.currentframe().f_lineno}: {obs_space.original_space=}")
-    obs_space_nomask = deepcopy(obs_space.original_space)
-    del obs_space_nomask.spaces[action_mask_key]
-    print(f"Line {inspect.currentframe().f_lineno}: {obs_space_nomask=}")
-    original_obs_space = to_preprocessed_obs_space(obs_space_nomask)
-    # original_obs_space = to_preprocessed_obs_space(obs_space.original_space["obs"])
+    original_obs_space = _create_unmasked_action_space(obs_space, model_config)
 
     return model_cls(
         original_obs_space,
@@ -194,18 +238,10 @@ def _create_wrapped(
         ModelV2: Wrapped model instance with an adjusted
             observation space.
     """
-    if model_cls is None:
-        model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
-    elif isinstance(model_cls, str):
-        model_cls = get_registered_model(model_cls)
-
-    action_mask_key = model_config["custom_model_config"]["action_mask_key"]
-    print(f"Line {inspect.currentframe().f_lineno}: {obs_space.original_space=}")
-    obs_space_nomask = deepcopy(obs_space.original_space)
-    del obs_space_nomask.spaces[action_mask_key]
-    print(f"Line {inspect.currentframe().f_lineno}: {obs_space_nomask=}")
-    original_obs_space = to_preprocessed_obs_space(obs_space_nomask)
-    # original_obs_space = to_preprocessed_obs_space(obs_space.original_space["obs"])
+    model_cls = _process_model_class_surrogate(
+        obs_space, model_config, framework, model_cls
+    )
+    original_obs_space = _create_unmasked_action_space(obs_space, model_config)
 
     wrapper_cls = ModelCatalog._wrap_if_needed(model_cls, wrapper_cls)
     wrapper_cls._wrapped_forward = model_cls.forward  # type: ignore[attr-defined]
@@ -272,7 +308,7 @@ class TorchMaskedActionsWrapper(
             model_cls,
             framework,
         )
-        self.view_requirements: Dict[str, ViewRequirement] = {
+        self.view_requirements: dict[str, ViewRequirement] = {
             **self._wrapped.view_requirements,
             SampleBatch.OBS: self.view_requirements[SampleBatch.OBS],
         }
