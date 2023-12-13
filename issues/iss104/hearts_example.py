@@ -1,0 +1,278 @@
+"""Action mask with GTrXL example from hearts repo.
+
+https://github.com/HelmholtzAI-FZJ/hearts-gym/tree/main
+"""
+# Standard Library Imports
+import os
+from typing import Any, Type
+
+# Third Party Imports
+import gymnasium as gym
+import ray
+import ray.rllib.algorithms.ppo as ppo
+from gymnasium.spaces import Space
+from ray.rllib.models import ModelCatalog
+from ray.rllib.models.modelv2 import ModelV2
+from ray.rllib.models.preprocessors import Preprocessor, get_preprocessor
+from ray.rllib.models.torch.misc import SlimFC
+from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
+from ray.rllib.policy.sample_batch import SampleBatch
+from ray.rllib.policy.view_requirement import ViewRequirement
+from ray.rllib.utils.framework import try_import_torch
+from ray.rllib.utils.typing import Dict, ModelConfigDict, TensorType
+from ray.tune import registry
+
+# Punch Clock Imports
+from punchclock.common.dummy_env import MaskRepeatAfterMe
+
+th, nn = try_import_torch()
+
+
+def get_registered_model(name: str) -> type:
+    """Return the model class registered in `ray` under the given name.
+
+    Args:
+        name (str): Name to query.
+
+    Returns:
+        type: A model class.
+    """
+    return _global_registry.get(RLLIB_MODEL, name)
+
+
+def to_preprocessed_obs_space(obs_space: Space) -> Space:
+    """Return the given observation space in RLlib-preprocessed form.
+
+    Args:
+        obs_space (Space): Observation space to preprocess.
+
+    Returns:
+        Space: Preprocessed observation space.
+    """
+    prep = get_preprocessor(obs_space)(obs_space)
+    return prep.observation_space
+
+
+def preprocessed_get_default_model(
+    obs_space: Space,
+    model_config: ModelConfigDict,
+    framework: str,
+) -> type:
+    """Return the default model class as specified by RLlib for an
+    environment with the given preprocessed observation space.
+
+    Args:
+        obs_space (Space): An already preprocessed observation space.
+        model_config (ModelConfigDict): Configuration for the model.
+        framework (str): Deep learning framework used.
+
+    Returns:
+        type: The default model class for the given preprocessed
+            observation space.
+
+    """
+    model_cls = ModelCatalog._get_v2_model_class(
+        obs_space, model_config, framework=framework
+    )
+    return model_cls
+
+
+def _split_input_dict(
+    input_dict: dict[str, Any],
+) -> tuple[dict[str, Any], TensorType]:
+    """Return a modified input dictionary and its removed action mask.
+
+    `input_dict` is modified in-place so that the "obs_flat" key
+    contains the flattened observations without the action mask.
+
+    Args:
+        input_dict (Dict[str, Any]): Input dictionary containing
+            observations with support for action masking.
+
+    Returns:
+        Dict[str, Any]: Input dictionary with the action mask removed
+            from its flattened observations.
+        TensorType: The action mask removed from the input dictionary.
+    """
+    action_mask = input_dict["obs"][HeartsEnv.ACTION_MASK_KEY]
+    # TODO allow ACTION_MASK_KEY to be placed anywhere, not just at
+    #      start (get start index)
+    action_mask_len = action_mask.shape[-1]
+
+    # The action mask is at the front as the DictFlatteningProcessor
+    # sorts its dictionary's items.
+    sans_action_mask = input_dict["obs_flat"][:, action_mask_len:]
+    input_dict["obs_flat"] = sans_action_mask
+    return input_dict, action_mask
+
+
+def _create_with_adjusted_obs(
+    obs_space: Space,
+    action_space: Space,
+    num_outputs: int,
+    model_config: ModelConfigDict,
+    name: str,
+    model_cls: Type[ModelV2] | str | None,
+    framework: str,
+) -> ModelV2:
+    """Return a model constructed with an observation space adjusted to _not_ include an action mask.
+
+    See also `ModelV2.__init__`.
+
+    Args:
+        obs_space (Space): Original observation space (including the
+            action mask) of the environment.
+        action_space (Space): Action space of the environment.
+        num_outputs (int): Number of output units of the model.
+        model_config (ModelConfigDict): Model configuration dictionary.
+        name (str): Name (scope) to give the model.
+        model_cls (Union[Type[ModelV2], str, None]): Class of the model
+            to construct.
+        framework (str): Deep learning framework used.
+
+    Returns:
+        ModelV2: Model instance with an adjusted observation space.
+    """
+    if model_cls is None:
+        model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
+    elif isinstance(model_cls, str):
+        model_cls = get_registered_model(model_cls)
+
+    original_obs_space = to_preprocessed_obs_space(obs_space.original_space["obs"])
+
+    return model_cls(
+        original_obs_space,
+        action_space,
+        num_outputs,
+        model_config,
+        name + "_wrapped",
+    )
+
+
+class TorchMaskedActionsWrapper(
+    TorchModelV2,
+    nn.Module,  # type: ignore[name-defined]
+):
+    """Wrapper class to support action masking for arbitrary non-recurrent PyTorch models."""
+
+    def __init__(
+        self,
+        obs_space: Space,
+        action_space: Space,
+        num_outputs: int,
+        model_config: ModelConfigDict,
+        name: str,
+        *,
+        model_cls: Type[ModelV2] | str | None = None,
+        framework: str = "torch",
+    ) -> None:
+        """Construct an action masking wrapper model around a given model class.
+
+        See also `TorchModelV2.__init__`.
+
+        Args:
+            obs_space (Space): Observation space of the environment.
+            action_space (Space): Action space of the environment.
+            num_outputs (int): Number of output units of the model.
+            model_config (ModelConfigDict): Model configuration dictionary.
+            name (str): Name (scope) to give the model.
+            model_cls (Union[Type[ModelV2], str, None]): Class of the model
+                to construct.
+            framework (str): Deep learning framework used.
+        """
+        nn.Module.__init__(self)
+        super().__init__(
+            obs_space,
+            action_space,
+            num_outputs,
+            model_config,
+            name,
+        )
+
+        self._wrapped = _create_with_adjusted_obs(
+            obs_space,
+            action_space,
+            num_outputs,
+            model_config,
+            name,
+            model_cls,
+            framework,
+        )
+        self.view_requirements: Dict[str, ViewRequirement] = {
+            **self._wrapped.view_requirements,
+            SampleBatch.OBS: self.view_requirements[SampleBatch.OBS],
+        }
+
+    def forward(
+        self,
+        input_dict: dict[str, TensorType],
+        state: list[TensorType],
+        seq_lens: TensorType,
+    ) -> tuple[TensorType, list[TensorType]]:
+        """Return the model applied to the given inputs. Apply the action mask
+        to give prohibited actions a probability close to zero.
+
+        See also `TorchModelV2.forward`.
+
+        Args:
+            input_dict (dict[str, TensorType]): Input tensors, including
+                keys "obs", "obs_flat", "prev_action", "prev_reward",
+                "is_training", "eps_id", "agent_id", "infos", and "t".
+            state (List[TensorType]): List of RNN state tensors.
+            seq_lens (TensorType): 1-D tensor holding input
+                sequence lengths.
+
+        Returns:
+            TensorType: Output of the model with action masking applied.
+            List[TensorType]: New RNN state.
+        """
+        _, action_mask = _split_input_dict(input_dict)
+        model_out, state = self._wrapped.forward(input_dict, state, seq_lens)
+
+        # We don't use -infinity for numerical stability.
+        inf_mask = th.maximum(
+            th.log(action_mask), th.tensor(th.finfo(model_out.dtype).min)
+        )
+        return model_out + inf_mask, state
+
+    def value_function(self):
+        return self._wrapped.value_function()
+
+
+if __name__ == "__main__":
+    env = MaskRepeatAfterMe()
+    print(f"{env.observation_space=}")
+    print(f"{env.action_space=}")
+
+    ray.init(local_mode=True)
+
+    # register custom environments
+    registry.register_env("MaskRepeatAfterMe", MaskRepeatAfterMe)
+    ModelCatalog.register_custom_model(
+        "TorchMaskedActionsWrapper", TorchMaskedActionsWrapper
+    )
+
+    # Make config
+    config = (
+        ppo.PPOConfig()
+        .environment(
+            "MaskRepeatAfterMe",
+            env_config={"mask_config": "off"},
+        )
+        .training(
+            gamma=0.99,
+            entropy_coeff=0.001,
+            num_sgd_iter=10,
+            vf_loss_coeff=1e-5,
+            model={
+                "custom_model": "TorchMaskedActionsWrapper",
+                "custom_model_config": {},
+            },
+        )
+        .framework("torch")
+        .rollouts(num_envs_per_worker=20)
+    )
+
+    # %% Build an train
+    algo = config.build()
+    algo.train()
