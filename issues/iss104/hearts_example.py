@@ -16,6 +16,9 @@ from gymnasium.spaces import Space
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
 from ray.rllib.models.preprocessors import Preprocessor, get_preprocessor
+from ray.rllib.models.torch.attention_net import (
+    AttentionWrapper as TorchAttentionWrapper,
+)
 from ray.rllib.models.torch.misc import SlimFC
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -81,6 +84,7 @@ def preprocessed_get_default_model(
 
 def _split_input_dict(
     input_dict: dict[str, Any],
+    action_mask_key: str = "action_mask",
 ) -> tuple[dict[str, Any], TensorType]:
     """Return a modified input dictionary and its removed action mask.
 
@@ -96,7 +100,7 @@ def _split_input_dict(
             from its flattened observations.
         TensorType: The action mask removed from the input dictionary.
     """
-    action_mask = input_dict["obs"][HeartsEnv.ACTION_MASK_KEY]
+    action_mask = input_dict["obs"][action_mask_key]
     # TODO allow ACTION_MASK_KEY to be placed anywhere, not just at
     #      start (get start index)
     action_mask_len = action_mask.shape[-1]
@@ -140,7 +144,6 @@ def _create_with_adjusted_obs(
     elif isinstance(model_cls, str):
         model_cls = get_registered_model(model_cls)
 
-    assert "action_mask_key" in model_config["custom_model_config"]
     action_mask_key = model_config["custom_model_config"]["action_mask_key"]
     print(f"Line {inspect.currentframe().f_lineno}: {obs_space.original_space=}")
     obs_space_nomask = deepcopy(obs_space.original_space)
@@ -155,6 +158,63 @@ def _create_with_adjusted_obs(
         num_outputs,
         model_config,
         name + "_wrapped",
+    )
+
+
+def _create_wrapped(
+    obs_space: Space,
+    action_space: Space,
+    num_outputs: int,
+    model_config: ModelConfigDict,
+    name: str,
+    model_cls: Type[ModelV2] | str | None,
+    wrapper_cls: type,
+    framework: str,
+) -> ModelV2:
+    """Return a model constructed with an observation space adjusted to
+    _not_ include an action mask. Also wrap the model in the given
+    wrapper class.
+
+    See also `ModelV2.__init__`.
+
+    Args:
+        obs_space (Space): Original observation space (including the
+            action mask) of the environment.
+        action_space (Space): Action space of the environment.
+        num_outputs (int): Number of output units of the model.
+        model_config (ModelConfigDict): Model configuration dictionary.
+        name (str): Name (scope) to give the model.
+        model_cls (Type[ModelV2] | str | None): Class of the model
+            to wrap.
+        wrapper_cls (Union[type, str, None]): Class to wrap the model
+            in. This is also used to construct the model.
+        framework (str): Deep learning framework used.
+
+    Returns:
+        ModelV2: Wrapped model instance with an adjusted
+            observation space.
+    """
+    if model_cls is None:
+        model_cls = preprocessed_get_default_model(obs_space, model_config, framework)
+    elif isinstance(model_cls, str):
+        model_cls = get_registered_model(model_cls)
+
+    action_mask_key = model_config["custom_model_config"]["action_mask_key"]
+    print(f"Line {inspect.currentframe().f_lineno}: {obs_space.original_space=}")
+    obs_space_nomask = deepcopy(obs_space.original_space)
+    del obs_space_nomask.spaces[action_mask_key]
+    print(f"Line {inspect.currentframe().f_lineno}: {obs_space_nomask=}")
+    original_obs_space = to_preprocessed_obs_space(obs_space_nomask)
+    # original_obs_space = to_preprocessed_obs_space(obs_space.original_space["obs"])
+
+    wrapper_cls = ModelCatalog._wrap_if_needed(model_cls, wrapper_cls)
+    wrapper_cls._wrapped_forward = model_cls.forward  # type: ignore[attr-defined]
+    return wrapper_cls(
+        original_obs_space,
+        action_space,
+        num_outputs,
+        model_config,
+        name,
     )
 
 
@@ -201,6 +261,8 @@ class TorchMaskedActionsWrapper(
 
         # print(f"Line {inspect.currentframe().f_lineno}: {action_mask_key=}")
         print(f"Line {inspect.currentframe().f_lineno}: {model_config=}")
+        assert "action_mask_key" in model_config["custom_model_config"]
+        self.action_mask_key = model_config["custom_model_config"]["action_mask_key"]
         self._wrapped = _create_with_adjusted_obs(
             obs_space,
             action_space,
@@ -238,7 +300,9 @@ class TorchMaskedActionsWrapper(
             TensorType: Output of the model with action masking applied.
             List[TensorType]: New RNN state.
         """
-        _, action_mask = _split_input_dict(input_dict)
+        _, action_mask = _split_input_dict(
+            input_dict, action_mask_key=self.action_mask_key
+        )
         model_out, state = self._wrapped.forward(input_dict, state, seq_lens)
 
         # We don't use -infinity for numerical stability.
@@ -249,6 +313,47 @@ class TorchMaskedActionsWrapper(
 
     def value_function(self):
         return self._wrapped.value_function()
+
+
+class TorchMaskedActionsAttentionWrapper(TorchMaskedActionsWrapper):
+    def __init__(
+        self,
+        obs_space: Space,
+        action_space: Space,
+        num_outputs: int,
+        model_config: ModelConfigDict,
+        name: str,
+        *,
+        model_cls: Type[ModelV2] | str | None = None,
+        attn_cls: type = TorchAttentionWrapper,
+        framework: str = "torch",
+    ) -> None:
+        super().__init__(
+            obs_space,
+            action_space,
+            num_outputs,
+            model_config,
+            name,
+            framework=framework,
+        )
+
+        self._wrapped = _create_wrapped(
+            obs_space,
+            action_space,
+            num_outputs,
+            model_config,
+            name + "_attn",
+            model_cls,
+            attn_cls,
+            framework,
+        )
+        self.view_requirements = {
+            **self._wrapped.view_requirements,
+            SampleBatch.OBS: self.view_requirements[SampleBatch.OBS],
+        }
+
+    def get_initial_state(self) -> list[TensorType]:
+        return self._wrapped.get_initial_state()
 
 
 if __name__ == "__main__":
@@ -262,6 +367,9 @@ if __name__ == "__main__":
     registry.register_env("MaskRepeatAfterMe", MaskRepeatAfterMe)
     ModelCatalog.register_custom_model(
         "TorchMaskedActionsWrapper", TorchMaskedActionsWrapper
+    )
+    ModelCatalog.register_custom_model(
+        "TorchMaskedActionsAttentionWrapper", TorchMaskedActionsAttentionWrapper
     )
 
     # Make config
@@ -277,7 +385,7 @@ if __name__ == "__main__":
             num_sgd_iter=10,
             vf_loss_coeff=1e-5,
             model={
-                "custom_model": "TorchMaskedActionsWrapper",
+                "custom_model": "TorchMaskedActionsAttentionWrapper",
                 "custom_model_config": {
                     "action_mask_key": "action_mask",
                 },
