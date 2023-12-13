@@ -3,7 +3,9 @@
 https://github.com/HelmholtzAI-FZJ/hearts-gym/tree/main
 """
 # Standard Library Imports
+import inspect
 import os
+from copy import deepcopy
 from typing import Any, Type
 
 # Third Party Imports
@@ -138,7 +140,14 @@ def _create_with_adjusted_obs(
     elif isinstance(model_cls, str):
         model_cls = get_registered_model(model_cls)
 
-    original_obs_space = to_preprocessed_obs_space(obs_space.original_space["obs"])
+    assert "action_mask_key" in model_config["custom_model_config"]
+    action_mask_key = model_config["custom_model_config"]["action_mask_key"]
+    print(f"Line {inspect.currentframe().f_lineno}: {obs_space.original_space=}")
+    obs_space_nomask = deepcopy(obs_space.original_space)
+    del obs_space_nomask.spaces[action_mask_key]
+    print(f"Line {inspect.currentframe().f_lineno}: {obs_space_nomask=}")
+    original_obs_space = to_preprocessed_obs_space(obs_space_nomask)
+    # original_obs_space = to_preprocessed_obs_space(obs_space.original_space["obs"])
 
     return model_cls(
         original_obs_space,
@@ -165,6 +174,7 @@ class TorchMaskedActionsWrapper(
         *,
         model_cls: Type[ModelV2] | str | None = None,
         framework: str = "torch",
+        # action_mask_key: str = None,
     ) -> None:
         """Construct an action masking wrapper model around a given model class.
 
@@ -189,6 +199,8 @@ class TorchMaskedActionsWrapper(
             name,
         )
 
+        # print(f"Line {inspect.currentframe().f_lineno}: {action_mask_key=}")
+        print(f"Line {inspect.currentframe().f_lineno}: {model_config=}")
         self._wrapped = _create_with_adjusted_obs(
             obs_space,
             action_space,
@@ -266,7 +278,9 @@ if __name__ == "__main__":
             vf_loss_coeff=1e-5,
             model={
                 "custom_model": "TorchMaskedActionsWrapper",
-                "custom_model_config": {},
+                "custom_model_config": {
+                    "action_mask_key": "action_mask",
+                },
             },
         )
         .framework("torch")
