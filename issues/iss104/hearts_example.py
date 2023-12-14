@@ -2,6 +2,7 @@
 
 https://github.com/HelmholtzAI-FZJ/hearts-gym/tree/main
 """
+
 # Standard Library Imports
 import inspect
 import os
@@ -13,6 +14,7 @@ import gymnasium as gym
 import ray
 import ray.rllib.algorithms.ppo as ppo
 from gymnasium.spaces import Space
+from ray import air, tune
 from ray.rllib.models import ModelCatalog
 from ray.rllib.models.modelv2 import ModelV2
 from ray.rllib.models.preprocessors import Preprocessor, get_preprocessor
@@ -31,6 +33,7 @@ from ray.tune.registry import RLLIB_MODEL, _global_registry
 
 # Punch Clock Imports
 from punchclock.common.dummy_env import MaskRepeatAfterMe
+from punchclock.common.utilities import safeGetattr
 
 th, nn = try_import_torch()
 
@@ -347,6 +350,14 @@ class TorchMaskedActionsWrapper(
         _, action_mask = _split_input_dict(
             input_dict, action_mask_key=self.action_mask_key
         )
+        # print(f"Line {inspect.currentframe().f_lineno}: {self=}")
+        # print(f"Line {inspect.currentframe().f_lineno}: {dir(self._wrapped)=}")
+        # print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
+        # print(
+        #     f"Line {inspect.currentframe().f_lineno}: {safeGetattr(state,'shape', None)=}"
+        # )
+        # print(f"Line {inspect.currentframe().f_lineno}: {seq_lens=}")
+
         model_out, state = self._wrapped.forward(input_dict, state, seq_lens)
 
         # We don't use -infinity for numerical stability.
@@ -367,7 +378,7 @@ class TorchMaskedActionsAttentionWrapper(TorchMaskedActionsWrapper):
         num_outputs: int,
         model_config: ModelConfigDict,
         name: str,
-        *,
+        # *,
         model_cls: Type[ModelV2] | str | None = None,
         attn_cls: type = TorchAttentionWrapper,
         framework: str = "torch",
@@ -381,6 +392,7 @@ class TorchMaskedActionsAttentionWrapper(TorchMaskedActionsWrapper):
             framework=framework,
         )
 
+        print(f"Line {inspect.currentframe().f_lineno}: {attn_cls=}")
         model_cls = model_config["custom_model_config"].get("model_cls", None)
         print(f"Line {inspect.currentframe().f_lineno}: {model_cls=}")
 
@@ -428,25 +440,31 @@ if __name__ == "__main__":
             env_config={"mask_config": "off"},
         )
         .training(
-            gamma=0.99,
-            entropy_coeff=0.001,
-            num_sgd_iter=10,
-            vf_loss_coeff=1e-5,
             model={
                 "custom_model": "TorchMaskedActionsAttentionWrapper",
                 "custom_model_config": {
                     "action_mask_key": "action_mask",
-                    "model_cls": "GTrXLNet",
+                    # "attn_cls": "TorchAttentionWrapper",
+                    # "attn_cls": der,
                 },
-                # "model_cls": "GTrXLNet",
             },
+            # attn_cls="der",
         )
         .framework("torch")
         .rollouts(num_envs_per_worker=20)
     )
 
     # %% Build an train
-    algo = config.build()
-    algo.train()
+    # algo = config.build()
+    # algo.train()
+
+    stop = {"training_iteration": 20}
+    tuner = tune.Tuner(
+        "PPO",
+        param_space=config.to_dict(),
+        run_config=air.RunConfig(stop=stop, verbose=3),
+    )
+    tuner.fit()
+    ray.shutdown()
 
     print("done")
