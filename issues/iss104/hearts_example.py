@@ -2,7 +2,7 @@
 
 https://github.com/HelmholtzAI-FZJ/hearts-gym/tree/main
 """
-
+# %% Imports
 # Standard Library Imports
 import inspect
 import os
@@ -305,9 +305,7 @@ class TorchMaskedActionsWrapper(
             model_config,
             name,
         )
-
-        # print(f"Line {inspect.currentframe().f_lineno}: {action_mask_key=}")
-        print(f"Line {inspect.currentframe().f_lineno}: {model_config=}")
+        # print(f"Line {inspect.currentframe().f_lineno}: {model_config=}")
         assert "action_mask_key" in model_config["custom_model_config"]
         self.action_mask_key = model_config["custom_model_config"]["action_mask_key"]
         self._wrapped = _create_with_adjusted_obs(
@@ -350,7 +348,7 @@ class TorchMaskedActionsWrapper(
         _, action_mask = _split_input_dict(
             input_dict, action_mask_key=self.action_mask_key
         )
-        # print(f"Line {inspect.currentframe().f_lineno}: {self=}")
+        print(f"Line {inspect.currentframe().f_lineno}: {self=}")
         # print(f"Line {inspect.currentframe().f_lineno}: {dir(self._wrapped)=}")
         # print(f"Line {inspect.currentframe().f_lineno}: {input_dict=}")
         # print(
@@ -378,11 +376,25 @@ class TorchMaskedActionsAttentionWrapper(TorchMaskedActionsWrapper):
         num_outputs: int,
         model_config: ModelConfigDict,
         name: str,
-        # *,
+        *,
         model_cls: Type[ModelV2] | str | None = None,
         attn_cls: type = TorchAttentionWrapper,
         framework: str = "torch",
     ) -> None:
+        """Attention wrapper for TorchMaskedActionsWrapper.
+
+        Args:
+            obs_space (Space): _description_
+            action_space (Space): _description_
+            num_outputs (int): _description_
+            model_config (ModelConfigDict): _description_
+            name (str): _description_
+            *
+            model_cls (Type[ModelV2] | str | None, optional): _description_. Defaults to None.
+            attn_cls (type, optional): _description_. Defaults to TorchAttentionWrapper.
+            framework (str, optional): _description_. Defaults to "torch".
+        """
+        # TorchAttentionWrapper includes a wrapped GTrXLNet.
         super().__init__(
             obs_space,
             action_space,
@@ -430,7 +442,6 @@ if __name__ == "__main__":
     ModelCatalog.register_custom_model(
         "TorchMaskedActionsAttentionWrapper", TorchMaskedActionsAttentionWrapper
     )
-    ModelCatalog.register_custom_model("GTrXLNet", GTrXLNet)
 
     # Make config
     config = (
@@ -448,6 +459,13 @@ if __name__ == "__main__":
                     # "attn_cls": der,
                 },
             },
+            # fcnet_hiddens=[51, 51],
+            # attention_dim=39,
+            # attention_num_heads=1,
+            # attention_head_dim=17,
+            # attention_memory_inference=50,
+            # attention_memory_training=50,
+            # attention_position_wise_mlp_dim=18,
             # attn_cls="der",
         )
         .framework("torch")
@@ -455,16 +473,16 @@ if __name__ == "__main__":
     )
 
     # %% Build an train
-    # algo = config.build()
-    # algo.train()
+    algo = config.build()
+    algo.train()
 
-    stop = {"training_iteration": 20}
-    tuner = tune.Tuner(
-        "PPO",
-        param_space=config.to_dict(),
-        run_config=air.RunConfig(stop=stop, verbose=3),
-    )
-    tuner.fit()
+    # stop = {"training_iteration": 20}
+    # tuner = tune.Tuner(
+    #     "PPO",
+    #     param_space=config.to_dict(),
+    #     run_config=air.RunConfig(stop=stop, verbose=3),
+    # )
+    # tuner.fit()
     ray.shutdown()
 
     print("done")
