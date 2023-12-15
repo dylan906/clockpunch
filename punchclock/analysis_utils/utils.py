@@ -230,6 +230,7 @@ def dropPartialTrials(df: DataFrame, group: str) -> DataFrame:
     """
     assert group in df.columns
     df = deepcopy(df)
+    # Need to make all rows have unique index value for diff to work
     df.reset_index(inplace=True)
     df["diff"] = df.groupby(group)["iterations_since_restore"].diff()
     cut_rows = df[~df["diff"].isin([1, nan])]  # cut this row and all before
@@ -239,5 +240,9 @@ def dropPartialTrials(df: DataFrame, group: str) -> DataFrame:
             df_to_drop = df[(df[group] == g) & (df.index < sub_i)]
             df = df.drop(df_to_drop.index)
 
-    df.drop("diff", axis=1, inplace=True)
+    # remove temporary columns
+    df.drop(["diff", "index"], axis=1, inplace=True)
+    # reset index to fill in gaps from dropped rows
+    df.reset_index(inplace=True, drop=True)
+
     return df
