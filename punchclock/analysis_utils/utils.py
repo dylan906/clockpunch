@@ -2,6 +2,9 @@
 # %% Imports
 from __future__ import annotations
 
+# Standard Library Imports
+from copy import deepcopy
+
 # Third Party Imports
 from gymnasium.spaces import flatten
 from numpy import (
@@ -10,6 +13,7 @@ from numpy import (
     asarray,
     count_nonzero,
     multiply,
+    nan,
     ndarray,
     sum,
     trace,
@@ -201,3 +205,39 @@ def truncateDFColNames(df: DataFrame, char_lim: int = 18) -> DataFrame:
         df_new = df.rename(columns=lambda x: x[:char_lim])
 
     return df_new
+
+
+def dropPartialTrials(df: DataFrame, group: str) -> DataFrame:
+    """Remove rows corresponding to incomplete trials from a DataFrame.
+
+    This function identifies and removes rows from the DataFrame that correspond to
+    trials which were not completed. A trial is considered incomplete if it was
+    restarted before completion, resulting in rows from the partially-complete trial
+    being present in the DataFrame. The function operates by grouping the DataFrame
+    by a specified column and calculating the difference in 'iterations_since_restore'
+    for each group. Rows where this difference is not 1 or NaN are considered to
+    be the start of a new trial, and all preceding rows in the same group are dropped.
+
+    Args:
+        df (DataFrame): The DataFrame from which to drop rows.
+        group (str): The column name to group by when identifying incomplete trials.
+
+    Returns:
+        DataFrame: The DataFrame with rows from incomplete trials removed.
+
+    Raises:
+        AssertionError: If 'group' is not a column in 'df'.
+    """
+    assert group in df.columns
+    df = deepcopy(df)
+    df.reset_index(inplace=True)
+    df["diff"] = df.groupby(group)["iterations_since_restore"].diff()
+    cut_rows = df[~df["diff"].isin([1, nan])]  # cut this row and all before
+    for g in cut_rows[group]:
+        cut_idx = cut_rows[cut_rows[group] == g].index.values
+        for sub_i in cut_idx:  # in case of multiple cut indices
+            df_to_drop = df[(df[group] == g) & (df.index < sub_i)]
+            df = df.drop(df_to_drop.index)
+
+    df.drop("diff", axis=1, inplace=True)
+    return df
