@@ -21,16 +21,40 @@ RE = getConstants()["earth_radius"]
 def getVisMapEstOrTruth(
     list_of_agents: list[Agent],
     truth_flag: bool,
+    binary: bool = True,
 ) -> ndarray[int]:
-    """Get a visibility map from either estimated or truth states.
+    """Generate a visibility map using either estimated or true states.
+
+    This function calculates a visibility map based on the states of a list of
+    agents. The states can be either the true states or the estimated states,
+    depending on the `truth_flag`. The true states of the sensors are always
+    used. The visibility map is a binary or continuous matrix where each entry
+    indicates whether a sensor can see a target.
 
     Args:
-        list_of_agents (`list[Agent]`): List of agents.
-        estimate_flag (`bool`): If True, calculate truth visibility map. If False,
-            calculate estimated visibility map.
+        list_of_agents (list[Agent]): A list of agents, which can be either
+            sensors or targets.
+        truth_flag (bool): A flag to determine whether to use target true or
+            estimated states for the visibility map calculation. If True, the
+            true states are used. If False, the estimated states are used.
+        binary (bool, optional): A flag to determine whether the visibility map
+            should be binary. If True, the visibility map is binary, where a
+            value of 1 indicates the sensor-target pair can see each other. If
+            False, the visibility is a float where a value >0 indicates the
+            sensor-target pair can see each other. Defaults to True.
 
     Returns:
-        `ndarray[int]`: (N, M) True visibility map.
+        ndarray[int]: A visibility map as a 2D array. Each entry in the array
+            indicates whether a sensor can see a target or not. If binary is
+            True, (1) indicates the sensor can see the target, and (0) indicates
+            the sensor cannot see the target. If binary is False, the value of
+            the entry is the a float, where a value >0 indicates the sensor can
+            see the target, and a value <=0 indicates the sensor cannot see the
+            target.
+
+    Raises:
+        AssertionError: If the times of sensors and targets (or target filters
+            if `truth_flag` is False) are not equal.
     """
     # Make sure states being used for vis map calculation are all on same
     # time step.
@@ -67,6 +91,7 @@ def getVisMapEstOrTruth(
         sensor_states=sensor_states,
         target_states=target_states,
         body_radius=RE,
+        binary=binary,
     )
 
     return vis_map
