@@ -39,9 +39,7 @@ def getVisMapEstOrTruth(
         target_times = [a.time for a in list_of_agents if isinstance(a, Target)]
     else:
         target_times = [
-            a.target_filter.time
-            for a in list_of_agents
-            if isinstance(a, Target)
+            a.target_filter.time for a in list_of_agents if isinstance(a, Target)
         ]
     assert allEqual(
         sensor_times + target_times
@@ -52,41 +50,16 @@ def getVisMapEstOrTruth(
 
     # arrange states into (6, X) arrays
     # Use true states of sensors
-    sensor_states = (
-        asarray(
-            [
-                agent.eci_state
-                for agent in list_of_agents
-                if type(agent) is Sensor
-            ]
-        )
-        .squeeze()
-        .T
-    )
+    sensor_states = getTrueStates([a for a in list_of_agents if isinstance(a, Sensor)])
+
     # Use true or estimated target states depending on truth_flag
     if truth_flag is True:
-        target_states = (
-            asarray(
-                [
-                    agent.eci_state
-                    for agent in list_of_agents
-                    if type(agent) is Target
-                ]
-            )
-            .squeeze()
-            .T
+        target_states = getTrueStates(
+            [a for a in list_of_agents if isinstance(a, Target)]
         )
     elif truth_flag is False:
-        target_states = (
-            asarray(
-                [
-                    agent.target_filter.est_x
-                    for agent in list_of_agents
-                    if type(agent) is Target
-                ]
-            )
-            .squeeze()
-            .T
+        target_states = getEstimatedStates(
+            [a for a in list_of_agents if isinstance(a, Target)]
         )
 
     # calculate visibility map
@@ -97,6 +70,34 @@ def getVisMapEstOrTruth(
     )
 
     return vis_map
+
+
+def getTrueStates(list_of_agents: list[Agent]) -> ndarray:
+    """Get the true states of the target agents.
+
+    Args:
+        list_of_agents (`list[Agent]`): List of agents.
+
+    Returns:
+        `ndarray`: True states of the target agents.
+    """
+    target_states = asarray([agent.eci_state for agent in list_of_agents]).squeeze().T
+    return target_states
+
+
+def getEstimatedStates(list_of_agents: list[Agent]) -> ndarray:
+    """Get the estimated states of the target agents.
+
+    Args:
+        list_of_agents (`list[Agent]`): List of agents.
+
+    Returns:
+        `ndarray`: Estimated states of the target agents.
+    """
+    target_states = (
+        asarray([agent.target_filter.est_x for agent in list_of_agents]).squeeze().T
+    )
+    return target_states
 
 
 # %% forecastVisMap
