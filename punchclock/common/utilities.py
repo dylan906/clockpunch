@@ -40,6 +40,7 @@ from satvis.visibility_func import isVis, visibilityFunc
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent
+from punchclock.common.constants import getConstants
 
 # %% Constants
 MAX_FLOAT32 = finfo("float32").max
@@ -50,6 +51,7 @@ MIN_FLOAT32 = finfo("float32").min
 MIN_FLOAT64 = finfo("float64").min
 MIN_INT32 = iinfo("int32").min
 MIN_INT64 = iinfo("int64").min
+RE = getConstants()["earth_radius"]
 
 
 # %% Functions
@@ -285,7 +287,7 @@ class MaskConverter:
 def calcVisMap(
     sensor_states: ndarray,
     target_states: ndarray,
-    body_radius: float,
+    body_radius: float = None,
     binary: bool = True,
 ) -> ndarray[int | float]:
     """
@@ -297,24 +299,26 @@ def calcVisMap(
 
     Args:
         sensor_states (ndarray): A 2D array of shape (6, M) representing the
-                                 states of M sensors. Each state is a 6D vector.
+            states of M sensors. Each state is a 6D vector.
         target_states (ndarray): A 2D array of shape (6, N) representing the
-                                 states of N targets. Each state is a 6D vector.
-        body_radius (float): The radius of the celestial body in units matching
-                             those of the state vectors.
+            states of N targets. Each state is a 6D vector.
+        body_radius (float, optional): The radius of the celestial body. The units
+            should match those of the state vectors. Defaults to Earth's radius.
         binary (bool, optional): If True, the visibility map will contain 1s and 0s.
-                                 If False, the visibility map will contain the
-                                 actual visibility values. Defaults to True.
+            If False, the visibility map will contain the actual visibility values.
+            Defaults to True.
 
     Returns:
         ndarray[int | float]: A 2D array of shape (N, M) representing the
-                              visibility map. If binary is True, the map contains
-                              1s and 0s, where 1 indicates that the corresponding
-                              sensor-target pair can see each other. If binary is
-                              False, the map contains the actual visibility values,
-                              where values >0 indicate that the corresponding
-                              sensor-target pair can see each other.
+            visibility map. If binary is True, the map contains 1s and 0s, where 1
+            indicates that the corresponding sensor-target pair can see each other.
+            If binary is False, the map contains the actual visibility values,
+            where values >0 indicate that the corresponding sensor-target pair can
+            see each other.
     """
+    if body_radius is None:
+        body_radius = RE
+
     # Check that 0th dimension of state arrays is 6-long.
     # Doesn't catch errors if M or N == 6.
     if sensor_states.shape[0] != 6:
