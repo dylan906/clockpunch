@@ -27,11 +27,13 @@ from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.common.math import entropyDiff, kldGaussian, logistic
 from punchclock.common.utilities import (
     actionSpace2Array,
+    calcVisMap,
     getInequalityFunc,
     getInfo,
     saturateInf,
 )
 from punchclock.dynamics.dynamics_classes import DynamicsModel
+from punchclock.environment.env_utils import getVisMapEstOrTruth
 from punchclock.environment.wrapper_utils import (
     configurableLogicGate,
     convertNumpyFuncStrToCallable,
@@ -1460,3 +1462,33 @@ class FilterInfo(InfoWrapper):
                 del new_info[k]
 
         return new_info
+
+
+class VisMap(InfoWrapper):
+    def __init__(self, env: Env, binary: bool, new_key: str = "vis_map"):
+        super().__init__(env=env)
+
+        info = getInfo(env)
+        if new_key in info:
+            warn(
+                f"""{new_key} already in info returned by env. Will be overwritten
+                by wrapper. Consider using different value for new_key={new_key}."""
+            )
+
+        self.binary = binary
+        self.new_key = new_key
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ) -> dict:
+        info = deepcopy(infos)
+
+        vis_map = calcVisMap(
+            sensor_states=info["x_sensors"],
+            target_states=info["x_targets"],
+            binary=self.binary,
+        )
+
+        new_item = {self.new_key: vis_map}
+
+        return new_item
