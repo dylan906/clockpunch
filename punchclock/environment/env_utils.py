@@ -74,15 +74,15 @@ def getVisMapEstOrTruth(
 
     # arrange states into (6, X) arrays
     # Use true states of sensors
-    sensor_states = getTrueStates([a for a in list_of_agents if isinstance(a, Sensor)])
+    sensor_states = _getTrueStates([a for a in list_of_agents if isinstance(a, Sensor)])
 
     # Use true or estimated target states depending on truth_flag
     if truth_flag is True:
-        target_states = getTrueStates(
+        target_states = _getTrueStates(
             [a for a in list_of_agents if isinstance(a, Target)]
         )
     elif truth_flag is False:
-        target_states = getEstimatedStates(
+        target_states = _getEstimatedStates(
             [a for a in list_of_agents if isinstance(a, Target)]
         )
 
@@ -97,7 +97,7 @@ def getVisMapEstOrTruth(
     return vis_map
 
 
-def getTrueStates(list_of_agents: list[Agent]) -> ndarray:
+def _getTrueStates(list_of_agents: list[Agent]) -> ndarray:
     """Get the true states of the target agents.
 
     Args:
@@ -110,7 +110,7 @@ def getTrueStates(list_of_agents: list[Agent]) -> ndarray:
     return target_states
 
 
-def getEstimatedStates(list_of_agents: list[Agent]) -> ndarray:
+def _getEstimatedStates(list_of_agents: list[Agent]) -> ndarray:
     """Get the estimated states of the target agents.
 
     Args:
