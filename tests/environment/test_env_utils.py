@@ -37,7 +37,7 @@ x_inits = [
 agents = []
 for i, (dyn, x) in enumerate(zip(dynamics, x_inits)):
     if isinstance(dyn, StaticTerrestrial):
-        agents.append(Sensor(dyn, i, x))
+        agents.append(Sensor(dyn, agent_id=i, init_eci_state=x))
     else:
         filt = ezUKF(
             {
@@ -48,7 +48,7 @@ for i, (dyn, x) in enumerate(zip(dynamics, x_inits)):
                 "R": 10,
             }
         )
-        agents.append(Target(dyn, i, x, filt))
+        agents.append(Target(dyn, agent_id=i, init_eci_state=x, target_filter=filt))
 
 # %% Test getVisMapEstOrTruth
 # Make Target2 state estimate very wrong so that the estimated visibility is different
