@@ -151,18 +151,12 @@ class SSAScheduler(gym.Env):
         # observation space as a Dict-- for human readability
         self.observation_space = Dict(
             {
-                "eci_state": Box(
-                    low=-inf, high=inf, shape=(6, self.num_agents)
-                ),
-                "est_cov": Box(
-                    low=-inf, high=inf, shape=(self.num_targets, 6, 6)
-                ),
+                "eci_state": Box(low=-inf, high=inf, shape=(6, self.num_agents)),
+                "est_cov": Box(low=-inf, high=inf, shape=(self.num_targets, 6, 6)),
                 "vis_map_est": MultiBinary(
                     (self.num_targets, self.num_sensors),
                 ),
-                "obs_staleness": Box(
-                    low=0, high=inf, shape=(1, self.num_targets)
-                ),
+                "obs_staleness": Box(low=0, high=inf, shape=(1, self.num_targets)),
                 "num_tasked": Box(
                     low=0, high=inf, shape=(1, self.num_targets), dtype=int
                 ),
@@ -178,9 +172,7 @@ class SSAScheduler(gym.Env):
             (self.num_targets + 1) * ones([self.num_sensors])
         )
 
-    def reset(
-        self, *, seed=None, options=None
-    ) -> tuple[OrderedDict, OrderedDict]:
+    def reset(self, *, seed=None, options=None) -> tuple[OrderedDict, OrderedDict]:
         """Reset environment to original state.
 
         Returns:
@@ -196,17 +188,20 @@ class SSAScheduler(gym.Env):
         self.info["num_steps"] = 0
         self.info["time_now"] = 0.0
         self.info["num_tasked"] = zeros(self.num_targets, dtype=int).tolist()
+        # reset agent id/type map
+        for agent in self.agents:
+            if isinstance(agent, Sensor):
+                self.info["agent_id_map"] = {"agent_type": "sensor"}
+            elif isinstance(agent, Target):
+                self.info["agent_id_map"] = {"agent_type": "target"}
+            self.info["agent_id_map"]["id"] = agent.agent_id
         # reset parameters associated with tracker
         self.info["targets_tasked"] = self.tracker.targets_tasked
         self.info["num_unique_targets_tasked"] = self.tracker.unique_tasks
         self.info["num_non_vis_taskings_est"] = self.tracker.non_vis_tasked_est
-        self.info[
-            "num_non_vis_taskings_truth"
-        ] = self.tracker.non_vis_tasked_truth
+        self.info["num_non_vis_taskings_truth"] = self.tracker.non_vis_tasked_truth
         self.info["non_vis_by_sensor_est"] = self.tracker.non_vis_by_sensor_est
-        self.info[
-            "non_vis_by_sensor_truth"
-        ] = self.tracker.non_vis_by_sensor_truth
+        self.info["non_vis_by_sensor_truth"] = self.tracker.non_vis_by_sensor_truth
         self.info["num_multiple_taskings"] = self.tracker.multiple_taskings
 
         # deepcopy needed for reset() to work properly
@@ -415,6 +410,8 @@ class SSAScheduler(gym.Env):
                 tasked.
             "true_states": (ndarray[float]) (6, N+M) Column i is true ECI state
                 of i-th agent.
+            "agent_id_map" (dict): Maps agent IDs and type to their index in the
+                agent list.
         """
         self.info["est_x"] = self.getEstStates()
 
@@ -465,6 +462,15 @@ class SSAScheduler(gym.Env):
             list_of_agents=self.agents,
             truth_flag=False,
         )
+
+        # # Create agent ID map
+        # for agent in self.agents:
+        #     if isinstance(agent, Sensor):
+        #         self.info["agent_id_map"] = {"agent_type": "sensor"}
+        #     elif isinstance(agent, Target):
+        #         self.info["agent_id_map"] = {"agent_type": "target"}
+
+        #     self.info["agent_id_map"]["id"] = agent.agent_id
 
     def _taskAgents(
         self,
@@ -573,9 +579,7 @@ class SSAScheduler(gym.Env):
         )
 
         # Don't pass in bottom row of action array (inaction row)
-        self._taskAgents(
-            action_array[:-1, :], deepcopy(self.info["vis_map_est"])
-        )
+        self._taskAgents(action_array[:-1, :], deepcopy(self.info["vis_map_est"]))
 
         # earn reward; deepcopy so that values don't change from reset on final iteration
         reward = deepcopy(self._earnReward(action))

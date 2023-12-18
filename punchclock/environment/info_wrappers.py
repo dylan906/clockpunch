@@ -1465,7 +1465,26 @@ class FilterInfo(InfoWrapper):
 
 
 class VisMap(InfoWrapper):
+    """A wrapper class for visibility map.
+
+    This class is used to add visibility map information to the environment's
+    info dictionary. The visibility map is calculated based on the states of
+    sensors and targets.
+    """
+
     def __init__(self, env: Env, binary: bool, new_key: str = "vis_map"):
+        """Initialize the VisMap wrapper.
+
+        This method initializes the VisMap wrapper by setting the environment,
+        binary flag, and new key for the visibility map.
+
+        Args:
+            env (Env): The environment to wrap.
+            binary (bool): If True, the visibility map will contain 1s and 0s. If
+                False, the visibility map will contain continuous visibility values.
+            new_key (str, optional): The key to use for the new item in the info
+                dictionary. Defaults to "vis_map".
+        """
         super().__init__(env=env)
 
         info = getInfo(env)
@@ -1481,7 +1500,18 @@ class VisMap(InfoWrapper):
     def updateInfo(
         self, observations, rewards, terminations, truncations, infos, action
     ) -> dict:
-        info = deepcopy(infos)
+        """Update the info dictionary with the visibility map.
+
+        This method calculates the visibility map and adds it to the info
+        dictionary.
+
+        Args:
+            observations, rewards, terminations, truncations, action: Unused.
+            infos: The info dictionary returned by the environment.
+
+        Returns:
+            dict: The updated info dictionary.
+        """
 
         vis_map = calcVisMap(
             sensor_states=info["x_sensors"],

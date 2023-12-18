@@ -28,6 +28,7 @@ from punchclock.environment.info_wrappers import (
     NumWindows,
     ThresholdInfo,
     TransformInfoWithNumpy,
+    VisMap,
 )
 from punchclock.environment.misc_wrappers import RandomInfo
 from punchclock.ray.build_env import buildEnv
@@ -482,6 +483,24 @@ fi_env = FilterInfo(env=rand_env, keys=["a"], reverse=True)
 (_, _, _, _, info) = fi_env.step(fi_env.action_space.sample())
 print("Test with reverse filter:")
 print(f"info (via step) = {info}")
+
+# %% VisMap
+rand_env = RandomInfo(
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
+    info_space=Dict(
+        {
+            "x_sensors": Box(low=7000, high=8000, shape=(6, 2)),
+            "x_targets": Box(low=7000, high=8000, shape=(6, 3)),
+        }
+    ),
+)
+vis_env = VisMap(env=rand_env, new_key="vis_map", binary=False)
+_, info = vis_env.reset()
+print(f"info (via reset) = {info}")
+
+(_, _, _, _, info) = vis_env.step(rand_env.action_space.sample())
+print(f"info (via step) = {info}")
+
 
 # %% done
 print("done")
