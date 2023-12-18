@@ -36,7 +36,7 @@ from numpy import (
     vstack,
     zeros,
 )
-from satvis.visibility_func import isVis
+from satvis.visibility_func import isVis, visibilityFunc
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent
@@ -286,17 +286,34 @@ def calcVisMap(
     sensor_states: ndarray,
     target_states: ndarray,
     body_radius: float,
-) -> ndarray[int]:
-    """Calculate visibility map between M sensors and N targets.
+    binary: bool = True,
+) -> ndarray[int | float]:
+    """
+    Calculate visibility map between M sensors and N targets.
+
+    This function calculates a visibility map that indicates whether each
+    sensor-target pair can see each other. The visibility is determined based
+    on the states of the sensors and targets and the radius of the celestial body.
 
     Args:
-        sensor_states (ndarray): (6, M) Sensor states.
-        target_states (ndarray): (6, N) Target states.
-        body_radius (float): Radius of celestial body (km).
+        sensor_states (ndarray): A 2D array of shape (6, M) representing the
+                                 states of M sensors. Each state is a 6D vector.
+        target_states (ndarray): A 2D array of shape (6, N) representing the
+                                 states of N targets. Each state is a 6D vector.
+        body_radius (float): The radius of the celestial body in units matching
+                             those of the state vectors.
+        binary (bool, optional): If True, the visibility map will contain 1s and 0s.
+                                 If False, the visibility map will contain the
+                                 actual visibility values. Defaults to True.
 
     Returns:
-        ndarray[int]: (N, M) Mapping of 1s/0s for sensor-target pairs that can see each
-            other. A 1 indicates that the m-n sensor target pair can see each other.
+        ndarray[int | float]: A 2D array of shape (N, M) representing the
+                              visibility map. If binary is True, the map contains
+                              1s and 0s, where 1 indicates that the corresponding
+                              sensor-target pair can see each other. If binary is
+                              False, the map contains the actual visibility values,
+                              where values >0 indicate that the corresponding
+                              sensor-target pair can see each other.
     """
     # Check that 0th dimension of state arrays is 6-long.
     # Doesn't catch errors if M or N == 6.
@@ -320,10 +337,18 @@ def calcVisMap(
     # Loop through sensors and targets, record visibility in vis_map.
     for col, sens in enumerate(sensor_states.T):
         for row, targ in enumerate(target_states.T):
-            # isVis outputs a bool, but is converted to float by assigning to vis_map
-            vis_map[row, col] = isVis(sens[:3], targ[:3], body_radius)
-    # convert vis_map from floats to ints
-    vis_map = vis_map.astype("int")
+            if binary is True:
+                # isVis outputs a bool, but is converted to float by assigning to vis_map
+                vis_map[row, col] = isVis(sens[:3], targ[:3], body_radius)
+            else:
+                vis_map[row, col], _, _, _ = visibilityFunc(
+                    sens[:3], targ[:3], body_radius, 0
+                )
+
+    if binary is True:
+        # convert vis_map from floats to ints
+        vis_map = vis_map.astype("int")
+
     return vis_map
 
 

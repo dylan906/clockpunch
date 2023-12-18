@@ -97,6 +97,14 @@ vis_map = calcVisMap(
 )
 print(f"vis_map = \n{vis_map}")
 
+vis_map = calcVisMap(
+    sensor_states=sensor_states,
+    target_states=target_states,
+    body_radius=RE,
+    binary=False,
+)
+print(f"vis_map = \n{vis_map}")
+
 # test with incorrect dimensions
 try:
     vis_map = calcVisMap(
