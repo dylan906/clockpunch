@@ -177,3 +177,31 @@ def forecastVisMap(
     )
 
     return vis_map
+
+
+def buildAgentInfoMap(agents: list[Agent]) -> list[dict]:
+    """This function takes a list of Agent objects and returns a list of dictionaries.
+
+    This function takes a list of Agent objects and returns a list of dictionaries.
+    Each dictionary represents an agent and is structured like:
+        {
+            'agent_type': value of 'sensor' or 'target',
+            'id': value of agent id
+        }.
+
+    Args:
+        agents (list[Agent]): A list of Agent objects.
+
+    Returns:
+        list[dict]: A list of dictionaries where each dictionary represents an
+            agent.
+    """
+    agent_map = []
+    for i, agent in enumerate(agents):
+        if isinstance(agent, Sensor):
+            agent_map.append({"agent_type": "Sensor"})
+        elif isinstance(agent, Target):
+            agent_map.append({"agent_type": "Target"})
+        agent_map[i]["id"] = agent.agent_id
+
+    return agent_map

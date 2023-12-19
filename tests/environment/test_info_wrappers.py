@@ -5,7 +5,14 @@ from copy import deepcopy
 
 # Third Party Imports
 from gymnasium import Env
-from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
+from gymnasium.spaces import (
+    Box,
+    Dict,
+    Discrete,
+    MultiBinary,
+    MultiDiscrete,
+    Sequence,
+)
 
 # from gymnasium.utils.env_checker import check_env
 from numpy import array, diag, eye, pi, stack, zeros
@@ -15,6 +22,9 @@ from ray.rllib.examples.env.random_env import RandomEnv
 from punchclock.common.agents import buildRandomAgent
 from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
+from punchclock.environment.env import SSAScheduler
+from punchclock.environment.env_parameters import SSASchedulerParams
+from punchclock.environment.env_utils import buildAgentInfoMap
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     CombineInfoItems,
@@ -184,7 +194,7 @@ env_config = {
 ssa_env = buildEnv(env_config)
 ssa_env.reset()
 # test in loop
-for _ in range(10):
+for _ in range(3):
     obs, _, _, _, info = ssa_env.step(ssa_env.action_space.sample())
     print(f"num windows left = {info['num_windows_alt']}")
     print(f"vis forecast shape = {info['vis_forecast'].shape}")
@@ -485,21 +495,19 @@ print("Test with reverse filter:")
 print(f"info (via step) = {info}")
 
 # %% VisMap
-rand_env = RandomInfo(
-    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
-    info_space=Dict(
-        {
-            "x_sensors": Box(low=7000, high=8000, shape=(6, 2)),
-            "x_targets": Box(low=7000, high=8000, shape=(6, 3)),
-        }
-    ),
+# This test is a bit more involved, so we will use the SSAScheduler environment
+rand_env_config = SSASchedulerParams(
+    horizon=2,
+    agent_params={"num_sensors": 2, "num_targets": 2, "sensor_dynamics": "satellite"},
 )
-vis_env = VisMap(env=rand_env, new_key="vis_map", binary=False)
+rand_env = SSAScheduler(rand_env_config)
+
+vis_env = VisMap(env=rand_env, new_key="vis_map_continuous", binary=False)
 _, info = vis_env.reset()
-print(f"info (via reset) = {info}")
+print(f"info (via reset) = {info['vis_map_continuous']}")
 
 (_, _, _, _, info) = vis_env.step(rand_env.action_space.sample())
-print(f"info (via step) = {info}")
+print(f"info (via step) = {info['vis_map_continuous']}")
 
 
 # %% done

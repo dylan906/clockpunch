@@ -26,10 +26,13 @@ from numpy import (
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
-from punchclock.common.metrics import TaskingMetricTracker, meanVarUncertainty
+from punchclock.common.metrics import TaskingMetricTracker
 from punchclock.common.utilities import actionSpace2Array
 from punchclock.environment.env_parameters import SSASchedulerParams
-from punchclock.environment.env_utils import getVisMapEstOrTruth
+from punchclock.environment.env_utils import (
+    buildAgentInfoMap,
+    getVisMapEstOrTruth,
+)
 
 
 # %% Environment
@@ -85,6 +88,8 @@ class SSAScheduler(gym.Env):
             time and the last time the given target was tasked (sec).
         "num_tasked" (list[int]): N-long, Number of times each target has been
             tasked.
+        "agent_map" (list[dict]): N+M-long, Maps agent IDs and type
+            (Sensor/Target) to their index in the agent list.
 
     Attributes (not all-inclusive):
         action_space (MultiDiscrete): See Action Space.
@@ -126,11 +131,12 @@ class SSAScheduler(gym.Env):
         self.num_sensors = scenario_params.agent_params["num_sensors"]
         self.num_agents = len(self.agents)
 
-        # initialize info (filled out in reset())
+        # initialize info and fill in data that doesn't change with step
         self.info = {}
         self.info["num_targets"] = self.num_targets
         self.info["num_sensors"] = self.num_sensors
         self.info["num_agents"] = self.num_agents
+        self.info["agent_map"] = buildAgentInfoMap(deepcopy(self.agents))
 
         # save backups for reset() (deepcopy needed for reset() to work properly)
         self.reset_params = deepcopy(scenario_params)
@@ -188,13 +194,7 @@ class SSAScheduler(gym.Env):
         self.info["num_steps"] = 0
         self.info["time_now"] = 0.0
         self.info["num_tasked"] = zeros(self.num_targets, dtype=int).tolist()
-        # reset agent id/type map
-        for agent in self.agents:
-            if isinstance(agent, Sensor):
-                self.info["agent_id_map"] = {"agent_type": "sensor"}
-            elif isinstance(agent, Target):
-                self.info["agent_id_map"] = {"agent_type": "target"}
-            self.info["agent_id_map"]["id"] = agent.agent_id
+
         # reset parameters associated with tracker
         self.info["targets_tasked"] = self.tracker.targets_tasked
         self.info["num_unique_targets_tasked"] = self.tracker.unique_tasks
@@ -410,8 +410,6 @@ class SSAScheduler(gym.Env):
                 tasked.
             "true_states": (ndarray[float]) (6, N+M) Column i is true ECI state
                 of i-th agent.
-            "agent_id_map" (dict): Maps agent IDs and type to their index in the
-                agent list.
         """
         self.info["est_x"] = self.getEstStates()
 
@@ -462,15 +460,6 @@ class SSAScheduler(gym.Env):
             list_of_agents=self.agents,
             truth_flag=False,
         )
-
-        # # Create agent ID map
-        # for agent in self.agents:
-        #     if isinstance(agent, Sensor):
-        #         self.info["agent_id_map"] = {"agent_type": "sensor"}
-        #     elif isinstance(agent, Target):
-        #         self.info["agent_id_map"] = {"agent_type": "target"}
-
-        #     self.info["agent_id_map"]["id"] = agent.agent_id
 
     def _taskAgents(
         self,

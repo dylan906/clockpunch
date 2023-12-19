@@ -12,6 +12,7 @@ from warnings import warn
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Dict, MultiBinary, MultiDiscrete
 from numpy import (
+    array,
     array_equal,
     asarray,
     bool_,
@@ -1498,7 +1499,13 @@ class VisMap(InfoWrapper):
         self.new_key = new_key
 
     def updateInfo(
-        self, observations, rewards, terminations, truncations, infos, action
+        self,
+        observations,
+        rewards,
+        terminations,
+        truncations,
+        infos,
+        action,
     ) -> dict:
         """Update the info dictionary with the visibility map.
 
@@ -1512,10 +1519,21 @@ class VisMap(InfoWrapper):
         Returns:
             dict: The updated info dictionary.
         """
+        agent_map = infos["agent_map"]
+        state_array = infos["est_x"]
+
+        x_sensors = [
+            x for x, ag in zip(state_array.T, agent_map) if ag["agent_type"] == "Sensor"
+        ]
+        x_targets = [
+            x for x, ag in zip(state_array.T, agent_map) if ag["agent_type"] == "Target"
+        ]
+        x_sensors = array(x_sensors).T
+        x_targets = array(x_targets).T
 
         vis_map = calcVisMap(
-            sensor_states=info["x_sensors"],
-            target_states=info["x_targets"],
+            sensor_states=x_sensors,
+            target_states=x_targets,
             binary=self.binary,
         )
 

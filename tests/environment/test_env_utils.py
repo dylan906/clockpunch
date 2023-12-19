@@ -11,7 +11,11 @@ from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
 )
-from punchclock.environment.env_utils import forecastVisMap, getVisMapEstOrTruth
+from punchclock.environment.env_utils import (
+    buildAgentInfoMap,
+    forecastVisMap,
+    getVisMapEstOrTruth,
+)
 from punchclock.estimation.ez_ukf import ezUKF
 
 # %% Build agents for testing
@@ -68,3 +72,8 @@ for dt in arange(367, 371):
     print(f"    vis_map, truth = \n{vis_map}")
     vis_map = forecastVisMap(agents, time_step=dt, estimate=True)
     print(f"    vis_map, estimate = \n{vis_map}")
+
+# %% buildAgentInfoMap
+print("\nTest buildAgentInfoMap...")
+agent_info_map = buildAgentInfoMap(agents)
+print(f"{agent_info_map=}")
