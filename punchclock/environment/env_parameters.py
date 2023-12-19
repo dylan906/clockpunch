@@ -481,21 +481,26 @@ class SSASchedulerParams:
         return [dict(zip(keys, values)) for values in params_tuples]
 
     def getDefaultAgentDists(self, config: dict) -> dict:
-        """Set default distribution params for agents.
+        """Set default distribution parameters for agents.
 
-        Target and sensor dynamics required; this function doesn't provide a default.
-
-        Terrestrial agents default to uniform distribution in LLA frame.
-
-        Satellite agents default to uniform distribution in LEO, circular orbits.
-
-        Does not modify sensor/target config if either "x_dist" or "fixed_x" are set.
+        Target and sensor dynamics are required; this function doesn't provide a
+        default. Terrestrial agents default to uniform distribution in LLA frame.
+        Satellite agents default to uniform distribution in COE, LEO, circular
+        orbits. Does not modify sensor/target config if either "x_dist" or "fixed_x"
+        are set.
 
         Args:
-            config (dict): Agent config.
+            config (dict): Agent configuration. This dictionary should contain
+                keys 'sensor_dist', 'fixed_sensors', 'sensor_dynamics', 'target_dist',
+                'fixed_targets', and 'target_dynamics'.
 
         Returns:
-            dict: Potentially modified agent config.
+            dict: Potentially modified agent configuration. The returned dictionary
+                will have updated 'sensor_dist', 'sensor_dist_frame',
+                'sensor_dist_params', 'target_dist', 'target_dist_frame', and
+                'target_dist_params' keys based on the provided dynamics if the
+                original distributions were None and no fixed sensors or targets
+                were set.
         """
         dist_config_map = {
             "terrestrial": {
