@@ -1473,7 +1473,9 @@ class VisMap(InfoWrapper):
     sensors and targets.
     """
 
-    def __init__(self, env: Env, binary: bool, new_key: str = "vis_map"):
+    def __init__(
+        self, env: Env, binary: bool, new_key: str = "vis_map", state_key: str = "est_x"
+    ):
         """Initialize the VisMap wrapper.
 
         This method initializes the VisMap wrapper by setting the environment,
@@ -1485,10 +1487,15 @@ class VisMap(InfoWrapper):
                 False, the visibility map will contain continuous visibility values.
             new_key (str, optional): The key to use for the new item in the info
                 dictionary. Defaults to "vis_map".
+            state_key (str, optional): The key to use for the state array in info.
+                Value of info[state_key] must be [6, N+M] array. Defaults to "est_x".
         """
         super().__init__(env=env)
 
         info = getInfo(env)
+        assert "agent_map" in info, "agent_map not in info"
+        assert state_key in info, f"{state_key} not in info"
+        assert info[state_key].shape[0] == 6, f"{state_key} must have 6 rows"
         if new_key in info:
             warn(
                 f"""{new_key} already in info returned by env. Will be overwritten
@@ -1497,6 +1504,7 @@ class VisMap(InfoWrapper):
 
         self.binary = binary
         self.new_key = new_key
+        self.state_key = state_key
 
     def updateInfo(
         self,
@@ -1519,8 +1527,10 @@ class VisMap(InfoWrapper):
         Returns:
             dict: The updated info dictionary.
         """
+        # agent_map used to map agents to order of vectors in est_x array. Order
+        # of agents in map is same as order of vectors in est_x.
         agent_map = infos["agent_map"]
-        state_array = infos["est_x"]
+        state_array = infos[self.state_key]
 
         x_sensors = [
             x for x, ag in zip(state_array.T, agent_map) if ag["agent_type"] == "Sensor"
