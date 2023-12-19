@@ -509,7 +509,8 @@ class SSASchedulerParams:
                 "_dist_params": [
                     [-pi / 2, pi / 2],
                     [-pi, pi],
-                    [0, 0],
+                    [1e-6, 1e-6],  # altitude slightly positive to avoid numeric issues
+                    # with being directly on the surface
                     [0, 0],  # last 3 entries not used in LLA
                     [0, 0],  # ''
                     [0, 0],  # ''
