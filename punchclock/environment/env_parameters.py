@@ -11,6 +11,7 @@ from numpy.random import normal
 
 # Punch Clock Imports
 from punchclock.common.agents import Sensor, Target
+from punchclock.common.constants import getConstants
 from punchclock.dynamics.dynamics_classes import (
     SatDynamicsModel,
     StaticTerrestrial,
@@ -20,6 +21,8 @@ from punchclock.estimation.ukf_v2 import UnscentedKalmanFilter
 
 # from punchclock.policies.threshold import Threshold
 from punchclock.simulation.sim_utils import genInitStates
+
+RE = getConstants()["earth_radius"]
 
 
 # %% Class definition
@@ -141,12 +144,8 @@ class SSASchedulerParams:
         )
         agent_params["sensor_dist"] = agent_params.get("sensor_dist", None)
         agent_params["target_dist"] = agent_params.get("target_dist", None)
-        agent_params["sensor_dist_frame"] = agent_params.get(
-            "sensor_dist_frame", None
-        )
-        agent_params["target_dist_frame"] = agent_params.get(
-            "target_dist_frame", None
-        )
+        agent_params["sensor_dist_frame"] = agent_params.get("sensor_dist_frame", None)
+        agent_params["target_dist_frame"] = agent_params.get("target_dist_frame", None)
         agent_params["sensor_dist_params"] = agent_params.get(
             "sensor_dist_params", None
         )
@@ -155,9 +154,7 @@ class SSASchedulerParams:
         )
         agent_params["fixed_sensors"] = agent_params.get("fixed_sensors", None)
         agent_params["fixed_targets"] = agent_params.get("fixed_targets", None)
-        agent_params["init_num_tasked"] = agent_params.get(
-            "init_num_tasked", None
-        )
+        agent_params["init_num_tasked"] = agent_params.get("init_num_tasked", None)
         agent_params["init_last_time_tasked"] = agent_params.get(
             "init_last_time_tasked", None
         )
@@ -178,10 +175,7 @@ class SSASchedulerParams:
         # For fixed agents, make sure that the number of agents specified matches
         # the shape of initial conditions arrays.
         if isinstance(agent_params["fixed_sensors"], list):
-            if (
-                len(agent_params["fixed_sensors"])
-                != agent_params["num_sensors"]
-            ):
+            if len(agent_params["fixed_sensors"]) != agent_params["num_sensors"]:
                 print(
                     "Error: len(agent_params['fixed_sensors']) != ",
                     "agent_params['num_sensors']",
@@ -192,10 +186,7 @@ class SSASchedulerParams:
                 )
 
         if isinstance(agent_params["fixed_targets"], list):
-            if (
-                len(agent_params["fixed_targets"])
-                != agent_params["num_targets"]
-            ):
+            if len(agent_params["fixed_targets"]) != agent_params["num_targets"]:
                 print(
                     "Error: len(agent_params['fixed_targets']) != ",
                     "agent_params['num_targets']",
@@ -311,8 +302,7 @@ class SSASchedulerParams:
         )
         # build list of sensors
         list_of_sensors = [
-            Sensor(**sensor_params[i])
-            for i in range(self.agent_params["num_sensors"])
+            Sensor(**sensor_params[i]) for i in range(self.agent_params["num_sensors"])
         ]
 
         # get list of target parameters
@@ -327,8 +317,7 @@ class SSASchedulerParams:
         )
         # build list of targets
         list_of_targets = [
-            Target(**target_params[i])
-            for i in range(self.agent_params["num_targets"])
+            Target(**target_params[i]) for i in range(self.agent_params["num_targets"])
         ]
 
         # combine sensors/targets into one list
@@ -384,8 +373,7 @@ class SSASchedulerParams:
         std = sqrt(diagonal(p_init_eye))
         # generate noise centered on initial conditions
         noisy_initial_conditions = [
-            (normal(ic.transpose(), std)).transpose()
-            for ic in initial_conditions
+            (normal(ic.transpose(), std)).transpose() for ic in initial_conditions
         ]
 
         # list comprehension of filters with noise-injected initial state estimated
@@ -467,9 +455,7 @@ class SSASchedulerParams:
             ids = ["S" + item for item in ids]
 
             # build list of parameter tuples
-            params_tuples = list(
-                zip(agent_dynamics, ids, agent_initial_conditions)
-            )
+            params_tuples = list(zip(agent_dynamics, ids, agent_initial_conditions))
         elif sensor_target == "target":
             # keys must match argument names of `Target` class.
             keys = [
@@ -497,9 +483,11 @@ class SSASchedulerParams:
     def getDefaultAgentDists(self, config: dict) -> dict:
         """Set default distribution params for agents.
 
-        Targets default to LEO, sensors default to Earth's surface.
+        Target and sensor dynamics required; this function doesn't provide a default.
 
-        Targets and sensors default to uniform distributions.
+        Terrestrial agents default to uniform distribution in LLA frame.
+
+        Satellite agents default to uniform distribution in LEO, circular orbits.
 
         Does not modify sensor/target config if either "x_dist" or "fixed_x" are set.
 
@@ -509,35 +497,54 @@ class SSASchedulerParams:
         Returns:
             dict: Potentially modified agent config.
         """
+        dist_config_map = {
+            "terrestrial": {
+                "_dist": "uniform",
+                "_dist_frame": "LLA",
+                "_dist_params": [
+                    [-pi / 2, pi / 2],
+                    [-pi, pi],
+                    [0, 0],
+                    [0, 0],  # last 3 entries not used in LLA
+                    [0, 0],  # ''
+                    [0, 0],  # ''
+                ],
+            },
+            "satellite": {
+                "_dist": "uniform",
+                "_dist_frame": "COE",
+                "_dist_params": [
+                    [RE + 400, RE + 1000],
+                    [0, 0],
+                    [-pi, pi],
+                    [0, 2 * pi],
+                    [0, 2 * pi],
+                    [0, 2 * pi],
+                ],
+            },
+        }
+
         new_config = deepcopy(config)
-        if (config["sensor_dist"] is None) and (
-            config["fixed_sensors"] is None
-        ):
-            # default sensors are uniformly distributed on globe with 0 altitude
-            new_config["sensor_dist"] = "uniform"
-            new_config["sensor_dist_frame"] = "LLA"
-            new_config["sensor_dist_params"] = [
-                [-pi / 2, pi / 2],
-                [-pi, pi],
-                [0, 0],
-                [0, 0],  # last 3 entries not used in LLA
-                [0, 0],  # ''
-                [0, 0],  # ''
+        if (config["sensor_dist"] is None) and (config["fixed_sensors"] is None):
+            new_config["sensor_dist"] = dist_config_map[config["sensor_dynamics"]][
+                "_dist"
             ]
-        if (config["target_dist"] is None) and (
-            config["fixed_targets"] is None
-        ):
-            # default targets are uniformly distributed in LEO with 0 eccentricity
-            new_config["target_dist"] = "uniform"
-            new_config["target_dist_frame"] = "COE"
-            new_config["target_dist_params"] = [
-                [400, 1000],
-                [0, 0],
-                [-pi, pi],
-                [0, 2 * pi],
-                [0, 2 * pi],
-                [0, 2 * pi],
+            new_config["sensor_dist_frame"] = dist_config_map[
+                config["sensor_dynamics"]
+            ]["_dist_frame"]
+            new_config["sensor_dist_params"] = dist_config_map[
+                config["sensor_dynamics"]
+            ]["_dist_params"]
+        if (config["target_dist"] is None) and (config["fixed_targets"] is None):
+            new_config["target_dist"] = dist_config_map[config["target_dynamics"]][
+                "_dist"
             ]
+            new_config["target_dist_frame"] = dist_config_map[
+                config["target_dynamics"]
+            ]["_dist_frame"]
+            new_config["target_dist_params"] = dist_config_map[
+                config["target_dynamics"]
+            ]["_dist_params"]
 
         return new_config
 
