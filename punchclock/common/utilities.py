@@ -36,7 +36,12 @@ from numpy import (
     vstack,
     zeros,
 )
-from satvis.visibility_func import isVis, visibilityFunc
+from satvis.visibility_func import (
+    calcVisAndDerVis,
+    isVis,
+    visDerivative,
+    visibilityFunc,
+)
 
 # Punch Clock Imports
 from punchclock.common.agents import Agent
@@ -284,6 +289,46 @@ class MaskConverter:
         return mask_no_nullaction
 
 
+def _prepVisMapInputs(
+    sensor_states: ndarray, target_states: ndarray, body_radius: float = None
+) -> tuple[float, int, int, ndarray, ndarray]:
+    """Prepare inputs for visibility map calculation.
+
+    Used by calcVisMap and calcVisMapDerivative.
+
+    Args:
+        sensor_states (ndarray): Array of sensor states with shape (6, M).
+        target_states (ndarray): Array of target states with shape (6, M).
+        body_radius (float, optional): Radius of the body. If None, is assigned
+            to Earth's radius (km). Defaults to None.
+
+    Returns:
+        Tuple: A tuple containing the body radius, number of sensors, number of targets,
+        sensor states, and target states.
+    """
+
+    if body_radius is None:
+        body_radius = RE
+
+    # Check that 0th dimension of state arrays is 6-long.
+    # Doesn't catch errors if M or N == 6.
+    if sensor_states.shape[0] != 6:
+        raise ValueError("Bad input: sensor_states must be (6, M)")
+    if target_states.shape[0] != 6:
+        raise ValueError("Bad input: target_states must be (6, M)")
+
+    # Reshape if 1-d arrays passed in
+    if sensor_states.ndim == 1:
+        sensor_states = sensor_states.reshape((6, 1))
+    if target_states.ndim == 1:
+        target_states = target_states.reshape((6, 1))
+
+    # get numbers of agents
+    num_sensors = sensor_states.shape[1]
+    num_targets = target_states.shape[1]
+    return body_radius, num_sensors, num_targets, sensor_states, target_states
+
+
 def calcVisMap(
     sensor_states: ndarray,
     target_states: ndarray,
@@ -316,25 +361,14 @@ def calcVisMap(
             where values >0 indicate that the corresponding sensor-target pair can
             see each other.
     """
-    if body_radius is None:
-        body_radius = RE
-
-    # Check that 0th dimension of state arrays is 6-long.
-    # Doesn't catch errors if M or N == 6.
-    if sensor_states.shape[0] != 6:
-        raise ValueError("Bad input: sensor_states must be (6, M)")
-    if target_states.shape[0] != 6:
-        raise ValueError("Bad input: target_states must be (6, M)")
-
-    # Reshape if 1-d arrays passed in
-    if sensor_states.ndim == 1:
-        sensor_states = sensor_states.reshape((6, 1))
-    if target_states.ndim == 1:
-        target_states = target_states.reshape((6, 1))
-
-    # get numbers of agents
-    num_sensors = sensor_states.shape[1]
-    num_targets = target_states.shape[1]
+    # use external function for code reuse
+    (
+        body_radius,
+        num_sensors,
+        num_targets,
+        sensor_states,
+        target_states,
+    ) = _prepVisMapInputs(sensor_states, target_states, body_radius)
 
     # initialize visibility map
     vis_map = zeros((num_targets, num_sensors))
@@ -354,6 +388,47 @@ def calcVisMap(
         vis_map = vis_map.astype("int")
 
     return vis_map
+
+
+def calcVisMapDerivative(
+    sensor_states: ndarray, target_states: ndarray, body_radius: float = None
+) -> ndarray[float]:
+    """
+    Calculate the derivative of the visibility map.
+
+    Args:
+        sensor_states (ndarray): Array of sensor states.
+        target_states (ndarray): Array of target states.
+        body_radius (float, optional): Radius of the body. Defaults to Earth's
+            radius (km).
+
+    Returns:
+        ndarray: Array representing the derivative of the visibility map.
+    """
+
+    # use external function for code reuse
+    (
+        body_radius,
+        num_sensors,
+        num_targets,
+        sensor_states,
+        target_states,
+    ) = _prepVisMapInputs(sensor_states, target_states, body_radius)
+
+    # initialize visibility map
+    vis_map_der = zeros((num_targets, num_sensors))
+    # Loop through sensors and targets, record visibility in vis_map.
+    for col, sens in enumerate(sensor_states.T):
+        for row, targ in enumerate(target_states.T):
+            _, vis_map_der[row, col] = calcVisAndDerVis(
+                r1=sens[:3],
+                r1dot=sens[3:],
+                r2=targ[:3],
+                r2dot=targ[3:],
+                RE=body_radius,
+            )
+
+    return vis_map_der
 
 
 # %% Helper print function
