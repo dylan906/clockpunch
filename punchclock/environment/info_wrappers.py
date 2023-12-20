@@ -29,6 +29,7 @@ from punchclock.common.math import entropyDiff, kldGaussian, logistic
 from punchclock.common.utilities import (
     actionSpace2Array,
     calcVisMap,
+    calcVisMapAndDerivative,
     getInequalityFunc,
     getInfo,
     saturateInf,
@@ -1469,42 +1470,86 @@ class VisMap(InfoWrapper):
     """A wrapper class for visibility map.
 
     This class is used to add visibility map information to the environment's
-    info dictionary. The visibility map is calculated based on the states of
-    sensors and targets.
+    info dictionary. The visibility map and its derivative are calculated based
+    on the dynamic states of sensors and targets. The dynamic states must be provided
+    from another item in the info dict. The info dict must also contain an agent
+    map, which maps the order of agent state vectors to agent types ("Sensor" or
+    "Target").
     """
 
     def __init__(
-        self, env: Env, binary: bool, new_key: str = "vis_map", state_key: str = "est_x"
+        self,
+        env: Env,
+        binary: bool,
+        new_keys: list[str] = None,
+        state_key: str = "est_x",
+        agent_map_key: str = "agent_map",
     ):
         """Initialize the VisMap wrapper.
 
         This method initializes the VisMap wrapper by setting the environment,
-        binary flag, and new key for the visibility map.
+        binary flag, and new keys for the visibility map and its derivative.
 
         Args:
             env (Env): The environment to wrap.
             binary (bool): If True, the visibility map will contain 1s and 0s. If
                 False, the visibility map will contain continuous visibility values.
-            new_key (str, optional): The key to use for the new item in the info
-                dictionary. Defaults to "vis_map".
+            new_keys (list[str], optional): The keys to use for the new items in the info
+                dictionary. The the visibility map will be assigned to the 0th entry,
+                the derivative will be assigned to the 1st entry. Defaults to
+                ["vis_map", "vis_map_dot"].
             state_key (str, optional): The key to use for the state array in info.
-                Value of info[state_key] must be [6, N+M] array. Defaults to "est_x".
+                Value of info[state_key] must be [6, N+M] array. The array must
+                be ECI dynamic states. Defaults to "est_x".
+            agent_map_key (str, optional): The key to use for the agent map in info.
+                Defaults to "agent_map". The agent map must be structured like:
+                    [{
+                        "agent_type": "Sensor",
+                        "agent_id": 0
+                    },
+                        ...
+                    {
+                        "agent_type": "Target",
+                        "agent_id": 1
+                    }]
+                    }]
+
+        Raises:
+            AssertionError: If new_keys is not a list or does not have a length of 2.
+            AssertionError: If agent_map_key is not present in the info dictionary.
+            AssertionError: If state_key is not present in the info dictionary or
+                if info[state_key] does not have 6 rows.
+
+        Warns:
+            UserWarning: If any of the new_keys already exist in the info dictionary,
+                they will be overwritten by the wrapper.
         """
         super().__init__(env=env)
 
+        if new_keys is None:
+            new_keys = ["vis_map", "vis_map_dot"]
+        assert isinstance(new_keys, list), "new_keys must be a list."
+        assert len(new_keys) == 2, "new_keys must have a length of 2."
+
         info = getInfo(env)
-        assert "agent_map" in info, "agent_map not in info"
+        assert agent_map_key in info, f"{agent_map_key} not in info"
+        assert len(info[agent_map_key]) == info[state_key].shape[1], (
+            f"Length of {agent_map_key} must be equal to number of columns in"
+            f" {state_key}."
+        )
         assert state_key in info, f"{state_key} not in info"
         assert info[state_key].shape[0] == 6, f"{state_key} must have 6 rows"
-        if new_key in info:
-            warn(
-                f"""{new_key} already in info returned by env. Will be overwritten
-                by wrapper. Consider using different value for new_key={new_key}."""
-            )
+        for k in new_keys:
+            if k in info:
+                warn(
+                    f"""{k} already in info returned by env. Will be overwritten
+                        by wrapper. Consider using different value for new_key={k}."""
+                )
 
         self.binary = binary
-        self.new_key = new_key
+        self.new_keys = new_keys
         self.state_key = state_key
+        self.agent_map_key = agent_map_key
 
     def updateInfo(
         self,
@@ -1515,21 +1560,24 @@ class VisMap(InfoWrapper):
         infos,
         action,
     ) -> dict:
-        """Update the info dictionary with the visibility map.
+        """Update the info dictionary with the visibility map and its derivative.
 
-        This method calculates the visibility map and adds it to the info
-        dictionary.
+        This method calculates the visibility map and its derivative based on the
+        sensor and target states provided in the info dictionary. It then appends
+        the calculated visibility map and its derivative to the info dictionary.
 
         Args:
+            infos (dict): The info dictionary returned by the environment. It must
+                contain the keys 'agent_map' and 'self.state_key'.
             observations, rewards, terminations, truncations, action: Unused.
-            infos: The info dictionary returned by the environment.
 
         Returns:
-            dict: The updated info dictionary.
+            dict: The updated info dictionary containing the visibility map and
+                its derivative.
         """
         # agent_map used to map agents to order of vectors in est_x array. Order
         # of agents in map is same as order of vectors in est_x.
-        agent_map = infos["agent_map"]
+        agent_map = infos[self.agent_map_key]
         state_array = infos[self.state_key]
 
         x_sensors = [
@@ -1541,12 +1589,12 @@ class VisMap(InfoWrapper):
         x_sensors = array(x_sensors).T
         x_targets = array(x_targets).T
 
-        vis_map = calcVisMap(
+        vis_map, vis_map_dot = calcVisMapAndDerivative(
             sensor_states=x_sensors,
             target_states=x_targets,
             binary=self.binary,
         )
 
-        new_item = {self.new_key: vis_map}
+        new_item = {self.new_keys[0]: vis_map, self.new_keys[1]: vis_map_dot}
 
         return new_item

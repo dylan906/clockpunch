@@ -502,13 +502,16 @@ rand_env_config = SSASchedulerParams(
 )
 rand_env = SSAScheduler(rand_env_config)
 
-vis_env = VisMap(env=rand_env, new_key="vis_map_continuous", binary=False)
+vis_env = VisMap(
+    env=rand_env, new_keys=["vis_map_continuous", "vis_map_dot"], binary=False
+)
 _, info = vis_env.reset()
 print(f"info (via reset) = {info['vis_map_continuous']}")
+print(f"info (via reset) = {info['vis_map_dot']}")
 
 (_, _, _, _, info) = vis_env.step(rand_env.action_space.sample())
 print(f"info (via step) = {info['vis_map_continuous']}")
-
+print(f"info (via step) = {info['vis_map_dot']}")
 
 # %% done
 print("done")
