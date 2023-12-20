@@ -11,7 +11,7 @@ from punchclock.common.agents import Sensor, Target
 from punchclock.common.utilities import (
     MaskConverter,
     calcVisMap,
-    calcVisMapDerivative,
+    calcVisMapAndDerivative,
     findNearest,
     fromStringArray,
     isActionValid,
@@ -127,11 +127,12 @@ except Exception as err:
     print(err)
     pass
 
-# %% Test calcVisMapDerivative
-print("\nTest calcVisMapDerivative()...")
-vis_map_der = calcVisMapDerivative(
+# %% Test calcVisMapAndDerivative
+print("\nTest calcVisMapAndDerivative()...")
+vis_map, vis_map_der = calcVisMapAndDerivative(
     sensor_states=sensor_states, target_states=target_states, body_radius=RE
 )
+print(f"{vis_map=}")
 print(f"{vis_map_der=}")
 
 # %% Test printNestedDict

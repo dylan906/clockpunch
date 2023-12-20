@@ -294,7 +294,7 @@ def _prepVisMapInputs(
 ) -> tuple[float, int, int, ndarray, ndarray]:
     """Prepare inputs for visibility map calculation.
 
-    Used by calcVisMap and calcVisMapDerivative.
+    Used by calcVisMap and calcVisMapAndDerivative.
 
     Args:
         sensor_states (ndarray): Array of sensor states with shape (6, M).
@@ -341,6 +341,9 @@ def calcVisMap(
     This function calculates a visibility map that indicates whether each
     sensor-target pair can see each other. The visibility is determined based
     on the states of the sensors and targets and the radius of the celestial body.
+
+    This function anc calcVisMapAndDerivative are similar. Use this if you want
+    to save a bit on computation.
 
     Args:
         sensor_states (ndarray): A 2D array of shape (6, M) representing the
@@ -390,23 +393,36 @@ def calcVisMap(
     return vis_map
 
 
-def calcVisMapDerivative(
-    sensor_states: ndarray, target_states: ndarray, body_radius: float = None
-) -> ndarray[float]:
+def calcVisMapAndDerivative(
+    sensor_states: ndarray,
+    target_states: ndarray,
+    body_radius: float = None,
+    binary=True,
+) -> tuple[ndarray[float], ndarray[float]]:
     """
-    Calculate the derivative of the visibility map.
+    Calculate the visibility map and its derivative.
+
+    This function is the more comprehensive version of calcVisMap. It's a bit
+    more computationally expensive, but returns the derivative of the visibility.
 
     Args:
         sensor_states (ndarray): Array of sensor states.
         target_states (ndarray): Array of target states.
         body_radius (float, optional): Radius of the body. Defaults to Earth's
             radius (km).
+        binary (bool, optional): If True, the visibility map will contain 1s and 0s.
+            If False, the visibility map will contain the actual visibility values.
+            Defaults to True.
 
     Returns:
-        ndarray[float]: Array representing the derivative of the visibility map.
-            If position vectors of any sensor-target pair are aligned, the value
-            is Inf or -Inf, dependent on other variables.
+        ndarray[float]: [N, M] array. The visibility map as continuous values.
+        ndarray[float]: [N, M] array. The derivative of the visibility map. If position
+            vectors of any sensor-target pair are aligned, the value is Inf or
+            -Inf, dependent on other variables.
     """
+    # Calculating the vis map derivative requires calculating the vis map, so we
+    # return both values in this function.
+
     # use external function for code reuse
     (
         body_radius,
@@ -417,11 +433,12 @@ def calcVisMapDerivative(
     ) = _prepVisMapInputs(sensor_states, target_states, body_radius)
 
     # initialize visibility map
+    vis_map = zeros((num_targets, num_sensors))
     vis_map_der = zeros((num_targets, num_sensors))
 
     for col, sens in enumerate(sensor_states.T):
         for row, targ in enumerate(target_states.T):
-            _, vis_map_der[row, col] = calcVisAndDerVis(
+            vis_map[row, col], vis_map_der[row, col] = calcVisAndDerVis(
                 r1=sens[:3],
                 r1dot=sens[3:],
                 r2=targ[:3],
@@ -429,7 +446,11 @@ def calcVisMapDerivative(
                 RE=body_radius,
             )
 
-    return vis_map_der
+    if binary is True:
+        # convert vis_map from floats to ints
+        vis_map = vis_map.astype("int")
+
+    return vis_map, vis_map_der
 
 
 # %% Helper print function
