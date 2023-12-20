@@ -403,9 +403,10 @@ def calcVisMapDerivative(
             radius (km).
 
     Returns:
-        ndarray: Array representing the derivative of the visibility map.
+        ndarray[float]: Array representing the derivative of the visibility map.
+            If position vectors of any sensor-target pair are aligned, the value
+            is Inf or -Inf, dependent on other variables.
     """
-
     # use external function for code reuse
     (
         body_radius,
@@ -417,7 +418,7 @@ def calcVisMapDerivative(
 
     # initialize visibility map
     vis_map_der = zeros((num_targets, num_sensors))
-    # Loop through sensors and targets, record visibility in vis_map.
+
     for col, sens in enumerate(sensor_states.T):
         for row, targ in enumerate(target_states.T):
             _, vis_map_der[row, col] = calcVisAndDerVis(
