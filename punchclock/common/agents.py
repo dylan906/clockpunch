@@ -15,7 +15,8 @@ from numpy.random import default_rng, multivariate_normal
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
-from punchclock.common.orbits import getCircOrbitVel, normalVec
+from punchclock.common.math import normalVec
+from punchclock.common.orbits import getCircOrbitVel
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
