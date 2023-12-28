@@ -3,16 +3,20 @@
 from numpy import array
 
 # Punch Clock Imports
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci
 from punchclock.common.visibility import calcVisMap, calcVisMapAndDerivative
 
-# %% CalcVisMap
-RE = 6378
-sensor_states = array(
-    [
-        [RE + 100, 0, 0, 0, 0, 0],
-        [-RE - 100, 0, 0, 0, 0, 0],
-    ],
-).T
+RE = getConstants()["earth_radius"]
+# %% Make test data
+sensor_states = ecef2eci(
+    array(
+        [
+            [RE + 100, 0, 0, 0, 0, 0],
+            [-RE - 100, 0, 0, 0, 0, 0],
+        ],
+    ).T
+)
 target_states = array(
     [
         [RE + 200, 0, 0, 0, 1, 0],
@@ -22,6 +26,8 @@ target_states = array(
     ],
 ).T
 
+# %% CalcVisMap
+print("\nTest calcVisMap()...")
 # test correct inputs
 vis_map = calcVisMap(
     sensor_states=sensor_states,
@@ -62,7 +68,10 @@ except Exception as err:
 # %% Test calcVisMapAndDerivative
 print("\nTest calcVisMapAndDerivative()...")
 vis_map, vis_map_der = calcVisMapAndDerivative(
-    sensor_states=sensor_states, target_states=target_states, body_radius=RE
+    sensor_states=sensor_states,
+    target_states=target_states,
+    body_radius=RE,
+    binary=False,
 )
 print(f"{vis_map=}")
 print(f"{vis_map_der=}")
