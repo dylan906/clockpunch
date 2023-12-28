@@ -18,6 +18,19 @@ RE = getConstants()["earth_radius"]
 
 
 # %% Functions
+def getCircOrbitVel(r: float, mu: float = MU) -> float:
+    """Calculates circular Earth-orbit velocity given radius.
+
+    Args:
+        r (float): Circular orbit radius (km)
+        mu (float, optional): Gravitational parameter (km^3/s^2). Defaults to MU.
+
+    Returns:
+        float: Circular orbit velocity (km/s)
+    """
+    return sqrt(mu / r)
+
+
 def getRadialRate(r_vec: ndarray, v_vec: ndarray, mu: float = MU) -> float:
     """Calculate the rate of change of the magnitude of the position vector.
 

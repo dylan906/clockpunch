@@ -15,7 +15,7 @@ from numpy.random import default_rng, multivariate_normal
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
-from punchclock.common.math import getCircOrbitVel, normalVec
+from punchclock.common.orbits import getCircOrbitVel, normalVec
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
@@ -48,9 +48,7 @@ class Agent:
             time (float | int, optional): Agent time at start of simulation.
                 Defaults to 0.
         """
-        assert isinstance(
-            init_eci_state, ndarray
-        ), "init_eci_state must be a ndarray"
+        assert isinstance(init_eci_state, ndarray), "init_eci_state must be a ndarray"
 
         self.dynamics = dynamics_model
         self.agent_id = agent_id
@@ -169,9 +167,7 @@ class Target(Agent):
         #   Filter.last_measurement_time always initializes as None. After the first
         #   measurement is taken, both values stay equal.
         if self.target_filter.last_measurement_time is not None:
-            self.last_time_tasked = npfloat32(
-                self.target_filter.last_measurement_time
-            )
+            self.last_time_tasked = npfloat32(self.target_filter.last_measurement_time)
 
     def getMeasurement(self) -> ndarray:
         """Measure dynamic state of target.
@@ -181,9 +177,7 @@ class Target(Agent):
         """
         # multivariate_norm needs to have singleton dimension arguments
         true_state = self.eci_state.squeeze()
-        noisy_state = multivariate_normal(
-            true_state, self.target_filter.r_matrix
-        )
+        noisy_state = multivariate_normal(true_state, self.target_filter.r_matrix)
 
         return noisy_state
 

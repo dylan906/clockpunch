@@ -16,7 +16,7 @@ from ray.rllib.utils import check_env as ray_check_env
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
-from punchclock.common.math import getCircOrbitVel
+from punchclock.common.orbits import getCircOrbitVel
 from punchclock.common.transforms import ecef2eci
 from punchclock.common.utilities import actionSpace2Array
 from punchclock.environment.env import SSAScheduler
@@ -177,17 +177,13 @@ env_params_long_ts = SSASchedulerParams(
 env_long_ts = SSAScheduler(env_params_long_ts)
 env_long_ts.reset()
 
-print(
-    f"num non-vis taskings = {env_long_ts._getInfo()['num_non_vis_taskings_est']}"
-)
+print(f"num non-vis taskings = {env_long_ts._getInfo()['num_non_vis_taskings_est']}")
 print(f"vis map est (pre tasking) = \n{env_long_ts._getInfo()['vis_map_est']}")
 # Task only visible targets
 action = array([0, 1, 2])
 env_long_ts.step(action)
 print(f"action = {action}")
-print(
-    f"num non-vis taskings = {env_long_ts._getInfo()['num_non_vis_taskings_est']}"
-)
+print(f"num non-vis taskings = {env_long_ts._getInfo()['num_non_vis_taskings_est']}")
 print(f"vis map est (post tasking) = \n{env_long_ts._getInfo()['vis_map_est']}")
 print(
     f"non-vis (est) by sensor (post tasking) = \
@@ -233,16 +229,12 @@ print(f"current agent[0] state = {env.agents[0].eci_state}")
 print(
     f"backup agent[3] target_filter initial est_x = {env.reset_params.agents[3].target_filter.est_x}"
 )
-print(
-    f"current agent[3] target_filter est_x = {env.agents[3].target_filter.est_x}"
-)
+print(f"current agent[3] target_filter est_x = {env.agents[3].target_filter.est_x}")
 print(f"tracker = {env.tracker.unique_tasks}")
 print("RESET env")
 env.reset()
 print(f"post-reset agent[0] state = {env.agents[0].eci_state}")
-print(
-    f"post-reset agent[3] target_filter est_x = {env.agents[3].target_filter.est_x}"
-)
+print(f"post-reset agent[3] target_filter est_x = {env.agents[3].target_filter.est_x}")
 print(f"tracker = {env.tracker.unique_tasks}")
 
 # %% Test step/dynamics in long loop
