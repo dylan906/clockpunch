@@ -1,4 +1,8 @@
-"""Generic math functions module."""
+"""Generic math functions module.
+
+[1] D. A. Vallado and W. D. Mcclain, Fundamentals of astrodynamics and applications.
+Hawthorne: Microcosm Press, 2013.
+"""
 # %% Imports
 # Standard Library Imports
 import warnings
@@ -7,6 +11,8 @@ from math import floor, log10
 # Third Party Imports
 from numpy import (
     amin,
+    arccos,
+    cos,
     cross,
     diag,
     dot,
@@ -17,12 +23,15 @@ from numpy import (
     log10,
     matmul,
     ndarray,
+    pi,
     real,
+    sin,
     spacing,
     sqrt,
     squeeze,
     trace,
     transpose,
+    vdot,
 )
 from numpy.linalg import LinAlgError, cholesky, det, inv, multi_dot, norm
 from numpy.random import default_rng
@@ -30,8 +39,14 @@ from scipy.linalg import eigvals, svd
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
+from punchclock.common.utilities import fpe_equals
+
+# %% Constants
+MU = getConstants()["mu"]
+RE = getConstants()["earth_radius"]
 
 
+# %% Functions
 def nearestPD(original_mat: ndarray) -> ndarray:
     r"""Find the nearest positive-definite matrix to input.
 
@@ -96,17 +111,16 @@ def isPD(matrix: ndarray) -> bool:
         return False
 
 
-def getCircOrbitVel(r: float) -> float:
+def getCircOrbitVel(r: float, mu: float = MU) -> float:
     """Calculates circular Earth-orbit velocity given radius.
 
     Args:
         r (float): Circular orbit radius (km)
+        mu (float, optional): Gravitational parameter (km^3/s^2). Defaults to MU.
 
     Returns:
         float: Circular orbit velocity (km/s)
     """
-    mu = getConstants()["mu"]
-
     return sqrt(mu / r)
 
 
