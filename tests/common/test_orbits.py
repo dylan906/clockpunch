@@ -13,9 +13,10 @@ MU = getConstants()["mu"]
 # %% Test getRadialRate
 print("\nTest getRadialRate...")
 r_vec = array([RE + 400, 0, 0])
-v_vec = array([0, 8, 0])
+v_vec = array([1, 8, 0])
 
 rdot = getRadialRate(r_vec, v_vec)
+print(f"{rdot=}")
 
 # %% Done
 print("done")

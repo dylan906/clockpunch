@@ -17,21 +17,21 @@ MU = getConstants()["mu"]
 RE = getConstants()["earth_radius"]
 
 
-# def getRadialRate(r: float, ta: float, ta_dot: float, e: float, sma: float) -> float:
+# %% Functions
 def getRadialRate(r_vec: ndarray, v_vec: ndarray, mu: float = MU) -> float:
-    """Calculate rate of change of position magnitude.
+    """Calculate the rate of change of the magnitude of the position vector.
 
-    From front cover of [1].
+    This function computes the rate at which the magnitude of the position vector
+    changes, given the position and velocity vectors and the gravitational parameter.
 
     Args:
-        r (float): Position magnitude (km).
-        ta (float): True anomaly (rad).
-        ta_dot (float): True anomaly rate (rad/s).
-        e (float): Eccentricity.
-        sma (float): Semi-major axis (km).
+        r_vec (ndarray): Position vector in ECI coordinates (km).
+        v_vec (ndarray): Velocity vector in ECI coordinates (km/s).
+        mu (float, optional): Gravitational parameter (km^3/s^2). Defaults to
+            Earth's mu.
 
     Returns:
-        float: Rate of change of position magnitude (km/s).
+        float: The rate of change of the magnitude of the position vector (km/s).
     """
     r = norm(r_vec)
     v = norm(v_vec)
@@ -170,9 +170,7 @@ def fixAngleQuadrant(angle: float, check: float) -> float:
     returned, otherwise `theta` is directly returned. This is due to the
     range of arccos(x) being [0, pi].
 
-    References:
-        [1] Vallado, D. A. (2013). Fundamentals of Astrodynamics and
-        Applications (4th ed.). Hawthorne, CA: Microcosm Press.
+    References: [1]
 
     Args:
         angle (float): Angular value (in radians) to be adjusted.
