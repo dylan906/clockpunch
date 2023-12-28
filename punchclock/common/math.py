@@ -110,19 +110,6 @@ def isPD(matrix: ndarray) -> bool:
         return False
 
 
-def getCircOrbitVel(r: float, mu: float = MU) -> float:
-    """Calculates circular Earth-orbit velocity given radius.
-
-    Args:
-        r (float): Circular orbit radius (km)
-        mu (float, optional): Gravitational parameter (km^3/s^2). Defaults to MU.
-
-    Returns:
-        float: Circular orbit velocity (km/s)
-    """
-    return sqrt(mu / r)
-
-
 def logistic(
     x: float,
     x0: float = 0.0,
