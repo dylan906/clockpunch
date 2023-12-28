@@ -1,0 +1,18 @@
+{
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+  "cSpell.words": ["punchclock"],
+  "workbench.colorCustomizations": {
+    "iLoveWorkSpaceColors": true,
+    "iLoveWorkSpaceRandom": true,
+    "useWorkspaceLite": true,
+    "commandCenter.border": "#e7e7e799",
+    "titleBar.activeBackground": "#0066cc",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#0066cc99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.remoteColor": "#007fff"
+}
