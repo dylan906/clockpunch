@@ -3,7 +3,7 @@
 # Third Party Imports
 
 # Third Party Imports
-from numpy import ndarray, zeros
+from numpy import ndarray, where, zeros
 from satvis.visibility_func import calcVisAndDerVis, isVis, visibilityFunc
 
 # Punch Clock Imports
@@ -174,7 +174,7 @@ def calcVisMapAndDerivative(
             )
 
     if binary is True:
-        # convert vis_map from floats to ints
-        vis_map = vis_map.astype("int")
+        # convert vis_map from floats to binary
+        vis_map = where(vis_map > 0, 1, 0)
 
     return vis_map, vis_map_der
