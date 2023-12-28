@@ -4,6 +4,9 @@
 Hawthorne: Microcosm Press, 2013.
 """
 # %% Imports
+# Standard Library Imports
+from math import isnan
+
 # Third Party Imports
 from numpy import arccos, cos, dot, ndarray, pi, sin, sqrt, vdot
 from numpy.linalg import norm
@@ -54,7 +57,13 @@ def getRadialRate(r_vec: ndarray, v_vec: ndarray, mu: float = MU) -> float:
     n = getMeanMotion(mu, sma)
     ta_dot = getTrueAnomalyRate(n, sma, e, r)
 
-    return r * ta_dot * e * sin(ta) / (1 + e * cos(ta))
+    r_dot = r * ta_dot * e * sin(ta) / (1 + e * cos(ta))
+    if isnan(r_dot):
+        raise ValueError(
+            f"r_dot is NaN! This is probably caused by a 0 velocity vector. {v_vec=}"
+        )
+
+    return r_dot
 
 
 def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float:
