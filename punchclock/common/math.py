@@ -39,7 +39,6 @@ from scipy.linalg import eigvals, svd
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
-from punchclock.common.utilities import fpe_equals
 
 # %% Constants
 MU = getConstants()["mu"]

@@ -24,6 +24,7 @@ from numpy import (
     asarray,
     delete,
     diag,
+    fabs,
     finfo,
     float32,
     float64,
@@ -441,8 +442,10 @@ def calcVisMapAndDerivative(
             vis_map[row, col], vis_map_der[row, col] = calcVisAndDerVis(
                 r1=sens[:3],
                 r1dot=sens[3:],
+                r1mag_dot=r1mag_dot,
                 r2=targ[:3],
                 r2dot=targ[3:],
+                r2mag_dot=r2mag_dot,
                 RE=body_radius,
             )
 
@@ -694,3 +697,19 @@ def safeGetattr(obj: Any, attr: str, default: Any = None) -> Any:
         return obj
     except AttributeError:
         return default
+
+
+def fpe_equals(value: float, expected: float) -> float:
+    """Utility for checking if value and expected are equal within FPE.
+
+    FPE: floating point error
+
+    Parameters:
+        value (float): The value being compared.
+        expected (float): The value that value is expected to be without FPE.
+
+    Returns:
+        bool: If True, then it should be safe to assume that value == expected and
+        the value is just misrepresented due to FPE.
+    """
+    return fabs(value - expected) < finfo(float).resolution

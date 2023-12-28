@@ -34,8 +34,12 @@ def getRadialRate(r_vec: ndarray, v_vec: ndarray, mu: float = MU) -> float:
         float: Rate of change of position magnitude (km/s).
     """
     r = norm(r_vec)
-    e, e_vec = getEccentricity(r_vec, v_vec, mu)
+    v = norm(v_vec)
+    e, e_vec = getEccentricity(r_vec, v_vec, mu=mu)
     ta = getTrueAnomaly(r_vec, v_vec, e_unit_vec=e_vec)
+    sma = getSemiMajorAxis(r, v, mu=mu)
+    n = getMeanMotion(mu, sma)
+    ta_dot = getTrueAnomalyRate(n, sma, e, r)
 
     return r * ta_dot * e * sin(ta) / (1 + e * cos(ta))
 
@@ -59,14 +63,14 @@ def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float
     return fixAngleQuadrant(anomaly, dot(r_vec, v_vec))
 
 
-def getTrueAnomalyRate(n: float, sma: float, e: float, r: float) -> float:
+def getTrueAnomalyRate(n: float, a: float, e: float, r: float) -> float:
     """Calculate true anomaly rate.
 
     From front cover of [1].
 
     Args:
         n (float): Mean motion (rad/s).
-        sma (float): Semi-major axis (km).
+        a (float): Semi-major axis (km).
         e (float): Eccentricity.
         r (float): Position magnitude (km).
 
