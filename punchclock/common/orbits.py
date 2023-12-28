@@ -163,20 +163,20 @@ def getSemiMajorAxis(r: float, v: float, mu: float = MU) -> float:
 
 
 def fixAngleQuadrant(angle: float, check: float) -> float:
-    """Called from within functions that require a quadrant check on the output angular value.
+    """Adjusts angle based on quadrant check.
 
-    If check is less than zero, theta = 2*pi - theta is returned, otherwise
-    theta is directly returned.
-
-    This occurs due to directly using arccos(x) because its range is [0, pi].
+    This function is used when a quadrant check is required on the output
+    angular value. If `check` is less than zero, `theta = 2*pi - theta` is
+    returned, otherwise `theta` is directly returned. This is due to the
+    range of arccos(x) being [0, pi].
 
     References:
-        [1] Vallado, D. A. (2013). Fundamentals of Astrodynamics and Applications (4th ed.).
-            Hawthorne, CA: Microcosm Press.
+        [1] Vallado, D. A. (2013). Fundamentals of Astrodynamics and
+        Applications (4th ed.). Hawthorne, CA: Microcosm Press.
 
     Args:
-        angle (float): The angular value (in radians) that is to be (potentially) adjusted.
-        check (float): The value used in the check.
+        angle (float): Angular value (in radians) to be adjusted.
+        check (float): Value used in the check.
 
     Returns:
         float: Angular value adjusted for the proper quadrant.
