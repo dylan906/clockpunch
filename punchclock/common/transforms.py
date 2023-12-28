@@ -52,12 +52,13 @@ def lla2ecef(x_lla: ndarray) -> ndarray:
 
 
 # %% ECEF -> ECI
-def ecef2eci(x_ecef: ndarray, JD: float) -> ndarray:
+def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
     """Convert an ECEF state vector into an ECI state vector.
 
     Args:
         x_ecef (ndarray): (6,) or (6, N) vector(s) in ECEF frame (km, km/s)
-        JD (float): Time since vernal equinox (since ECEF was aligned with ECI)
+        JD (float, optional): Time since vernal equinox (since ECEF was aligned
+            with ECI). Defaults to 0.
 
     Returns:
         ndarray: (6,) or (6, N) state vector(s) in ECI frame (km, km/s).  Returns (6,) if
