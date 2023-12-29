@@ -16,8 +16,10 @@ from numpy import (
     array_equal,
     asarray,
     bool_,
+    full_like,
     insert,
     isnan,
+    nan,
     ndarray,
     where,
     zeros,
@@ -1169,6 +1171,60 @@ class TransformInfoWithNumpy(InfoWrapper):
         new_info[self.new_key] = val_trans
 
         return new_info
+
+
+class TimeDiff(InfoWrapper):
+    """Calculate the time difference of a specific key in the info dictionary.
+
+    Attributes:
+        key (str): The key for which the time difference is calculated.
+        new_key (str): The key under which the calculated time difference
+            is stored in the info dictionary.
+        last_value (ndarray): The value of info[key] the last time
+            TimeDiff.updateInfo() was called. Initialized with NaNs of the
+            same shape as the key's value.
+    """
+
+    def __init__(
+        self,
+        env: Env,
+        key: str,
+        new_key: str = None,
+        **kwargs,
+    ):
+        """Initialize the TimeDiff wrapper.
+
+        Args:
+            env (Env): The environment.
+            key (str): The key for which the time difference is calculated.
+            new_key (str, optional): The key under which the calculated time difference is stored in the info dictionary.
+                Defaults to None, in which case `key` is used.
+        """
+        super().__init__(env)
+        info = getInfo(env)
+        assert isinstance(info[key], ndarray)
+
+        self.key = key
+        if new_key is None:
+            new_key = key
+        self.new_key = new_key
+        self.last_value = full_like(info[key], nan)
+
+    def updateInfo(
+        self, observations, rewards, terminations, truncations, infos, action
+    ):
+        """Update the info dictionary with the time difference of the key.
+
+        Args:
+            observations, rewards, terminations, truncations, action: Unused.
+            infos (dict): The info dictionary from the environment.
+
+        Returns:
+            dict: Info dictionary updated with the time difference of the key.
+        """
+        new_value = infos[self.key] - self.last_value
+        self.last_value = deepcopy(infos[self.key])
+        return {self.new_key: new_value}
 
 
 # %% CombineInfoItems

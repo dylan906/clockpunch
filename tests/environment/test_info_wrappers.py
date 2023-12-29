@@ -5,17 +5,10 @@ from copy import deepcopy
 
 # Third Party Imports
 from gymnasium import Env
-from gymnasium.spaces import (
-    Box,
-    Dict,
-    Discrete,
-    MultiBinary,
-    MultiDiscrete,
-    Sequence,
-)
+from gymnasium.spaces import Box, Dict, Discrete, MultiBinary, MultiDiscrete
 
 # from gymnasium.utils.env_checker import check_env
-from numpy import array, diag, eye, pi, stack, zeros
+from numpy import array, diag, eye, nan, pi, stack, zeros
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
@@ -24,7 +17,6 @@ from punchclock.common.constants import getConstants
 from punchclock.common.transforms import ecef2eci, lla2ecef
 from punchclock.environment.env import SSAScheduler
 from punchclock.environment.env_parameters import SSASchedulerParams
-from punchclock.environment.env_utils import buildAgentInfoMap
 from punchclock.environment.info_wrappers import (
     ActionTypeCounter,
     CombineInfoItems,
@@ -37,6 +29,7 @@ from punchclock.environment.info_wrappers import (
     MaskViolationCounter,
     NumWindows,
     ThresholdInfo,
+    TimeDiff,
     TransformInfoWithNumpy,
     VisMap,
 )
@@ -412,6 +405,27 @@ print(f"info (via step) = {info}")
 np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="nonzero", key="a")
 (_, _, _, _, info) = np_env.step(np_env.action_space.sample())
 print(f"info (via step) = {info}")
+
+# %% Test TimeDiff
+print("\nTest TimeDiff...")
+rand_env = RandomInfo(
+    RandomEnv({"observation_space": Dict({}), "action_space": MultiDiscrete([1])}),
+    info_space=Dict({"a": Box(low=-2, high=2, shape=(2, 2))}),
+)
+
+td_env = TimeDiff(env=rand_env, key="a", new_key="a_diff")
+_, info = td_env.reset()
+print(f"info (via reset) = {info}")
+
+(_, _, _, _, info) = td_env.step(td_env.action_space.sample())
+print(f"info (via step) = {info}")
+
+# test with nan in info
+info_item = td_env.updateInfo(
+    None, None, None, None, {"a": array([[nan, 1], [1, 1]])}, None
+)
+print(f"{info_item=}")
+
 
 # %% Test CombineInfoItems
 print("\nTest CombineInfoItems...")
