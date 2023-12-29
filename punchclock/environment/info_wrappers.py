@@ -28,11 +28,11 @@ from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.common.math import entropyDiff, kldGaussian, logistic
 from punchclock.common.utilities import (
     actionSpace2Array,
-    calcVisMapAndDerivative,
     getInequalityFunc,
     getInfo,
     saturateInf,
 )
+from punchclock.common.visibility import calcVisMap, calcVisMapAndDerivative
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
     configurableLogicGate,

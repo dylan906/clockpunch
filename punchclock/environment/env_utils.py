@@ -11,7 +11,8 @@ from numpy import array, asarray, ndarray
 # Punch Clock Imports
 from punchclock.common.agents import Agent, Sensor, Target
 from punchclock.common.constants import getConstants
-from punchclock.common.utilities import allEqual, calcVisMap
+from punchclock.common.utilities import allEqual
+from punchclock.common.visibility import calcVisMap
 
 # %% Constants
 RE = getConstants()["earth_radius"]
