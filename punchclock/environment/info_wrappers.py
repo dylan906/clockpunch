@@ -1471,7 +1471,7 @@ class VisMap(InfoWrapper):
     info dictionary. The visibility map and its derivative are calculated based
     on the dynamic states of sensors and targets. The dynamic states must be provided
     from another item in the info dict. The info dict must also contain an agent
-    map, which maps the order of agent state vectors to agent types ("Sensor" or
+    map, which maps order and agent state vectors to agent types ("Sensor" or
     "Target").
     """
 
@@ -1500,7 +1500,9 @@ class VisMap(InfoWrapper):
                 Value of info[state_key] must be [6, N+M] array. The array must
                 be ECI dynamic states. Defaults to "est_x".
             agent_map_key (str, optional): The key to use for the agent map in info.
-                Defaults to "agent_map". The agent map must be structured like:
+                Defaults to "agent_map". The order of the items must match the
+                order of columns in info['state_key']. The agent map must be structured
+                like:
                     [{
                         "agent_type": "Sensor",
                         "agent_id": 0
@@ -1511,6 +1513,7 @@ class VisMap(InfoWrapper):
                         "agent_id": 1
                     }]
                     }]
+                Defaults to "agent_map".
 
         Raises:
             AssertionError: If new_keys is not a list or does not have a length of 2.
@@ -1532,8 +1535,8 @@ class VisMap(InfoWrapper):
         info = getInfo(env)
         assert agent_map_key in info, f"{agent_map_key} not in info"
         assert len(info[agent_map_key]) == info[state_key].shape[1], (
-            f"Length of {agent_map_key} must be equal to number of columns in"
-            f" {state_key}."
+            f"Length of info[{agent_map_key}] must be equal to number of columns"
+            f"in info[{state_key}]."
         )
         assert state_key in info, f"{state_key} not in info"
         assert info[state_key].shape[0] == 6, f"{state_key} must have 6 rows"
@@ -1566,12 +1569,14 @@ class VisMap(InfoWrapper):
 
         Args:
             infos (dict): The info dictionary returned by the environment. It must
-                contain the keys 'agent_map' and 'self.state_key'.
+                contain the keys self.agent_map_key and self.state_key.
             observations, rewards, terminations, truncations, action: Unused.
 
         Returns:
             dict: The updated info dictionary containing the visibility map and
-                its derivative.
+                its derivative. The new keys are specified by self.new_keys, where
+                self.new_keys[0] corresponds to the visibility map and self.new_keys[1]
+                corresponds to the derivative.
         """
         # agent_map used to map agents to order of vectors in est_x array. Order
         # of agents in map is same as order of vectors in est_x.
