@@ -316,7 +316,7 @@ def safeArccos(arg: float) -> float:
     if fabs(arg) <= 1.0:
         return arccos(arg)
     # else
-    if not fpe_equals(fabs(arg), 1.0):
+    if not fpe_equals(fabs(arg), 1.0, resolution=1e-6):
         msg = f"`safeArccos()` used on non-truncation/rounding error. Value: {arg}"
         raise ValueError(msg)
 
