@@ -532,17 +532,24 @@ def safeGetattr(obj: Any, attr: str, default: Any = None) -> Any:
         return default
 
 
-def fpe_equals(value: float, expected: float) -> float:
-    """Utility for checking if value and expected are equal within FPE.
+def fpe_equals(value: float, expected: float, resolution: float = None) -> bool:
+    """Check if `value` and `expected` are approximately equal considering FPE.
 
-    FPE: floating point error
+    This function checks if the difference between `value` and `expected` is less
+    than the resolution, which represents the floating point error (FPE). If the
+    resolution is not provided, it defaults to the machine's resolution for float.
 
-    Parameters:
-        value (float): The value being compared.
-        expected (float): The value that value is expected to be without FPE.
+    Args:
+        value (float): The value to be compared.
+        expected (float): The expected value of `value` without considering FPE.
+        resolution (float, optional): The maximum difference for which `value` and
+            `expected` will be considered equal. Defaults to machine's resolution.
 
     Returns:
-        bool: If True, then it should be safe to assume that value == expected and
-        the value is just misrepresented due to FPE.
+        bool: True if `value` and `expected` are approximately equal considering
+        FPE, False otherwise.
     """
-    return fabs(value - expected) < finfo(float).resolution
+    if resolution is None:
+        resolution = finfo(float).resolution
+    check = fabs(value - expected) < resolution
+    return check
