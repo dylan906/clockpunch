@@ -8,11 +8,12 @@ Hawthorne: Microcosm Press, 2013.
 from math import isnan
 
 # Third Party Imports
-from numpy import arccos, cos, dot, ndarray, pi, sin, sqrt, vdot
+from numpy import cos, dot, ndarray, pi, sin, sqrt, vdot
 from numpy.linalg import norm
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
+from punchclock.common.math import safeArccos
 from punchclock.common.utilities import fpe_equals
 
 # %% Constants
@@ -81,10 +82,10 @@ def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float
         float: The true anomaly in radians, ranging from 0 to 2*pi.
     """
     # pylint: disable=invalid-name
-    anomaly = arccos(dot(e_unit_vec, r_vec) / norm(r_vec))
+    anomaly = safeArccos(dot(e_unit_vec, r_vec) / norm(r_vec))
+    if isnan(anomaly):
+        raise ValueError(f"anomaly is NaN!, {e_unit_vec=}, {r_vec=}")
     ta = fixAngleQuadrant(anomaly, dot(r_vec, v_vec))
-    if isnan(ta):
-        raise ValueError("ta is NaN!")
     return ta
 
 
