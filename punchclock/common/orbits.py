@@ -82,7 +82,10 @@ def getTrueAnomaly(r_vec: ndarray, v_vec: ndarray, e_unit_vec: ndarray) -> float
     """
     # pylint: disable=invalid-name
     anomaly = arccos(dot(e_unit_vec, r_vec) / norm(r_vec))
-    return fixAngleQuadrant(anomaly, dot(r_vec, v_vec))
+    ta = fixAngleQuadrant(anomaly, dot(r_vec, v_vec))
+    if isnan(ta):
+        raise ValueError("ta is NaN!")
+    return ta
 
 
 def getTrueAnomalyRate(n: float, a: float, e: float, r: float) -> float:
