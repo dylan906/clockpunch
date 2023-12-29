@@ -13,6 +13,7 @@ from punchclock.common.math import (
     kldGaussian,
     logistic,
     normalVec,
+    safeArccos,
     saturate,
 )
 
@@ -80,6 +81,17 @@ print(f"{e=}")
 sigma_scaler = [1e20, 1e25, 1e30, 1e40]
 for s in sigma_scaler:
     e = entropyDiff(sigma_den=(1 / s) * eye(2), sigma_num=s * eye(2))
+
+# %% Test safeArccos
+print("\nTest safeArccos...")
+out = safeArccos(0.5)
+print(f"{out=}")
+out = safeArccos(1 + 1e-16)
+print(f"{out=}")
+try:
+    out = safeArccos(-1.00000001)
+except ValueError as ex:
+    print(ex)
 
 # %% Done
 plt.show()

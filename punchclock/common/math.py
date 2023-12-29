@@ -12,12 +12,14 @@ from math import floor, log10
 from numpy import (
     amin,
     arccos,
+    clip,
     cos,
     cross,
     diag,
     dot,
     exp,
     eye,
+    fabs,
     log,
     log2,
     log10,
@@ -39,6 +41,7 @@ from scipy.linalg import eigvals, svd
 
 # Punch Clock Imports
 from punchclock.common.constants import getConstants
+from punchclock.common.utilities import fpe_equals
 
 # %% Constants
 MU = getConstants()["mu"]
@@ -289,3 +292,32 @@ def entropyDiff(
 
     warnings.resetwarnings()
     return entropy
+
+
+def safeArccos(arg: float) -> float:
+    r"""Safely perform an :math:`\arccos{}` calculation.
+
+    It's possible due to floating point error/truncation that a value that should be
+    1.0 or -1.0 could end up being e.g. 1.0000000002 or -1.000000002. These values result
+    in ``numpy.arccos()`` throwing a domain warning and breaking functionality. ``safeArccos()``
+    checks to see if the given ``arg`` is within the proper domain, and if not, will correct
+    the value before performing the :math:`\arccos{}` calculation.
+
+    Raises:
+        ``ValueError``: if the given ``arg`` is *actually* outside the domain of :math:`\arccos{}`
+
+    Args:
+        arg (``ndarray``): value(s) to perform :math:`\arccos{}` calculation on
+
+    Returns:
+        (``ndarray``): result of :math:`\arccos{}` calculation on given ``arg``, radians
+    """
+    # Check for valid arccos domain
+    if fabs(arg) <= 1.0:
+        return arccos(arg)
+    # else
+    if not fpe_equals(fabs(arg), 1.0):
+        msg = f"`safeArccos()` used on non-truncation/rounding error. Value: {arg}"
+        raise ValueError(msg)
+
+    return arccos(clip(arg, -1, 1))
