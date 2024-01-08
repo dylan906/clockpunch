@@ -34,7 +34,7 @@ from punchclock.common.utilities import (
     getInfo,
     saturateInf,
 )
-from punchclock.common.visibility import calcVisMap, calcVisMapAndDerivative
+from punchclock.common.visibility import calcVisMapAndDerivative
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
     configurableLogicGate,
