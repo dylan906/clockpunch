@@ -413,7 +413,7 @@ rand_env = RandomInfo(
     info_space=Dict({"a": Box(low=-2, high=2, shape=(2, 2))}),
 )
 
-td_env = TimeDiff(env=rand_env, key="a", new_key="a_diff")
+td_env = TimeDiff(env=rand_env, key="a", new_key="a_diff", normalize_by=1e4)
 _, info = td_env.reset()
 print(f"info (via reset) = {info}")
 

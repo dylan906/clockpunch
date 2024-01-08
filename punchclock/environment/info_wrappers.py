@@ -1183,6 +1183,7 @@ class TimeDiff(InfoWrapper):
         last_value (ndarray): The value of info[key] the last time
             TimeDiff.updateInfo() was called. Initialized with NaNs of the
             same shape as the key's value.
+        norm_val (float): The value by which the time difference is divided by.
     """
 
     def __init__(
@@ -1190,6 +1191,7 @@ class TimeDiff(InfoWrapper):
         env: Env,
         key: str,
         new_key: str = None,
+        normalize_by: float = 1,
         **kwargs,
     ):
         """Initialize the TimeDiff wrapper.
@@ -1197,18 +1199,23 @@ class TimeDiff(InfoWrapper):
         Args:
             env (Env): The environment.
             key (str): The key for which the time difference is calculated.
-            new_key (str, optional): The key under which the calculated time difference is stored in the info dictionary.
-                Defaults to None, in which case `key` is used.
+            new_key (str, optional): The key under which the calculated time difference
+                is stored in the info dictionary. Defaults to None, in which case
+                `key` is used.
+            normalize_by (float, optional): The value by which the time difference
+                is divided by. Must be > 0. Defaults to 1.
         """
         super().__init__(env)
         info = getInfo(env)
         assert isinstance(info[key], ndarray)
+        assert normalize_by > 0
 
         self.key = key
         if new_key is None:
             new_key = key
         self.new_key = new_key
         self.last_value = full_like(info[key], nan)
+        self.norm_val = normalize_by
 
     def updateInfo(
         self, observations, rewards, terminations, truncations, infos, action
@@ -1222,7 +1229,7 @@ class TimeDiff(InfoWrapper):
         Returns:
             dict: Info dictionary updated with the time difference of the key.
         """
-        new_value = infos[self.key] - self.last_value
+        new_value = (infos[self.key] - self.last_value) / self.norm_val
         self.last_value = deepcopy(infos[self.key])
         return {self.new_key: new_value}
 
