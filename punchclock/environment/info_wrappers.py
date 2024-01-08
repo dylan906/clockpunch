@@ -1192,7 +1192,6 @@ class TimeDiff(InfoWrapper):
         key: str,
         new_key: str = None,
         normalize_by: float = 1,
-        **kwargs,
     ):
         """Initialize the TimeDiff wrapper.
 
