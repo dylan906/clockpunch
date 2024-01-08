@@ -14,6 +14,7 @@ I'm trying to get better about that.
 - Added `VisMap(InfoWrapper)` wrapper to calculate visibility matrix (outside of base env). Allows use of continuous visibility function value and its time derivative (#105, #106).
 - New module `visibility.py` that has low-level visibility functions (#107).
 - Added `orbits.py` which has a collection of equations to calculate orbital parameters. Consolidated some equations into new module (#107).
+- Added `TimeDiff` wrapper which takes time difference (and optional discrete derivative) of an item in environment info (#108).
 
 ### Changed
 - `ConfigurableCurriculumFn` now doesn't allow for level skipping, always starts curriculum at level 0, and repeats final level if env is already at final level (#101).
