@@ -4,7 +4,18 @@
 from numpy import array, eye
 
 # Punch Clock Imports
-from punchclock.estimation.ez_ukf import ezUKF
+from punchclock.estimation.ez_ukf import ezUKF, getRandomParams
+
+# %% Test getRandomParams
+print("\nTest getRandomParams...")
+params = getRandomParams(dist="uniform", params=[[1, 2], [2, 3]])
+print(f"params =\n{params}")
+
+params = []
+for _ in range(20):
+    params.append(getRandomParams(dist="uniform", params=[[1, 2], [2, 3]]))
+params = array(params)
+print(f"params =\n{params}")
 
 # %% Test ezUKF
 print("\nTest ezUKF...")
@@ -57,6 +68,14 @@ ez_filter_params = {
 }
 ukf_test = ezUKF(ez_filter_params)
 print(f"ukf_test.est_p =\n{ukf_test.est_p}")
+
+# Test in loop with PDF inputs
+ukfs = []
+for _ in range(20):
+    ukfs.append(ezUKF(ez_filter_params))
+
+p_inits = [f.est_p for f in ukfs]
+p_inits = array(p_inits)
 
 # %% Done
 print("done")
