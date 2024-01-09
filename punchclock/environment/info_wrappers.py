@@ -15,6 +15,7 @@ from numpy import (
     array,
     array_equal,
     asarray,
+    atleast_2d,
     bool_,
     full_like,
     insert,
@@ -352,6 +353,10 @@ class NumWindows(InfoWrapper):
         # return (6, M) and (6, N) arrays
         x_sensors = asarray(x_sensors).squeeze().transpose()
         x_targets = asarray(x_targets).squeeze().transpose()
+
+        # Make state arrays 2d if they are 1d
+        x_sensors = atleast_2d(x_sensors).reshape(6, -1)
+        x_targets = atleast_2d(x_targets).reshape(6, -1)
 
         return x_sensors, x_targets
 
