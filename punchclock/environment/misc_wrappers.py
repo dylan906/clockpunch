@@ -1016,14 +1016,16 @@ class VisMap2ActionMask(ModifyObsOrInfo):
 
 
 class CheckNanInf(Wrapper):
-    """Wrapper that checks if there are any NaN or Inf values in the obs dict.
+    """Wrapper that checks if there are any NaN or Inf values in the obs or reward.
 
     Used in development/debugging.
     """
 
-    def __init__(self, env: Env):
+    def __init__(self, env: Env, obs: bool = True, reward: bool = True):
         """Wrap env."""
         super().__init__(env)
+        self.check_obs = obs
+        self.check_reward = reward
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Checks if there are any NaN or Inf values in the observation dictionary.
@@ -1037,16 +1039,35 @@ class CheckNanInf(Wrapper):
         Returns:
             OrderedDict: The observation dictionary.
         """
-        invalid_items = [
-            (key, value)
-            for key, value in obs.items()
-            if isnan(value).any() or isinf(value).any()
-        ]
+        if self.check_obs is True:
+            invalid_items = [
+                (key, value)
+                for key, value in obs.items()
+                if isnan(value).any() or isinf(value).any()
+            ]
 
-        if invalid_items:
-            invalid_items_str = ", ".join(
-                f"key={key}, value={value}" for key, value in invalid_items
-            )
-            raise ValueError(f"NaN or Inf found in observation: {invalid_items_str}")
+            if invalid_items:
+                invalid_items_str = ", ".join(
+                    f"key={key}, value={value}" for key, value in invalid_items
+                )
+                raise ValueError(
+                    f"NaN or Inf found in observation: {invalid_items_str}"
+                )
 
         return obs
+
+    def step(self, action):
+        """Check if there are any NaN or Inf values in the reward."""
+        (
+            observations,
+            reward,
+            terminations,
+            truncations,
+            infos,
+        ) = self.env.step(action)
+
+        if self.check_reward is True:
+            if isnan(reward) or isinf(reward):
+                raise ValueError("NaN or Inf found in reward.")
+
+        return (observations, reward, terminations, truncations, infos)
