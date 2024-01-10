@@ -6,6 +6,7 @@ Hawthorne: Microcosm Press, 2013.
 # %% Imports
 # Standard Library Imports
 from math import isnan
+from warnings import warn
 
 # Third Party Imports
 from numpy import cos, dot, ndarray, pi, sin, sqrt, vdot
@@ -60,8 +61,9 @@ def getRadialRate(r_vec: ndarray, v_vec: ndarray, mu: float = MU) -> float:
 
     r_dot = r * ta_dot * e * sin(ta) / (1 + e * cos(ta))
     if isnan(r_dot):
-        raise ValueError(
-            f"r_dot is NaN! This is probably caused by a 0 velocity vector. {v_vec=}"
+        warn(
+            f"r_dot is NaN! This is probably caused by a 0 velocity vector or negative"
+            f"SMA. \n{v_vec=},\n {sma=}"
         )
 
     return r_dot
