@@ -69,9 +69,7 @@ class FloatObs(gym.ObservationWrapper):
         ), "env.observation_space must be a gymnasium.spaces.Dict."
 
         super().__init__(env)
-        self.observation_space = self._recursiveConvertDictSpace(
-            env.observation_space
-        )
+        self.observation_space = self._recursiveConvertDictSpace(env.observation_space)
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Transform obs returned by base env before passing out from wrapped env."""
@@ -79,9 +77,7 @@ class FloatObs(gym.ObservationWrapper):
 
         return obs_new
 
-    def _recursiveConvertDictSpace(
-        self, obs_space: gym.spaces.Dict
-    ) -> OrderedDict:
+    def _recursiveConvertDictSpace(self, obs_space: gym.spaces.Dict) -> OrderedDict:
         """Convert fundamental spaces to Box with dtype == float.
 
         Loop through a dict and convert all Box values that have dtype == int and
@@ -341,9 +337,7 @@ class MultiplyObsItems(gym.ObservationWrapper):
         self.keys = keys
         self.new_key = new_key
 
-        relevant_spaces = [
-            deepcopy(self.observation_space.spaces[key]) for key in keys
-        ]
+        relevant_spaces = [deepcopy(self.observation_space.spaces[key]) for key in keys]
         self.new_space = self.makeSuperSpace(relevant_spaces)
 
         # Redefine new entry in obs space. Overwrites key if new_key is already
@@ -413,9 +407,7 @@ class MultiplyObsItems(gym.ObservationWrapper):
         if new_high > 1:
             new_high = Inf
 
-        new_space = Box(
-            low=new_low, high=new_high, shape=spaces[0].shape, dtype=cd
-        )
+        new_space = Box(low=new_low, high=new_high, shape=spaces[0].shape, dtype=cd)
 
         # convert to MultiBinary if necessary
         new_space = convertBinaryBoxToMultiBinary(new_space)
@@ -470,9 +462,7 @@ class FlatDict(gym.ObservationWrapper):
 
         # Redefine the observation space with new flattened spaces.
         space_preprocessor = SelectiveDictProcessor([flatten_space], keys)
-        new_obs_space = space_preprocessor.applyFunc(
-            env.observation_space.spaces
-        )
+        new_obs_space = space_preprocessor.applyFunc(env.observation_space.spaces)
         self.observation_space = gym.spaces.Dict(new_obs_space)
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
@@ -566,10 +556,7 @@ class LinScaleDictObs(gym.ObservationWrapper):
         ), """The input environment to LinScaleDictObs() must have a `gym.spaces.Dict`
              observation space."""
         assert all(
-            [
-                k in list(env.observation_space.keys())
-                for k in rescale_config.keys()
-            ]
+            [k in list(env.observation_space.keys()) for k in rescale_config.keys()]
         ), "Keys of rescale_config must be a subset of keys in env.observation_space."
         assert all(
             [
@@ -581,9 +568,7 @@ class LinScaleDictObs(gym.ObservationWrapper):
 
         super().__init__(env)
 
-        mult_funcs = [
-            partial(self.multWrap, mult=m) for m in rescale_config.values()
-        ]
+        mult_funcs = [partial(self.multWrap, mult=m) for m in rescale_config.values()]
 
         self.processor = SelectiveDictProcessor(
             funcs=mult_funcs, keys=list(rescale_config.keys())
@@ -707,9 +692,7 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
 
         # check that new observation is in bounds and ID key with problem
         if self.observation_space.contains(new_obs) is False:
-            contains_report = checkDictSpaceContains(
-                self.observation_space, new_obs
-            )
+            contains_report = checkDictSpaceContains(self.observation_space, new_obs)
             bad_keys = [k for (k, v) in contains_report.items() if v is False]
             raise Exception(
                 f"Observation not in observation space. Check keys: \n {bad_keys}"
@@ -806,9 +789,7 @@ class SplitArrayObs(gym.ObservationWrapper):
         """
         # Defaults
         if len(indices_or_sections) == 1:
-            indices_or_sections = [
-                indices_or_sections[0] for i in range(len(keys))
-            ]
+            indices_or_sections = [indices_or_sections[0] for i in range(len(keys))]
         if axes is None:
             axes = [0]
         if len(axes) == 1:
@@ -951,9 +932,7 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
                 None, all elements of array will be summed. Defaults to None.
         """
         funcs = [partial(self.wrapSum, axis=axis)]
-        obs_space = Dict(
-            {k: deepcopy(v) for (k, v) in env.observation_space.items()}
-        )
+        obs_space = Dict({k: deepcopy(v) for (k, v) in env.observation_space.items()})
         for k in keys:
             v = obs_space[k]
             if axis is None:
@@ -983,9 +962,7 @@ class SumArrayWrapper(SelectiveDictObsWrapper):
                 dtype=new_dtype,
             )
 
-        super().__init__(
-            env=env, funcs=funcs, keys=keys, new_obs_space=obs_space
-        )
+        super().__init__(env=env, funcs=funcs, keys=keys, new_obs_space=obs_space)
 
     def wrapSum(self, x: ndarray, axis: int | None) -> ndarray:
         """Wrapper around numpy sum to handle corner case.
@@ -1061,15 +1038,11 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
             keys
         ), "diag_on_0_or_1 must have same length as keys."
         for k, d in zip(keys, diag_on_0_or_1):
-            assert (
-                k in env.observation_space.spaces
-            ), f"{k} not in observation_space."
+            assert k in env.observation_space.spaces, f"{k} not in observation_space."
             assert isinstance(
                 env.observation_space.spaces[k], Box
             ), f"{k} is not a Box."
-            assert (
-                len(env.observation_space.spaces[k].shape) == 2
-            ), f"{k} is not 2d."
+            assert len(env.observation_space.spaces[k].shape) == 2, f"{k} is not 2d."
             assert d in [0, 1], "All entries of diag_on_0_or_1 must be 0 or 1."
 
         super().__init__(env)
@@ -1107,9 +1080,7 @@ class Convert2dTo3dObsItems(gym.ObservationWrapper):
             # Loop through keys. Take old space (shape=AxB) and make new space
             # (shape BxAxA).
             ob = obs[k]
-            new_ob = zeros(
-                shape=(ob.shape[d], ob.shape[1 - d], ob.shape[1 - d])
-            )
+            new_ob = zeros(shape=(ob.shape[d], ob.shape[1 - d], ob.shape[1 - d]))
             for i in range(new_ob.shape[0]):
                 if d == 0:
                     # Diagonalize rows of input obs
@@ -1212,9 +1183,7 @@ class DiagonalObsItems(SelectiveDictObsWrapper):
         new_obs_space = deepcopy(env.observation_space)
         for k, off, ax1, ax2 in zip(keys, offset, axis1, axis2):
             orig_space = env.observation_space[k]
-            diag_obs = diagonal(
-                orig_space.sample(), offset=off, axis1=ax1, axis2=ax2
-            )
+            diag_obs = diagonal(orig_space.sample(), offset=off, axis1=ax1, axis2=ax2)
             new_space_shape = diag_obs.shape
             new_obs_space[k] = remakeSpace(orig_space, shape=new_space_shape)
 
@@ -1277,9 +1246,7 @@ class ConvertObsBoxToMultiBinary(gym.ObservationWrapper):
 
         self.key = key
         self.observation_space = deepcopy(env.observation_space)
-        self.observation_space[key] = MultiBinary(
-            env.observation_space[key].shape
-        )
+        self.observation_space[key] = MultiBinary(env.observation_space[key].shape)
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Convert Box observation to MultiBinary observation.
@@ -1518,7 +1485,7 @@ class WastedActionsMask(gym.ObservationWrapper):
 
 
 # %% TransformDictObsWithNumpy
-class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
+class TransformDictObsWithNumpy(gym.ObservationWrapper):
     """Transform an entry in a Dict observation space by a numpy function.
 
     Apply a numpy function to a single entry in a dict observation. Converts
@@ -1541,6 +1508,7 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
         env: Env,
         numpy_func_str: str,
         key: str,
+        new_key: str = None,
         **kwargs: Any,
     ):
         """Wrap environment with TransformDictObsWithNumpy.
@@ -1550,29 +1518,44 @@ class TransformDictObsWithNumpy(SelectiveDictObsWrapper):
             numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
                 getattr(numpy, numpy_func_str)).
             key (str): Key of observation space to apply function to.
+            new_key (str, optional): New key to assign to obs. If None, overrides
+                key. Defaults to None.
             kwargs (Any, optional): Any kwargs to be used in numpy function.
         """
-        partial_func = convertNumpyFuncStrToCallable(
+        super().__init__(env)
+        self.partial_func = convertNumpyFuncStrToCallable(
             numpy_func_str=numpy_func_str, **kwargs
         )
+
+        self.key = key
+        if new_key is None:
+            new_key = key
+        self.new_key = new_key
 
         # Make new observation space by trasnforming sample observation, then getting
         # shape and dtype. Assume bounds are (-Inf, Inf).
         new_obs_space = deepcopy(env.observation_space)
-        unwrapped_obs = env.observation_space.sample()[key]
-        wrapped_obs = partial_func(unwrapped_obs)
+        unwrapped_obs = env.observation_space.sample()[self.key]
+        wrapped_obs = self.partial_func(unwrapped_obs)
 
         new_shape = wrapped_obs.shape
         new_dtype = wrapped_obs.dtype
 
-        new_obs_space[key] = Box(
+        new_obs_space[self.new_key] = Box(
             -Inf,
             Inf,
             shape=new_shape,
             dtype=new_dtype,
         )
+        self.observation_space = new_obs_space
 
-        super().__init__(env, [partial_func], [key], new_obs_space)
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Get wrapped observation from a Dict observation space."""
+
+        new_obs = deepcopy(obs)
+        new_obs[self.new_key] = self.partial_func(new_obs[self.key])
+
+        return new_obs
 
 
 # %% convertBinaryBoxToMultiBinary
@@ -1595,9 +1578,7 @@ class MakeObsSpaceMultiBinary(SelectiveDictObsWrapper):
         new_obs_space[key] = mb_space
 
         func = self.clipIntArray
-        super().__init__(
-            env=env, funcs=[func], keys=[key], new_obs_space=new_obs_space
-        )
+        super().__init__(env=env, funcs=[func], keys=[key], new_obs_space=new_obs_space)
 
         return
 
