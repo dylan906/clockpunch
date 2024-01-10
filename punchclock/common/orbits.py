@@ -62,7 +62,7 @@ def getRadialRate(r_vec: ndarray, v_vec: ndarray, mu: float = MU) -> float:
     r_dot = r * ta_dot * e * sin(ta) / (1 + e * cos(ta))
     if isnan(r_dot):
         warn(
-            f"r_dot is NaN! This is probably caused by a 0 velocity vector or negative"
+            f"r_dot is NaN! This is probably caused by a 0 velocity vector or negative "
             f"SMA. \n{v_vec=},\n {sma=}"
         )
 
