@@ -7,12 +7,13 @@ from collections import OrderedDict
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete
 from gymnasium.utils.env_checker import check_env
 from gymnasium.wrappers import FilterObservation
-from numpy import array, array_equal, ones
+from numpy import array, array_equal, inf, nan, ones
 from ray.rllib.examples.env.random_env import RandomEnv
 
 # Punch Clock Imports
 from punchclock.common.custody_tracker import DebugCustody
 from punchclock.environment.misc_wrappers import (
+    CheckNanInf,
     ConvertCustody2ActionMask,
     CopyObsInfoItem,
     CustodyWrapper,
@@ -60,9 +61,7 @@ wrapped_obs = identity_env.observation(unwrapped_obs)
 print(f"unwrapped obs = {unwrapped_obs}")
 print(f"wrapped obs = {wrapped_obs}")
 
-obs, reward, term, trunc, info = identity_env.step(
-    identity_env.action_space.sample()
-)
+obs, reward, term, trunc, info = identity_env.step(identity_env.action_space.sample())
 
 identity_env = IdentityWrapper(rand_env, id="foo")
 print(f"identity env = {identity_env}")
@@ -388,9 +387,7 @@ rand_env = RandomInfo(
     ),
     info_space=Dict({"a": MultiBinary((2, 2))}),
 )
-am_env = VisMap2ActionMask(
-    rand_env, obs_info="obs", vis_map_key="a", new_key="a_mask"
-)
+am_env = VisMap2ActionMask(rand_env, obs_info="obs", vis_map_key="a", new_key="a_mask")
 obs, info = am_env.reset()
 print(f"obs (reset) = {obs}")
 print(f"info (reset) = {info}")
@@ -407,9 +404,7 @@ assert am_env.observation_space.contains(obs_mask)
 
 # Test with info
 print("  Test with info")
-am_env = VisMap2ActionMask(
-    rand_env, obs_info="info", vis_map_key="a", new_key="a_mask"
-)
+am_env = VisMap2ActionMask(rand_env, obs_info="info", vis_map_key="a", new_key="a_mask")
 obs, info = am_env.reset()
 print(f"obs (reset) = {obs}")
 print(f"info (reset) = {info}")
@@ -479,6 +474,47 @@ print(f"custody action mask obs = \n{obs_2wrap['custody']}")
 print(f"visibility action mask obs = \n{obs_3wrap['vis_action_mask']}")
 assert env_3wrap.observation_space.contains(obs_3wrap)
 assert array_equal(obs_2wrap["custody"], obs_3wrap["vis_action_mask"])
+
+# %% Test CheckNanInf
+print("\nTest CheckNanInf...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(-inf, inf, shape=(3,)),
+                "b": Box(-inf, inf, shape=(3,)),
+            }
+        ),
+    }
+)
+
+cni_env = CheckNanInf(rand_env)
+obs, info = cni_env.reset()
+unwrapped_obs = rand_env.observation_space.sample()
+try:
+    obs = cni_env.observation(unwrapped_obs)
+    print("Test passed")
+except Exception as e:
+    print("Test failed -- false positive")
+    print(e)
+
+unwrapped_obs["a"][0] = nan
+try:
+    obs = cni_env.observation(unwrapped_obs)
+    print("Test failed to identify nan/inf")
+except Exception as e:
+    print(e)
+    print("Test passed")
+
+unwrapped_obs["a"][1] = inf
+unwrapped_obs["b"][2] = -inf
+
+try:
+    obs = cni_env.observation(unwrapped_obs)
+    print("Test failed to identify nan/inf")
+except Exception as e:
+    print(e)
+    print("Test passed")
 
 # %% Done
 print("done")

@@ -11,7 +11,7 @@ from warnings import warn
 # Third Party Imports
 from gymnasium import Env, Wrapper
 from gymnasium.spaces import Box, Dict, MultiBinary, MultiDiscrete, Space
-from numpy import append, array, int8, int64, ones
+from numpy import append, array, int8, int64, isinf, isnan, ones
 
 # Punch Clock Imports
 from punchclock.analysis_utils.utils import countMaskViolations
@@ -1013,3 +1013,40 @@ class VisMap2ActionMask(ModifyObsOrInfo):
             new_info = relevant_dict
 
         return new_obs, new_info
+
+
+class CheckNanInf(Wrapper):
+    """Wrapper that checks if there are any NaN or Inf values in the obs dict.
+
+    Used in development/debugging.
+    """
+
+    def __init__(self, env: Env):
+        """Wrap env."""
+        super().__init__(env)
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Checks if there are any NaN or Inf values in the observation dictionary.
+
+        Args:
+            obs (OrderedDict): The observation dictionary.
+
+        Raises:
+            ValueError: If NaN or Inf values are found in the observation dictionary.
+
+        Returns:
+            OrderedDict: The observation dictionary.
+        """
+        invalid_items = [
+            (key, value)
+            for key, value in obs.items()
+            if isnan(value).any() or isinf(value).any()
+        ]
+
+        if invalid_items:
+            invalid_items_str = ", ".join(
+                f"key={key}, value={value}" for key, value in invalid_items
+            )
+            raise ValueError(f"NaN or Inf found in observation: {invalid_items_str}")
+
+        return obs
