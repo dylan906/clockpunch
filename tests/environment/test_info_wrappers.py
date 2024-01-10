@@ -527,5 +527,18 @@ print(f"info (via reset) = {info['vis_map_dot']}")
 print(f"info (via step) = {info['vis_map_continuous']}")
 print(f"info (via step) = {info['vis_map_dot']}")
 
+vis_env = VisMap(
+    env=rand_env,
+    new_keys=["vis_map", "vis_map_dot_ignored"],
+    binary=False,
+    no_derivative=True,
+)
+(_, _, _, _, info) = vis_env.step(rand_env.action_space.sample())
+print(f"info (via step) = {info['vis_map']}")
+try:
+    print(f"info (via step) = {info['vis_map_dot_ignored']}")
+except KeyError:
+    print("Test passed")
+
 # %% done
 print("done")

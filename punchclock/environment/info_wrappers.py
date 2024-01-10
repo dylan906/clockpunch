@@ -35,7 +35,7 @@ from punchclock.common.utilities import (
     getInfo,
     saturateInf,
 )
-from punchclock.common.visibility import calcVisMapAndDerivative
+from punchclock.common.visibility import calcVisMap, calcVisMapAndDerivative
 from punchclock.dynamics.dynamics_classes import DynamicsModel
 from punchclock.environment.wrapper_utils import (
     configurableLogicGate,
@@ -1549,6 +1549,7 @@ class VisMap(InfoWrapper):
         new_keys: list[str] = None,
         state_key: str = "est_x",
         agent_map_key: str = "agent_map",
+        no_derivative: bool = False,
     ):
         """Initialize the VisMap wrapper.
 
@@ -1581,6 +1582,8 @@ class VisMap(InfoWrapper):
                     }]
                     }]
                 Defaults to "agent_map".
+            no_derivative (bool, optional): If True, the vis map derivative will
+                not be calculated. Saves computation. Defaults to False.
 
         Raises:
             AssertionError: If new_keys is not a list or does not have a length of 2.
@@ -1594,10 +1597,14 @@ class VisMap(InfoWrapper):
         """
         super().__init__(env=env)
 
+        # Value of new_keys[1] is ignored if no_derivative == True
         if new_keys is None:
             new_keys = ["vis_map", "vis_map_dot"]
         assert isinstance(new_keys, list), "new_keys must be a list."
-        assert len(new_keys) == 2, "new_keys must have a length of 2."
+        assert len(new_keys) in [
+            1,
+            2,
+        ], "new_keys must have a length of 1 or 2, depending on value of no_derivative."
 
         info = getInfo(env)
         assert agent_map_key in info, f"{agent_map_key} not in info"
@@ -1618,6 +1625,7 @@ class VisMap(InfoWrapper):
         self.new_keys = new_keys
         self.state_key = state_key
         self.agent_map_key = agent_map_key
+        self.no_derivative = no_derivative
 
     def updateInfo(
         self,
@@ -1659,12 +1667,19 @@ class VisMap(InfoWrapper):
         x_sensors = array(x_sensors).T
         x_targets = array(x_targets).T
 
-        vis_map, vis_map_dot = calcVisMapAndDerivative(
-            sensor_states=x_sensors,
-            target_states=x_targets,
-            binary=self.binary,
-        )
-
-        new_item = {self.new_keys[0]: vis_map, self.new_keys[1]: vis_map_dot}
+        if self.no_derivative is False:
+            vis_map, vis_map_dot = calcVisMapAndDerivative(
+                sensor_states=x_sensors,
+                target_states=x_targets,
+                binary=self.binary,
+            )
+            new_item = {self.new_keys[0]: vis_map, self.new_keys[1]: vis_map_dot}
+        else:
+            vis_map = calcVisMap(
+                sensor_states=x_sensors,
+                target_states=x_targets,
+                binary=self.binary,
+            )
+            new_item = {self.new_keys[0]: vis_map}
 
         return new_item
