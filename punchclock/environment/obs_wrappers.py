@@ -624,14 +624,15 @@ class MinMaxScaleDictObs(gym.ObservationWrapper):
             env.observation_space, gym.spaces.Dict
         ), """The input environment to MinMaxScaleDictObs() must have a `gym.spaces.Dict`
          observation space."""
-        for space in env.observation_space.spaces.values():
+        for k, space in env.observation_space.spaces.items():
             assert isinstance(
                 space, (Box, MultiBinary)
             ), """
             All sub-spaces in env.observation_space must be one of [Box, MultiBinary]."""
-            assert (
-                len(space.shape) <= 2
-            ), """All sub-spaces in env.observation_space must have <=2 dims."""
+            assert len(space.shape) <= 2, (
+                "All sub-spaces in env.observation_space must have <=2 dims.\n"
+                f"{k=}, {space.shape=}"
+            )
 
         super().__init__(env)
 
