@@ -1218,7 +1218,7 @@ class TimeDiff(InfoWrapper):
         if new_key is None:
             new_key = key
         self.new_key = new_key
-        self.last_value = full_like(info[key], nan)
+        self.last_value = full_like(info[key], 0)
         self.norm_val = normalize_by
 
     def updateInfo(
