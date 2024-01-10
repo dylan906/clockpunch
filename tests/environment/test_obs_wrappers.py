@@ -57,11 +57,7 @@ assert env_float.observation_space.contains(obs_float)
 # %% Test NestObsItems
 print("Test NestObsItems...")
 env_prenest = RandomEnv(
-    {
-        "observation_space": Dict(
-            {"a": MultiBinary(3), "b": Box(0, 1), "c": Discrete(4)}
-        )
-    }
+    {"observation_space": Dict({"a": MultiBinary(3), "b": Box(0, 1), "c": Discrete(4)})}
 )
 
 # set key_to_nest to different order from observation_space; wrapped env should
@@ -100,9 +96,7 @@ env_randmask = RandomEnv(
         )
     }
 )
-env_doublemask = MultiplyObsItems(
-    env=env_randmask, keys=["a1", "a2"], new_key="foo"
-)
+env_doublemask = MultiplyObsItems(env=env_randmask, keys=["a1", "a2"], new_key="foo")
 obs_randmask = env_randmask.observation_space.sample()
 obs_doublemask = env_doublemask.observation(obs=obs_randmask)
 print(f"unwrapped obs space = {env_randmask.observation_space}")
@@ -363,11 +357,7 @@ assert diag_env.observation_space.contains(wrapped_obs)
 # %% Test ConvertObsBoxToMultiBinary
 print("\nTest ConvertObsBoxToMultiBinary...")
 box_env = RandomEnv(
-    {
-        "observation_space": Dict(
-            {"a": Box(low=0, high=1, shape=(2, 2), dtype=int)}
-        )
-    }
+    {"observation_space": Dict({"a": Box(low=0, high=1, shape=(2, 2), dtype=int)})}
 )
 mb_env = ConvertObsBoxToMultiBinary(box_env, key="a")
 obs_unwrapped = box_env.observation_space.sample()
@@ -411,9 +401,7 @@ rand_env = RandomEnv(
     }
 )
 
-nam_env = WastedActionsMask(
-    rand_env, vis_map_key="vis_map", mask_key="null_mask"
-)
+nam_env = WastedActionsMask(rand_env, avail_map_key="vis_map", mask_key="null_mask")
 
 unwrapped_obs = rand_env.observation_space.sample()
 wrapped_obs = nam_env.observation(unwrapped_obs)
@@ -429,9 +417,7 @@ rand_env = RandomEnv(
     }
 )
 
-nam_env = WastedActionsMask(
-    rand_env, vis_map_key="vis_map", mask_key="null_mask"
-)
+nam_env = WastedActionsMask(rand_env, avail_map_key="vis_map", mask_key="null_mask")
 unwrapped_obs = rand_env.observation_space.sample()
 wrapped_obs = nam_env.observation(unwrapped_obs)
 print(f"unwrapped obs  = \n{unwrapped_obs}")
