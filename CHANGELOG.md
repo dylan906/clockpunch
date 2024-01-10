@@ -18,6 +18,7 @@ I'm trying to get better about that.
 
 ### Changed
 - `ConfigurableCurriculumFn` now doesn't allow for level skipping, always starts curriculum at level 0, and repeats final level if env is already at final level (#101).
+- `TransformDictObsWithNumpy` now more similar in structure and functionality to `TransformInfoWithNumpy` (#109).
 
 ### Deprecated
 
