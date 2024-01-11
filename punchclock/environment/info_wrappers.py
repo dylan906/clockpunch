@@ -21,6 +21,7 @@ from numpy import (
     insert,
     isnan,
     nan,
+    nan_to_num,
     ndarray,
     where,
     zeros,
@@ -1682,7 +1683,14 @@ class VisMap(InfoWrapper):
             )
             new_item = {self.new_keys[0]: vis_map}
 
-        if isnan(new_item[self.new_keys[0]]).any():
-            Exception("Vis map is NaN.")
+        new_item = self.makeNansNeg(new_item)
+        # if isnan(new_item[self.new_keys[0]]).any():
+        #     Exception("Vis map is NaN.")
 
         return new_item
+
+    def makeNansNeg(self, d: dict) -> dict:
+        for k, v in d.items():
+            d[k] = nan_to_num(v, nan=-1e10)
+
+        return d
