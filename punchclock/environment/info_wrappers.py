@@ -34,7 +34,6 @@ from punchclock.common.utilities import (
     actionSpace2Array,
     getInequalityFunc,
     getInfo,
-    saturateInf,
 )
 from punchclock.common.visibility import calcVisMap, calcVisMapAndDerivative
 from punchclock.dynamics.dynamics_classes import DynamicsModel
@@ -224,7 +223,11 @@ class NumWindows(InfoWrapper):
                 "time_to_next_window". Defaults to None, meaning "num_windows_left",
                 "vis_forecast", and "time_to_next_window" are used.
             saturate_inf (bool, optional): If True, saturates "num_windows_left"
-                returned in info to largest possible numpy float. Defaults to False.
+                returned in info to a constant defined by `saturate_val`. Defaults
+                to False.
+            saturate_val (float, optional): If saturate_inf is True, this value
+                is used in place of Inf. Must be > 0. Defaults to None, meaning
+                numpy's max float. Ignored if sature_inf is False.
         """
         super().__init__(env)
         # Type checking
