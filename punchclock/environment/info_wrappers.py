@@ -1682,4 +1682,7 @@ class VisMap(InfoWrapper):
             )
             new_item = {self.new_keys[0]: vis_map}
 
+        if isnan(new_item[self.new_keys[0]]).any():
+            Exception("Vis map is NaN.")
+
         return new_item
