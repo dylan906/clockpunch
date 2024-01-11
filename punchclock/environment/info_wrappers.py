@@ -17,6 +17,7 @@ from numpy import (
     asarray,
     atleast_2d,
     bool_,
+    finfo,
     full_like,
     insert,
     isnan,
@@ -45,6 +46,8 @@ from punchclock.environment.wrapper_utils import (
     countNullActiveActions,
 )
 from punchclock.schedule_tree.access_windows import AccessWindowCalculator
+
+MAX_FLOAT = finfo(float).max
 
 
 # %% Info Wrapper
@@ -1551,6 +1554,7 @@ class VisMap(InfoWrapper):
         state_key: str = "est_x",
         agent_map_key: str = "agent_map",
         no_derivative: bool = False,
+        nan_override: float = None,
     ):
         """Initialize the VisMap wrapper.
 
@@ -1585,6 +1589,10 @@ class VisMap(InfoWrapper):
                 Defaults to "agent_map".
             no_derivative (bool, optional): If True, the vis map derivative will
                 not be calculated. Saves computation. Defaults to False.
+            nan_override (float, optional): When visibility is undefined, which
+                can happen for a variety of valid reasons (e.g. poor estimated
+                state), NaN values are overridden. This sets the override value.
+                If None, defaults to -MAX_FLOAT. Defaults to None.
 
         Raises:
             AssertionError: If new_keys is not a list or does not have a length of 2.
@@ -1621,12 +1629,15 @@ class VisMap(InfoWrapper):
                     f"""{k} already in info returned by env. Will be overwritten
                         by wrapper. Consider using different value for new_key={k}."""
                 )
+        if nan_override is None:
+            nan_override = -MAX_FLOAT
 
         self.binary = binary
         self.new_keys = new_keys
         self.state_key = state_key
         self.agent_map_key = agent_map_key
         self.no_derivative = no_derivative
+        self.nan_override = nan_override
 
     def updateInfo(
         self,
@@ -1683,14 +1694,15 @@ class VisMap(InfoWrapper):
             )
             new_item = {self.new_keys[0]: vis_map}
 
-        new_item = self.makeNansNeg(new_item)
+        new_item = self.overrideNans(new_item)
         # if isnan(new_item[self.new_keys[0]]).any():
         #     Exception("Vis map is NaN.")
 
         return new_item
 
-    def makeNansNeg(self, d: dict) -> dict:
+    def overrideNans(self, d: dict) -> dict:
+        """Replaces NaN values in a dictionary with override value."""
         for k, v in d.items():
-            d[k] = nan_to_num(v, nan=-1e10)
+            d[k] = nan_to_num(v, nan=self.nan_override)
 
         return d
