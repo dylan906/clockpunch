@@ -195,6 +195,7 @@ class NumWindows(InfoWrapper):
         open_loop: bool = False,
         new_keys: list[str] = None,
         saturate_inf: bool = False,
+        saturate_val: float = None,
     ):
         """Wrap environment with NumWindows InfoWrapper.
 
@@ -257,6 +258,10 @@ class NumWindows(InfoWrapper):
                 """
             )
 
+        if saturate_val is None:
+            saturate_val = MAX_FLOAT
+        assert saturate_val > 0, f"saturate_val must be > 0. ({saturate_val=})"
+
         # check items in unwrapped info
         info = getInfo(env)
         if "num_windows_left" or "vis_forecast" in info:
@@ -274,7 +279,9 @@ class NumWindows(InfoWrapper):
         }
         self.use_estimates = use_estimates
         self.open_loop = open_loop
+
         self.saturate_inf = saturate_inf
+        self.saturate_val = saturate_val
 
         # Separate sensors from targets and dynamics
         sensors, targets = self._getAgents()
@@ -418,7 +425,10 @@ class NumWindows(InfoWrapper):
 
         time_to_next_window = self.time_to_window_hist[0, :]
         if self.saturate_inf is True:
-            time_to_next_window = saturateInf(x=time_to_next_window, dtype=float)
+            # time_to_next_window = saturateInf(x=time_to_next_window, dtype=float)
+            time_to_next_window = nan_to_num(
+                time_to_next_window, posinf=self.saturate_val
+            )
 
         new_info = {
             self.new_keys_map["num_windows_left"]: self.num_windows_left,
