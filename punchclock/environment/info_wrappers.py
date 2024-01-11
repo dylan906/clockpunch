@@ -21,7 +21,6 @@ from numpy import (
     full_like,
     insert,
     isnan,
-    nan,
     nan_to_num,
     ndarray,
     where,
