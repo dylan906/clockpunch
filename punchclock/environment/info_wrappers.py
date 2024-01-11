@@ -1553,7 +1553,8 @@ class VisMap(InfoWrapper):
         state_key: str = "est_x",
         agent_map_key: str = "agent_map",
         no_derivative: bool = False,
-        nan_override: float = None,
+        nan_override_vis: float = None,
+        nan_override_visdot: float = None,
     ):
         """Initialize the VisMap wrapper.
 
@@ -1628,15 +1629,18 @@ class VisMap(InfoWrapper):
                     f"""{k} already in info returned by env. Will be overwritten
                         by wrapper. Consider using different value for new_key={k}."""
                 )
-        if nan_override is None:
-            nan_override = -MAX_FLOAT
+        if nan_override_vis is None:
+            nan_override_vis = -MAX_FLOAT
+        if nan_override_visdot is None:
+            nan_override_visdot = 0
 
         self.binary = binary
         self.new_keys = new_keys
         self.state_key = state_key
         self.agent_map_key = agent_map_key
         self.no_derivative = no_derivative
-        self.nan_override = nan_override
+        self.nan_override_vis = nan_override_vis
+        self.nan_override_visdot = nan_override_visdot
 
     def updateInfo(
         self,
@@ -1701,7 +1705,15 @@ class VisMap(InfoWrapper):
 
     def overrideNans(self, d: dict) -> dict:
         """Replaces NaN values in a dictionary with override value."""
-        for k, v in d.items():
-            d[k] = nan_to_num(v, nan=self.nan_override)
+        d[self.new_keys[0]] = nan_to_num(
+            d[self.new_keys[0]],
+            nan=self.nan_override_vis,
+        )
+
+        if len(d) == 2:
+            d[self.new_keys[1]] = nan_to_num(
+                d[self.new_keys[1]],
+                nan=self.nan_override_visdot,
+            )
 
         return d

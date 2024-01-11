@@ -527,6 +527,25 @@ print(f"info (via reset) = {info['vis_map_dot']}")
 print(f"info (via step) = {info['vis_map_continuous']}")
 print(f"info (via step) = {info['vis_map_dot']}")
 
+# Check nan handling
+vis_env = VisMap(
+    env=rand_env, binary=False, nan_override_vis=-10, nan_override_visdot=99
+)
+vis_env.reset()
+fake_vis_dat = {
+    "vis_map": array([[nan, 1], [1, 1]]),
+    "vis_map_dot": array([[nan, 1], [1, 1]]),
+}
+override_dat = vis_env.overrideNans(fake_vis_dat)
+print(f"{override_dat=}")
+
+fake_vis_dat = {
+    "vis_map": array([[nan, 1], [1, 1]]),
+}
+override_dat = vis_env.overrideNans(fake_vis_dat)
+print(f"{override_dat=}")
+
+# Ignore derivative
 vis_env = VisMap(
     env=rand_env,
     new_keys=["vis_map", "vis_map_dot_ignored"],
