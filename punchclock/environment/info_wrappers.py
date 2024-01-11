@@ -1554,7 +1554,7 @@ class VisMap(InfoWrapper):
         agent_map_key: str = "agent_map",
         no_derivative: bool = False,
         nan_override_vis: float = None,
-        nan_override_visdot: float = None,
+        nan_override_visdot: float = 0,
     ):
         """Initialize the VisMap wrapper.
 
@@ -1589,10 +1589,14 @@ class VisMap(InfoWrapper):
                 Defaults to "agent_map".
             no_derivative (bool, optional): If True, the vis map derivative will
                 not be calculated. Saves computation. Defaults to False.
-            nan_override (float, optional): When visibility is undefined, which
+            nan_override_vis (float, optional): When visibility is undefined, which
                 can happen for a variety of valid reasons (e.g. poor estimated
-                state), NaN values are overridden. This sets the override value.
-                If None, defaults to -MAX_FLOAT. Defaults to None.
+                state), NaN values in the visibility map are overridden. This sets
+                the override value. If None, defaults to -MAX_FLOAT. Defaults to
+                None.
+            nan_override_visdot (float, optional): When the derivative of visibility
+                is undefined, NaN values in the visibility map derivative are
+                overridden. This sets the override value. Defaults to 0.
 
         Raises:
             AssertionError: If new_keys is not a list or does not have a length of 2.
@@ -1631,8 +1635,6 @@ class VisMap(InfoWrapper):
                 )
         if nan_override_vis is None:
             nan_override_vis = -MAX_FLOAT
-        if nan_override_visdot is None:
-            nan_override_visdot = 0
 
         self.binary = binary
         self.new_keys = new_keys
