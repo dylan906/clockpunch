@@ -1039,20 +1039,17 @@ class CheckNanInf(Wrapper):
         Returns:
             OrderedDict: The observation dictionary.
         """
-        if self.check_obs is True:
-            invalid_items = [
-                (key, value)
-                for key, value in obs.items()
-                if isnan(value).any() or isinf(value).any()
-            ]
+        invalid_items = [
+            (key, value)
+            for key, value in obs.items()
+            if isnan(value).any() or isinf(value).any()
+        ]
 
-            if invalid_items:
-                invalid_items_str = ", ".join(
-                    f"key={key}, value={value}" for key, value in invalid_items
-                )
-                raise ValueError(
-                    f"NaN or Inf found in observation: {invalid_items_str}"
-                )
+        if invalid_items:
+            invalid_items_str = ", ".join(
+                f"key={key}, value={value}" for key, value in invalid_items
+            )
+            raise ValueError(f"NaN or Inf found in observation: {invalid_items_str}")
 
         return obs
 
@@ -1069,5 +1066,8 @@ class CheckNanInf(Wrapper):
         if self.check_reward is True:
             if isnan(reward) or isinf(reward):
                 raise ValueError("NaN or Inf found in reward.")
+
+        if self.check_obs is True:
+            observations = self.observation(observations)
 
         return (observations, reward, terminations, truncations, infos)
