@@ -1552,7 +1552,6 @@ class TransformDictObsWithNumpy(gym.ObservationWrapper):
 
     def observation(self, obs: OrderedDict) -> OrderedDict:
         """Get wrapped observation from a Dict observation space."""
-
         new_obs = deepcopy(obs)
         new_obs[self.new_key] = self.partial_func(new_obs[self.key])
 
