@@ -18,8 +18,10 @@ from numpy import (
     atleast_2d,
     bool_,
     finfo,
+    float32,
     full_like,
     insert,
+    int64,
     isnan,
     nan_to_num,
     ndarray,
@@ -1713,8 +1715,9 @@ class VisMap(InfoWrapper):
             new_item = {self.new_keys[0]: vis_map}
 
         new_item = self.overrideNans(new_item)
-        # if isnan(new_item[self.new_keys[0]]).any():
-        #     Exception("Vis map is NaN.")
+
+        # convert dtypes to more easily be converted to Gym spaces
+        new_item = self.convertDtypes(new_item)
 
         return new_item
 
@@ -1730,5 +1733,19 @@ class VisMap(InfoWrapper):
                 d[self.new_keys[1]],
                 nan=self.nan_override_visdot,
             )
+
+        return d
+
+    def convertDtypes(self, d: dict) -> dict:
+        """Converts dtypes of values in new dict."""
+        # Vis map is either an int or float, depending on wrapper config (self.binary)
+        if self.binary is True:
+            d[self.new_keys[0]] = d[self.new_keys[0]].astype(int64)
+        else:
+            d[self.new_keys[0]] = d[self.new_keys[0]].astype(float32)
+
+        # vis_dot, if used, is always a float
+        if len(d) == 2:
+            d[self.new_keys[1]] = d[self.new_keys[1]].astype(float32)
 
         return d
