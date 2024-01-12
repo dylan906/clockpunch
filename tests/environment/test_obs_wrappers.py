@@ -12,6 +12,7 @@ from ray.rllib.utils import check_env
 # Punch Clock Imports
 from punchclock.environment.obs_wrappers import (
     Convert2dTo3dObsItems,
+    ConvertDictItemSpaceDtype,
     ConvertObsBoxToMultiBinary,
     DiagonalObsItems,
     FlatDict,
@@ -54,6 +55,25 @@ obs_float = env_float.observation(obs)
 print(f"unwrapped obs = {obs}")
 print(f"wrapped obs = {obs_float}")
 assert env_float.observation_space.contains(obs_float)
+
+# %% Test ConvertDictItemSpaceDtype
+print("\nTest ConvertDictItemSpaceDtype...")
+rand_env = RandomEnv(
+    {
+        "observation_space": Dict(
+            {
+                "a": Box(0, 1, shape=(3, 2), dtype=float),
+                "b": Box(0, 1, shape=(3, 2), dtype=int),
+            }
+        ),
+    }
+)
+env_cdisd = ConvertDictItemSpaceDtype(env=rand_env, keys=["b"], new_dtype="float")
+print(f"{env_cdisd.observation_space=}")
+
+obs, _, _, _, _ = env_cdisd.step(env_cdisd.action_space.sample())
+print(f"{obs['b'].dtype=}")
+
 # %% Test NestObsItems
 print("Test NestObsItems...")
 env_prenest = RandomEnv(

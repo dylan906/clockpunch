@@ -26,6 +26,7 @@ from numpy import (
     clip,
     diag,
     diagonal,
+    dtype,
     float32,
     inf,
     int8,
@@ -116,6 +117,55 @@ class FloatObs(gym.ObservationWrapper):
             # replace array of ints with floats
             else:
                 obs_new[k] = v.astype(float32)
+
+        return obs_new
+
+
+# %% ConvertDictItemDtype
+class ConvertDictItemSpaceDtype(gym.ObservationWrapper):
+    """Converts the dtype of a(n) item(s) in a Dict observation space."""
+
+    def __init__(
+        self,
+        env: Env,
+        keys: list[str],
+        new_dtype: str,
+    ):
+        """Wrap environment.
+
+        Overwrites keys.
+
+        Args:
+            env (Env): Must have a Dict observation space.
+            keys (list[str]): Keys of items in observation space that will be
+                converted to new_dtype.
+            new_dtype (type): New dtype of item(s) in observation space.
+        """
+        assert isinstance(
+            env.observation_space, Dict
+        ), "env.observation_space must be a gymnasium.spaces.Dict."
+        assert all(
+            [k in env.observation_space.spaces.keys() for k in keys]
+        ), "All entries in keys must be in env.observation_space."
+
+        super().__init__(env)
+        self.keys = keys
+        self.new_dtype = dtype(new_dtype)
+
+        # Redefine observation space
+        obs_space = deepcopy(env.observation_space)
+        for k, v in obs_space.items():
+            if k in keys:
+                obs_space[k] = remakeSpace(space=v, dtype=self.new_dtype)
+
+        self.observation_space = obs_space
+
+    def observation(self, obs: OrderedDict) -> OrderedDict:
+        """Convert dtype of items in obs."""
+        obs_new = deepcopy(obs)
+        for k, v in obs_new.items():
+            if k in self.keys:
+                obs_new[k] = v.astype(self.new_dtype)
 
         return obs_new
 
