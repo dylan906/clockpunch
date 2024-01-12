@@ -428,7 +428,9 @@ class NumWindows(InfoWrapper):
                 self.time_to_window_hist,
             ] = self._openLoopForecast(time_now=calc_window_inputs["t0"])
 
-        time_to_next_window = self.time_to_window_hist[0, :]
+        # Enforce dtype=float32 for compatibility with obs space
+        time_to_next_window = self.time_to_window_hist[0, :].astype(float32)
+
         if self.saturate_inf is True:
             # time_to_next_window = saturateInf(x=time_to_next_window, dtype=float)
             time_to_next_window = nan_to_num(
