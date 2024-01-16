@@ -10,8 +10,8 @@ I'm trying to get better about that.
 ## [unreleased] - 20YY-MM-DD
 
 ### Added
-- Added feature to `NumWindows` wrapper to return time until next window (#102).
-- Added `VisMap(InfoWrapper)` wrapper to calculate visibility matrix (outside of base env). Allows use of continuous visibility function value and its time derivative (#105, #106).
+- Added feature to `NumWindows` wrapper to return time until next window (#102, #111).
+- Added `VisMap(InfoWrapper)` wrapper to calculate visibility matrix (outside of base env). Allows use of continuous visibility function value and its time derivative (#105, #106, #111).
 - New module `visibility.py` that has low-level visibility functions (#107).
 - Added `orbits.py` which has a collection of equations to calculate orbital parameters. Consolidated some equations into new module (#107).
 - Added `TimeDiff` wrapper which takes time difference (and optional discrete derivative) of an item in environment info (#108).
