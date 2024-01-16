@@ -10,6 +10,8 @@ from numpy.random import randint
 from punchclock.common.agents import Sensor, Target
 from punchclock.common.utilities import (
     MaskConverter,
+    chainedAppend,
+    chainedDelete,
     findNearest,
     fromStringArray,
     isActionValid,
@@ -143,5 +145,43 @@ out = findNearest(x=a, val=x, round="down")
 print(f"{out=}")
 out = findNearest(x=a, val=x, round="up")
 print(f"{out=}")
+
+# %% Test chainedDelete
+print("\nTest chainedDelete...")
+in_dict = {
+    "a": {
+        "b": {"c": 1},
+        "bb": 1,
+    }
+}
+
+# regular test
+out_dict = chainedDelete(in_dict, ["a", "b", "c"])
+print(f"{in_dict=}")
+print(f"{out_dict=}")
+
+# test with key that is not in dict
+out_dict = chainedDelete(in_dict, ["a", "b", "d"])
+print(f"{out_dict=}")
+
+# %% Test chainedAppend
+print("\nTest chainedAppend...")
+in_dict = {
+    "a": {
+        "b": {"c": 1},
+        "bb": 1,
+    }
+}
+
+# regular test
+out_dict = chainedAppend(in_dict, ["a", "b", "cc"], 2)
+print(f"{in_dict=}")
+print(f"{out_dict=}")
+
+# test with path that is not in dict
+out_dict = chainedAppend(in_dict, ["a", "b", "d", "e", "f"], 2)
+print(f"{out_dict=}")
+
+
 # %%
 print("done")

@@ -484,13 +484,13 @@ def saturateInf(x: ndarray, dtype: type = float) -> ndarray:
 
 # %% Chained get
 def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
-    """
-    Get a value nested in a dictionary by its nested path.
+    """Get a value nested in a dictionary by its nested path.
 
     Parameters:
         dictionary (dict): The dictionary to search in.
         *args: The nested path to the value.
-        default (Any, optional): The default value to return if the nested value is not found. Defaults to None.
+        default (Any, optional): The default value to return if the nested value
+            is not found. Defaults to None.
 
     Returns:
         Any: The nested value if found, otherwise the default value.
@@ -504,6 +504,52 @@ def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
             return default
 
     return dict_chain
+
+
+def chainedDelete(dictionary: dict, keys_path: list[str]) -> dict:
+    """Delete a value nested in a dictionary by its nested path.
+
+    If path keys_path is to a non-existent item, then the dictionary is returned
+    unmodified.
+
+    Args:
+        dictionary (dict): The dictionary to delete the value from.
+        keys_path (list[str]): The nested path of keys to traverse in the dictionary.
+
+    Returns:
+        dict: The modified dictionary after deleting the value.
+
+    """
+    if keys_path and dictionary:
+        key = keys_path.pop(0)
+        if key in dictionary:
+            if keys_path:
+                chainedDelete(dictionary[key], keys_path)
+            else:
+                del dictionary[key]
+    return dictionary
+
+
+def chainedAppend(dictionary: dict, keys: list[str], value: Any) -> dict:
+    """Appends a value to a nested dictionary using a list of keys.
+
+    Args:
+        dictionary (dict): The dictionary to append the value to.
+        keys (list[str]): The list of keys representing the nested structure.
+        value (Any): The value to be appended.
+
+    Returns:
+        dict: The updated dictionary with the value appended.
+    """
+    if keys and dictionary is not None:
+        key = keys.pop(0)
+        if keys:
+            if key not in dictionary:
+                dictionary[key] = {}
+            chainedAppend(dictionary[key], keys, value)
+        else:
+            dictionary[key] = value
+    return dictionary
 
 
 # %% safeGetattr
