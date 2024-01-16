@@ -16,7 +16,15 @@ from numpy import append, array, int8, int64, isinf, isnan, ones
 # Punch Clock Imports
 from punchclock.analysis_utils.utils import countMaskViolations
 from punchclock.common.custody_tracker import CustodyTracker
-from punchclock.common.utilities import actionSpace2Array, getInfo
+from punchclock.common.utilities import (
+    actionSpace2Array,
+    chainedAppend,
+    chainedConvertDictSpaceToDict,
+    chainedConvertDictToDictSpace,
+    chainedDelete,
+    chainedGet,
+    getInfo,
+)
 from punchclock.environment.wrapper_utils import (
     OperatorFuncBuilder,
     SelectiveDictProcessor,
@@ -1071,3 +1079,89 @@ class CheckNanInf(Wrapper):
             observations = self.observation(observations)
 
         return (observations, reward, terminations, truncations, infos)
+
+
+class ModifyNestedDict(ModifyObsOrInfo):
+    def __init__(
+        self,
+        env: Env,
+        obs_info: str,
+        append_delete: str,
+        keys_path: list[str],
+        value_path: list[str] | None = None,
+    ):
+        super().__init__(env=env, obs_info=obs_info)
+
+        assert append_delete in [
+            "append",
+            "delete",
+        ], "append_delete must be 'append' or 'delete'"
+
+        if append_delete == "append":
+            assert (
+                value_path is not None
+            ), "value_path must be provided if append_delete == 'append'"
+
+        self.append_delete = append_delete
+        self.keys_path = keys_path
+        self.value_path = value_path
+
+        # modify obs space if necessary
+        if obs_info == "obs":
+            obs_space = deepcopy(env.observation_space)
+            # obs_space_dict = chainedConvertDictSpaceToDict(obs_space)
+            if append_delete == "append":
+                self.observation_space = self._appendObsSpaceItem(obs_space)
+            elif append_delete == "delete":
+                self.observation_space = self._deleteObsSpaceItem(obs_space)
+
+    def modifyOI(self, obs: OrderedDict, info: dict) -> Tuple[OrderedDict, dict]:
+        if self.obs_info == "obs":
+            relevant_dict = deepcopy(obs)
+        elif self.obs_info == "info":
+            relevant_dict = deepcopy(info)
+
+        if self.append_delete == "append":
+            relevant_dict = self._appendItem(relevant_dict)
+        elif self.append_delete == "delete":
+            relevant_dict = self._deleteItem(relevant_dict)
+
+        if self.obs_info == "obs":
+            new_obs = relevant_dict
+            new_info = info
+        elif self.obs_info == "info":
+            new_obs = obs
+            new_info = relevant_dict
+
+        return new_obs, new_info
+
+    def _deleteItem(self, dictionary: dict) -> dict:
+        dictionary = deepcopy(dictionary)
+        keys = deepcopy(self.keys_path)
+        dictionary = chainedDelete(dictionary, keys)
+        return dictionary
+
+    def _appendItem(self, dictionary: dict) -> dict:
+        dictionary = deepcopy(dictionary)
+        keys = deepcopy(self.keys_path)
+        value_path = deepcopy(self.value_path)
+        value = chainedGet(dictionary, *value_path)
+
+        dictionary = chainedAppend(dictionary, keys, value)
+        return dictionary
+
+    def _deleteObsSpaceItem(self, obs_space: Dict) -> Dict:
+        # Convert obs space from Dict -> dict, delete item, convert back to Dict
+        obs_space = deepcopy(obs_space)
+        obs_space_dict = chainedConvertDictSpaceToDict(obs_space)
+        obs_space_dict = self._deleteItem(obs_space_dict)
+        obs_space = chainedConvertDictToDictSpace(obs_space_dict)
+        return obs_space
+
+    def _appendObsSpaceItem(self, obs_space: Dict) -> Dict:
+        # Convert obs space from Dict -> dict, append item, convert back to Dict
+        obs_space = deepcopy(obs_space)
+        obs_space_dict = chainedConvertDictSpaceToDict(obs_space)
+        obs_space_dict = self._appendItem(obs_space_dict)
+        obs_space = chainedConvertDictToDictSpace(obs_space_dict)
+        return obs_space

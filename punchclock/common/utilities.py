@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 # Third Party Imports
+import gymnasium as gym
 from gymnasium import Env
-from gymnasium.spaces import Box, MultiDiscrete
+from gymnasium.spaces import Box, MultiDiscrete, Space
 from gymnasium.spaces.utils import flatten, unflatten
 from numpy import (
     Inf,
@@ -506,6 +507,7 @@ def chainedGet(dictionary: dict, *args, default: Any = None) -> Any:
     return dict_chain
 
 
+# %% chainedDelete
 def chainedDelete(dictionary: dict, keys_path: list[str]) -> dict:
     """Delete a value nested in a dictionary by its nested path.
 
@@ -530,6 +532,7 @@ def chainedDelete(dictionary: dict, keys_path: list[str]) -> dict:
     return dictionary
 
 
+# %% chainedAppend
 def chainedAppend(dictionary: dict, keys: list[str], value: Any) -> dict:
     """Appends a value to a nested dictionary using a list of keys.
 
@@ -550,6 +553,41 @@ def chainedAppend(dictionary: dict, keys: list[str], value: Any) -> dict:
         else:
             dictionary[key] = value
     return dictionary
+
+
+# %% chainedConvertDictSpaceToDict
+def chainedConvertDictSpaceToDict(
+    dict_space: gym.spaces.Dict,
+) -> dict[str, gym.spaces.Space]:
+    """Convert a gym.spaces.Dict to a dict.
+
+    Args:
+        dict_space (gym.spaces.Dict): The gym.spaces.Dict to be converted.
+
+    Returns:
+        dict: The converted dict.
+    """
+    out_dict = {}
+    for key, space in dict_space.spaces.items():
+        if isinstance(space, gym.spaces.Dict):
+            out_dict[key] = chainedConvertDictSpaceToDict(space)
+        else:
+            out_dict[key] = space
+    return out_dict
+
+
+# %% chainedConvertDictToDictSpace
+def chainedConvertDictToDictSpace(
+    dictionary: dict[str, dict | Space]
+) -> gym.spaces.Dict:
+    """Convert a dict to a gym.spaces.Dict."""
+    out_dict_space = {}
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            out_dict_space[key] = chainedConvertDictToDictSpace(value)
+        else:
+            out_dict_space[key] = value
+    return gym.spaces.Dict(out_dict_space)
 
 
 # %% safeGetattr

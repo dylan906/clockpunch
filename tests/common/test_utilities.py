@@ -2,7 +2,7 @@
 # %% Imports
 
 # Third Party Imports
-from gymnasium.spaces import MultiDiscrete, flatten
+from gymnasium.spaces import Box, Dict, MultiDiscrete, flatten
 from numpy import array, zeros
 from numpy.random import randint
 
@@ -11,6 +11,8 @@ from punchclock.common.agents import Sensor, Target
 from punchclock.common.utilities import (
     MaskConverter,
     chainedAppend,
+    chainedConvertDictSpaceToDict,
+    chainedConvertDictToDictSpace,
     chainedDelete,
     findNearest,
     fromStringArray,
@@ -182,6 +184,29 @@ print(f"{out_dict=}")
 out_dict = chainedAppend(in_dict, ["a", "b", "d", "e", "f"], 2)
 print(f"{out_dict=}")
 
+# %% Test chainedConvertDictSpaceToDict
+print("\nTest chainedConvertDictSpaceToDict...")
+
+in_dict = Dict(
+    {
+        "a": Box(low=0, high=1),
+        "b": Dict({"c": Box(low=0, high=1)}),
+    }
+)
+out_dict = chainedConvertDictSpaceToDict(in_dict)
+print(f"{in_dict=}")
+print(f"{out_dict=}")
+
+# %% Test chainedConvertDictToDictSpace
+print("\nTest chainedConvertDictToDictSpace...")
+
+in_dict = {
+    "a": Box(low=0, high=1),
+    "b": {"c": Box(low=0, high=1)},
+}
+out_dict = chainedConvertDictToDictSpace(in_dict)
+print(f"{in_dict=}")
+print(f"{out_dict=}")
 
 # %%
 print("done")

@@ -19,6 +19,7 @@ from punchclock.environment.misc_wrappers import (
     CustodyWrapper,
     IdentityWrapper,
     MaskViolationChecker,
+    ModifyNestedDict,
     ModifyObsOrInfo,
     OperatorWrapper,
     RandomInfo,
@@ -515,6 +516,72 @@ try:
 except Exception as e:
     print(e)
     print("Test passed")
+
+# %% Test ModifyNestedDict
+print("\nTest ModifyNestedDict...")
+dict_space = Dict({"a": Dict({"b": Box(-inf, inf, shape=(3,))})})
+rand_env = RandomInfo(
+    RandomEnv({"observation_space": dict_space}),
+    info_space=dict_space,
+)
+print(f"rand_env.observation_space = {rand_env.observation_space}")
+print(f"rand_env.info_space = {rand_env.info_space}")
+
+# Test info/delete
+print("\n   Test info/delete")
+mnd_env = ModifyNestedDict(
+    env=rand_env, obs_info="info", keys_path=["a", "b"], append_delete="delete"
+)
+obs, info = mnd_env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+obs, _, _, _, info = mnd_env.step(mnd_env.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
+
+# Test info/append
+print("\n   Test info/append")
+mnd_env = ModifyNestedDict(
+    env=rand_env,
+    obs_info="info",
+    keys_path=["a", "c"],
+    append_delete="append",
+    value_path=["a", "b"],
+)
+obs, info = mnd_env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+# Test obs/delete
+print("\n   Test obs/delete")
+mnd_env = ModifyNestedDict(
+    env=rand_env, obs_info="obs", keys_path=["a", "b"], append_delete="delete"
+)
+obs, info = mnd_env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+obs, _, _, _, info = mnd_env.step(mnd_env.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
+
+# Test obs/append
+print("\n   Test obs/append")
+mnd_env = ModifyNestedDict(
+    env=rand_env,
+    obs_info="obs",
+    keys_path=["a", "c"],
+    append_delete="append",
+    value_path=["a", "b"],
+)
+obs, info = mnd_env.reset()
+print(f"obs (reset) = {obs}")
+print(f"info (reset) = {info}")
+
+obs, _, _, _, info = mnd_env.step(mnd_env.action_space.sample())
+print(f"obs (step) = {obs}")
+print(f"info (step) = {info}")
 
 # %% Done
 print("done")
