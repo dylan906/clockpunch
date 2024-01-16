@@ -15,6 +15,7 @@ I'm trying to get better about that.
 - New module `visibility.py` that has low-level visibility functions (#107).
 - Added `orbits.py` which has a collection of equations to calculate orbital parameters. Consolidated some equations into new module (#107).
 - Added `TimeDiff` wrapper which takes time difference (and optional discrete derivative) of an item in environment info (#108).
+- Added `ModifyNestedDict` wrapper to append/delete an item from a nested observation space or info (#113)
 
 ### Changed
 - `ConfigurableCurriculumFn` now doesn't allow for level skipping, always starts curriculum at level 0, and repeats final level if env is already at final level (#101).
