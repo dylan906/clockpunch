@@ -15,6 +15,7 @@ I'm trying to get better about that.
 - New module `visibility.py` that has low-level visibility functions (#107).
 - Added `orbits.py` which has a collection of equations to calculate orbital parameters. Consolidated some equations into new module (#107).
 - Added `TimeDiff` wrapper which takes time difference (and optional discrete derivative) of an item in environment info (#108).
+- Added `CheckNanInf` wrapper to check if NaNs or Infs exist in observations or reward (#110).
 - Added `ConvertDictItemSpaceDtype` wrapper to convert the dtype of an item in the observation space (#112).
 - Added `ModifyNestedDict` wrapper to append/delete an item from a nested observation space or info (#113).
 
