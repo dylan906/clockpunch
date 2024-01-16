@@ -524,8 +524,8 @@ rand_env = RandomInfo(
     RandomEnv({"observation_space": dict_space}),
     info_space=dict_space,
 )
-print(f"rand_env.observation_space = {rand_env.observation_space}")
-print(f"rand_env.info_space = {rand_env.info_space}")
+print(f"{rand_env.observation_space=}")
+print(f"{rand_env.info_space=}")
 
 # Test info/delete
 print("\n   Test info/delete")
@@ -558,6 +558,8 @@ print("\n   Test obs/delete")
 mnd_env = ModifyNestedDict(
     env=rand_env, obs_info="obs", keys_path=["a", "b"], append_delete="delete"
 )
+print(f"{mnd_env.observation_space=}")
+
 obs, info = mnd_env.reset()
 print(f"obs (reset) = {obs}")
 print(f"info (reset) = {info}")
@@ -575,6 +577,8 @@ mnd_env = ModifyNestedDict(
     append_delete="append",
     value_path=["a", "b"],
 )
+print(f"{mnd_env.observation_space=}")
+
 obs, info = mnd_env.reset()
 print(f"obs (reset) = {obs}")
 print(f"info (reset) = {info}")
