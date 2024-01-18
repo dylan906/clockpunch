@@ -135,12 +135,13 @@ class SequentialCurriculumFn:
     Patience attribute forces task advancement regardless of metric.
     """
 
-    def __init__(self, patience: int = 0):
+    def __init__(self, patience: int | None = None):
         """Build curriculum function.
 
         Args:
-            patience (int, optional): Number of iterations to wait before forcing
-                task increment. Defaults to 0.
+            patience (int | None, optional): Number of iterations to wait before
+            forcing task increment. If None, task advancement is strict, no skipping.
+            Defaults to None.
         """
         self.patience = patience
         self.patience_ctr = 0
@@ -172,7 +173,7 @@ class SequentialCurriculumFn:
             train_results=train_results, metric=curriculum_config["results_metric"]
         )
 
-        if self.patience_ctr < self.patience:
+        if (self.patience is None) or (self.patience_ctr < self.patience):
             # Do regular task update check if patience threshold not reached
             task = updateTask(cur_task, metric_val, curriculum_map=curriculum_map)
             if task == cur_task:

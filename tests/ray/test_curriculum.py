@@ -103,6 +103,15 @@ for _ in range(6):
     print(f"{scf.patience_ctr=}")
     print(f"{task=}")
 
+# Test with patience off
+print("    Test with patience off...")
+scf = SequentialCurriculumFn(patience=None)
+task = scf(train_results=results, task_settable_env=env, env_ctx=env_ctx)
+env.set_task(task)
+print(f"{scf.patience_ctr=}")
+print(f"{task=}")
+
+
 # %% Test Fit
 print("\nTest with fit...")
 ray.init(num_cpus=3, num_gpus=0)
