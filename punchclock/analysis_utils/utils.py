@@ -85,6 +85,33 @@ def countOpportunities(mask: ndarray[int] | list) -> int:
     return int(sum(sum(any_avail)))
 
 
+def checkNonTrivialOpportunities(mask: ndarray[int] | list) -> ndarray[int]:
+    """Check which agents had more than one action available.
+
+    Checks if there are more than one 1s in each column of the mask.
+
+    Args:
+        mask (ndarray[int] | list): A 2D array or list of lists representing
+            the actions available to each agent. Each row corresponds to an
+            agent and each column corresponds to an action. A value of 1
+            indicates the action is available, and 0 indicates it is not.
+
+    Returns:
+        ndarray[int]: Whether or not each column of mask had more than one 1.
+
+    Raises:
+        AssertionError: If the input mask does not have exactly two dimensions.
+    """
+    # convert to array if arg is list
+    mask = array(mask)
+    assert mask.ndim == 2, "mask must have ndims == 2"
+
+    sum_actions = sum(mask, axis=0)
+    num_nontrivial = array([1 if a > 1 else 0 for a in sum_actions])
+
+    return num_nontrivial.astype(int)
+
+
 def calcMissedOpportunities(
     action: ndarray[int] | list[int],
     mask: ndarray[int],

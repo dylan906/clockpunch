@@ -9,6 +9,7 @@ from numpy.random import randint
 from punchclock.analysis_utils.utils import (
     calc3dTr,
     calcMissedOpportunities,
+    checkNonTrivialOpportunities,
     countMaskViolations,
     countNullActions,
     countOpportunities,
@@ -56,6 +57,18 @@ mask = array([[1, 0, 0], [1, 0, 0]])
 opps = countOpportunities(mask)
 print(f"mask = \n{mask}")
 print(f"opportunities = {opps}")
+
+# ## checkNonTrivialOpportunities
+print("\nTest checkNonTrivialOpportunities...")
+mask = array([[1, 1, 1]])
+opps = checkNonTrivialOpportunities(mask)
+print(f"{mask=}")
+print(f"{opps=}")
+
+mask = array([[0, 1, 0], [1, 1, 0]])
+opps = checkNonTrivialOpportunities(mask)
+print(f"{mask=}")
+print(f"{opps=}")
 
 # %% calcMissed Opportunities
 print("\nTest calcMissedOpportunities...")
