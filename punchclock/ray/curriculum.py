@@ -67,12 +67,12 @@ class CustomCallbacks(DefaultCallbacks):
 
     def on_train_result(self, *, algorithm, result: dict, **kwargs):
         """Rename and cleanup spurious metrics added by on_episode_end callback."""
-        result["custom_metrics"]["curriculum_task"] = result["custom_metrics"][
-            "curriculum_task_mean"
-        ]
+        result["custom_metrics"]["curriculum_task"] = result["custom_metrics"].get(
+            "curriculum_task_mean", None
+        )
         result["custom_metrics"]["curriculum_metric_threshold"] = result[
             "custom_metrics"
-        ]["curriculum_metric_threshold_mean"]
+        ].get("curriculum_metric_threshold_mean", None)
 
         for k in [
             "curriculum_task_mean",
