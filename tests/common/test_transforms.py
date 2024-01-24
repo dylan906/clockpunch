@@ -102,6 +102,11 @@ axs[1, 1].set_ylabel("K")
 axs[1, 1].set_xlabel("I")
 plt.tight_layout()
 
+x_ecef = array([6000, 0, 0, 0, 0, 0])
+x_eci = ecef2eci(x_ecef, 1)
+print(f"{x_ecef=}")
+print(f"{x_eci=}")
+
 # %% eci2ecef
 print("\nTest eci2ecef()...")
 # test with 1D input
@@ -180,4 +185,5 @@ except ValueError as e:
     print(e)
 
 # %% Done
+plt.show()
 print("done")

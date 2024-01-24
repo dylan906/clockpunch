@@ -1,7 +1,5 @@
 """Tests for dynamics_classes module."""
 # %% Imports
-from __future__ import annotations
-
 # Standard Library Imports
 from typing import Callable
 
@@ -10,11 +8,16 @@ from matplotlib import pyplot as plt
 from numpy import array, linspace, ndarray, ones
 
 # Punch Clock Imports
+from punchclock.common.constants import getConstants
+from punchclock.common.transforms import ecef2eci
 from punchclock.dynamics.dynamics_classes import (
     DynamicsModel,
     SatDynamicsModel,
     StaticTerrestrial,
 )
+
+# %% Constants
+RE = getConstants()["earth_radius"]
 
 
 # %% Dummy Functions
@@ -112,9 +115,7 @@ class TestDynamicsMoreParams(DynamicsModel):
         end_time: float,
         **kwargs,
     ) -> ndarray:
-        return super().propagate(
-            start_state, start_time, end_time, [self.a, self.b]
-        )
+        return super().propagate(start_state, start_time, end_time, [self.a, self.b])
 
 
 # %% Test base class
@@ -148,9 +149,10 @@ for i, t in enumerate(time[:-1]):
     state_hist.append(state.copy())
 
 fig, axs = plt.subplots(2)
-axs[0].set_title("position")
+axs[0].set_title("Satellite Dynamics")
+axs[0].set_ylabel("position")
 axs[0].plot([x[:3] for x in state_hist])
-axs[1].set_title("velocity")
+axs[1].set_ylabel("velocity")
 axs[1].plot([x[3:] for x in state_hist])
 
 
@@ -175,3 +177,40 @@ x_init = array(
 print(f"x_init = \n{x_init}")
 x1 = b.propagate(x_init, 0, 400)
 print(f"propagated states (StaticTerrestrial) = \n{x1}\n")
+
+x_ecef = array([RE, 0, 0, 0, 0, 0])
+x_eci = ecef2eci(x_ecef, 0)
+state = x_eci
+
+time = linspace(0, 1e4)
+state_hist = []
+for i, t in enumerate(time[:-1]):
+    state = b.propagate(start_state=state, start_time=t, end_time=time[i + 1])
+    state_hist.append(state.copy())
+
+state_hist_arr = array(state_hist)
+fig, axs = plt.subplots(2)
+axs[0].set_title("Terrestrial Dynamics")
+axs[0].set_ylabel("position")
+axs[0].plot(state_hist_arr[:, :3], label=["I", "J", "K"])
+axs[1].set_ylabel("velocity")
+axs[1].plot(state_hist_arr[:, 3:], label=["dI", "dJ", "dK"])
+axs[0].legend()
+axs[1].legend()
+
+state_hist_arr = array(state_hist)
+fig, axs = plt.subplots(2, sharex=True)
+axs[0].plot(state_hist_arr[:, 0], state_hist_arr[:, 1])
+axs[1].plot(state_hist_arr[:, 0], state_hist_arr[:, 2])
+axs[0].set_xlabel("I")
+axs[0].set_ylabel("J")
+axs[1].set_ylabel("K")
+axs[0].set_xlim(-1.1 * RE, 1.1 * RE)
+axs[0].set_ylim(-1.1 * RE, 1.1 * RE)
+axs[1].set_xlim(-1.1 * RE, 1.1 * RE)
+axs[1].set_ylim(-1.1 * RE, 1.1 * RE)
+axs[0].plot(state_hist_arr[0, 0], state_hist_arr[0, 1], "*")
+
+# %%
+plt.show()
+print("done")
