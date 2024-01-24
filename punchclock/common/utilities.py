@@ -640,7 +640,20 @@ def fpe_equals(value: float, expected: float, resolution: float = None) -> bool:
 
 
 def getMatchedKeys(dictionary: dict, values: list) -> list[list[str]] | list:
-    """Get all keys in a nested dictionary that correspond to a list of values."""
+    """Get all keys in a dictionary that correspond to a list of values.
+
+    Recursively searches through a dict for keys that correspond to a value contained
+    in `values`.
+
+    Args:
+        dictionary (dict): The nested dictionary to search.
+        values (list): The list of values to match.
+
+    Returns:
+        list[list[str]] | list: Each entry in the list is the key path to a matched
+            value.  Matched keys at the top level of a dict have a list of length
+            1. If there are no matching values, the list is empty.
+    """
     matched_keys = []
     for k, v in dictionary.items():
         if isinstance(v, dict):
