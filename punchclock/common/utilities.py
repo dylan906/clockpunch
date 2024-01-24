@@ -536,6 +536,8 @@ def chainedDelete(dictionary: dict, keys_path: list[str]) -> dict:
 def chainedAppend(dictionary: dict, keys: list[str], value: Any) -> dict:
     """Appends a value to a nested dictionary using a list of keys.
 
+    Can use to change an existing value by using an existing key path.
+
     Args:
         dictionary (dict): The dictionary to append the value to.
         keys (list[str]): The list of keys representing the nested structure.
