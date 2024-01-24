@@ -16,6 +16,7 @@ from punchclock.common.utilities import (
     chainedDelete,
     findNearest,
     fromStringArray,
+    getMatchedKeys,
     isActionValid,
     printNestedDict,
     saveJSONFile,
@@ -207,6 +208,27 @@ in_dict = {
 out_dict = chainedConvertDictToDictSpace(in_dict)
 print(f"{in_dict=}")
 print(f"{out_dict=}")
+
+# %% Test getMatchedKeys
+print("\nTest getMatchedKeys...")
+d = {
+    "a": 1,
+    "b": {
+        "aa": 2,
+        "bb": {
+            "aaa": 3,
+            "bbb": 4,
+            "ccc": 1,
+        },
+    },
+    "c": 1,
+    "d": 4,
+}
+keys = getMatchedKeys(d, [1, 3])
+print(f"{keys=}")
+
+keys = getMatchedKeys(d, [0])
+print(f"{keys=}")
 
 # %%
 print("done")

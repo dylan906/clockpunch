@@ -637,3 +637,18 @@ def fpe_equals(value: float, expected: float, resolution: float = None) -> bool:
         resolution = finfo(float).resolution
     check = fabs(value - expected) < resolution
     return check
+
+
+def getMatchedKeys(dictionary: dict, values: list) -> list[list[str]] | list:
+    """Get all keys in a nested dictionary that correspond to a list of values."""
+    matched_keys = []
+    for k, v in dictionary.items():
+        if isinstance(v, dict):
+            nested_keys = getMatchedKeys(v, values)
+            for nk in nested_keys:
+                nk.insert(0, k)
+            matched_keys.extend(nested_keys)
+        elif v in values:
+            matched_keys.append([k])
+
+    return matched_keys
