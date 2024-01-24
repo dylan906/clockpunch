@@ -1,6 +1,8 @@
 """Constants: Module for constants used throughout repo."""
+# Reference Vallado, 3rd Edition
 # %% Imports
-from __future__ import annotations
+# Third Party Imports
+from numpy import pi
 
 
 # %% Function
@@ -23,5 +25,17 @@ def getConstants() -> dict:
 
     # Earth's rotation rate around K-axis (rad/s)
     params["earth_rotation_rate"] = 7.27e-5
+
+    # Day length (sec)
+    params["sidereal_day"] = 86164.090517
+    params["solar_day"] = 86400
+
+    # Radius (Semi-major axis) of geosynchronous orbit (km)
+    params["gso_radius"] = (
+        (params["sidereal_day"] ** 2) / (4 * (pi**2)) * params["mu"]
+    ) ** (1 / 3)
+
+    # Altitude of geosynchronous orbit (km)
+    params["gso_altitude"] = params["gso_radius"] - params["earth_radius"]
 
     return params

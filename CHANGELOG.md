@@ -18,6 +18,7 @@ I'm trying to get better about that.
 - Added `CheckNanInf` wrapper to check if NaNs or Infs exist in observations or reward (#110).
 - Added `ConvertDictItemSpaceDtype` wrapper to convert the dtype of an item in the observation space (#112).
 - Added `ModifyNestedDict` wrapper to append/delete an item from a nested observation space or info (#113).
+- Added constants for geostationary orbit radius/altitude (#116).
 
 ### Changed
 - `ConfigurableCurriculumFn` now doesn't allow for level skipping, always starts curriculum at level 0, and repeats final level if env is already at final level (#101).
