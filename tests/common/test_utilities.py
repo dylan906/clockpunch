@@ -1,6 +1,9 @@
 """Test Utilities module."""
 # %% Imports
 
+# Standard Library Imports
+from copy import deepcopy
+
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiDiscrete, flatten
 from numpy import array, zeros
@@ -185,6 +188,9 @@ print(f"{out_dict=}")
 out_dict = chainedAppend(in_dict, ["a", "b", "d", "e", "f"], 2)
 print(f"{out_dict=}")
 
+# Reassign existing value
+out_dict = chainedAppend(in_dict, ["a", "bb"], 3)
+print(f"{out_dict=}")
 # %% Test chainedConvertDictSpaceToDict
 print("\nTest chainedConvertDictSpaceToDict...")
 
