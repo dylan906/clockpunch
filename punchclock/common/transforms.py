@@ -3,6 +3,9 @@
 # %% Imports
 from __future__ import annotations
 
+# Standard Library Imports
+from typing import Optional
+
 # Third Party Imports
 from numpy import (
     array,
@@ -32,18 +35,14 @@ def lla2ecef(x_lla: ndarray) -> ndarray:
     """Converts lat, lon, altitude to state vector in ECEF.
 
     Args:
-        x_lla (`ndarray`): (3,) Latitude (rad), longitude (rad), altitude (km).
+        x_lla (ndarray): (3,) Latitude (rad), longitude (rad), altitude (km).
 
     Returns:
-        `ndarray`: [I, J, K, dI, dJ, dK] state vector (km, km/s)
+        ndarray: [I, J, K, dI, dJ, dK] state vector (km, km/s)
 
     Notes:
         - If x_lla has more than 3 elements, the elements after index 2 are ignored.
     """
-    # Earth radius (km)
-    params = getConstants()
-    # RE = params["earth_radius"]
-
     lat, lon, alt = x_lla[0], x_lla[1], x_lla[2]
     r_delta = (RE + alt) * cos(lat)
     r_k = (RE + alt) * sin(lat)
@@ -62,14 +61,14 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
             with ECI). Defaults to 0.
 
     Returns:
-        ndarray: (6,) or (6, N) state vector(s) in ECI frame (km, km/s).  Returns (6,) if
-            input is (6,1).
+        ndarray: (6,) or (6, N) state vector(s) in ECI frame (km, km/s).  Returns
+            (6,) if input is (6,1).
 
     Notes:
         - Does not account for Earth precession, nutation.
-        - Passing in 6 vectors is an edge case which is not flagged as an error and outputs
-            incorrect values, so ensure that the 0th dimension of the input array is the
-            state vector.
+        - Passing in 6 vectors is an edge case which is not flagged as an error
+            and outputs incorrect values, so ensure that the 0th dimension of the
+            input array is the state vector.
     """
     x_ecef = _check_dimensions(x_ecef)
 
@@ -82,7 +81,6 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
     x_eci = zeros(x_ecef.shape)
     for i, vec in enumerate(x_ecef.transpose()):
         x_eci_i = _transport_theorem_posvel(vec, R, omega_vec)
-
         x_eci[:, i] = x_eci_i
 
     # convert to singleton dimension if single vector was input
@@ -96,19 +94,19 @@ def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
     """Convert an ECI state vector into an ECEF state vector.
 
     Args:
-        x_eci (`ndarray`): (6, N) or (6,) state vector(s) in ECI frame (km, km/s). If converting
-            a single state vector, input can be 1D.
-        JD (`float`): Time since vernal equinox (since ECEF was aligned with ECI)
+        x_eci (ndarray): (6, N) or (6,) state vector(s) in ECI frame (km, km/s).
+            If converting a single state vector, input can be 1D.
+        JD (float): Time since vernal equinox (since ECEF was aligned with ECI)
 
     Returns:
-        ndarray: (6, N) or (6,) state vector(s) in ECEF frame (km, km/s). Returns (6,) if
-            input is (6,1).
+        ndarray: (6, N) or (6,) state vector(s) in ECEF frame (km, km/s).
+            Returns (6,) if input is (6,1).
 
     Notes:
         - Doesn't account for Earth precession, nutation.
-        - Passing in 6 vectors is an edge case which is not flagged as an error and outputs
-            incorrect values, so ensure that the 0th dimension of the input array is the
-            state vector.
+        - Passing in 6 vectors is an edge case which is not flagged as an error
+            and outputs incorrect values, so ensure that the 0th dimension of the
+            input array is the state vector.
     """
     x_eci = _check_dimensions(x_eci)
 
@@ -184,10 +182,10 @@ def rot1(theta: float) -> ndarray:
     """Generates rotation matrix about axis 1.
 
     Args:
-        theta (`float`): angle (rad)
+        theta (float): angle (rad)
 
     Returns:
-        `ndarray`: (3,3) rotation matrix
+        ndarray: (3,3) rotation matrix
     """
     R1 = array(
         [
@@ -203,10 +201,10 @@ def rot2(theta: float) -> ndarray:
     """Generates rotation matrix about axis 2.
 
     Args:
-        theta (`float`): angle (rad)
+        theta (float): angle (rad)
 
     Returns:
-        `ndarray`: (3,3) rotation matrix
+        ndarray: (3,3) rotation matrix
     """
     R2 = array(
         [
@@ -222,10 +220,10 @@ def rot3(theta: float) -> ndarray:
     """Generates rotation matrix about axis 3.
 
     Args:
-        theta (`float`): angle (rad)
+        theta (float): angle (rad)
 
     Returns:
-        `ndarray`: (3,3) rotation matrix
+        ndarray: (3,3) rotation matrix
     """
     R3 = array(
         [
@@ -250,19 +248,20 @@ def coe2eci(
     r"""Convert a set of COEs to an ECI (J2000) position and velocity vector.
 
     References:
-        :cite:t:`vallado_2013_astro`, Sections 2-6, Pgs 116-120
+        :cite:t:vallado_2013_astro, Sections 2-6, Pgs 116-120
 
     Args:
-        sma (`float`): semi-major axis, :math:`a` (km).
-        ecc (`float`): eccentricity, :math:`e\in[0,1)`.
-        inc (`float`): inclination angle, :math:`i\in[0,\pi]` in radians.
-        raan (`float`): right ascension of the ascending node, :math:`\Omega\in[0,2\pi)`, in radians.
-        argp (`float`): argument of perigee, :math:`\omega\in[0,2\pi)`, in radians.
-        true_anom (`float`): true  anomaly (location) angle, :math:`f\in[0,2\pi)`, in radians.
-        mu (`float`, optional): gravitational parameter of central body (km^3/sec^2). Defaults to :attr:`.Earth.mu`.
+        sma (float): semi-major axis, a (km).
+        ecc (float): eccentricity, e[0,1).
+        inc (float): inclination angle, i[0,\pi] in radians.
+        raan (float): right ascension of the ascending node, \Omega[0,2\pi), in radians.
+        argp (float): argument of perigee, \omega[0,2\pi), in radians.
+        true_anom (float): true  anomaly (location) angle, f[0,2\pi), in radians.
+        mu (float, optional): gravitational parameter of central body (km^3/sec^2).
+            Defaults to :attr:.Earth.mu.
 
     Returns:
-        `ndarray`: 6x1 ECI state vector (km; km/sec).
+        ndarray: 6x1 ECI state vector (km; km/sec).
     """
     # %% Argument Checkers
     if sma < RE:
