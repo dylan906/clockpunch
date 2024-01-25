@@ -25,6 +25,7 @@ class DynamicsModel(ABC):
         self,
         dynamics_func: Callable[[ndarray, float, float], ndarray],
     ):
+        """Initialize dynamics model instance."""
         self._dynamics_func = dynamics_func
 
     @abstractmethod
@@ -35,6 +36,10 @@ class DynamicsModel(ABC):
         end_time: float,
         **kwargs,
     ) -> ndarray:
+        """Propagate dynamics.
+
+        Abstract method. Must be implemented by child class.
+        """
         return self._dynamics_func(
             start_state,
             start_time,

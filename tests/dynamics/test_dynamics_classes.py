@@ -210,6 +210,7 @@ axs[0].set_ylim(-1.1 * RE, 1.1 * RE)
 axs[1].set_xlim(-1.1 * RE, 1.1 * RE)
 axs[1].set_ylim(-1.1 * RE, 1.1 * RE)
 axs[0].plot(state_hist_arr[0, 0], state_hist_arr[0, 1], "*")
+axs[1].plot(state_hist_arr[0, 0], state_hist_arr[0, 2], "*")
 
 # %%
 plt.show()
