@@ -107,6 +107,31 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
     return x_eci
 
 
+def ecef2eci_test(x_ecef: ndarray, JD: float = 0) -> ndarray:
+    # reshape array if single-dimension
+    if x_ecef.ndim == 1:
+        x_ecef = reshape(x_ecef, (6, 1))
+
+    # make array (6xN) if passed in as (Nx6)
+    # note that this is ambiguous if you want to convert 6 vectors
+    if x_ecef.shape[0] != 6:
+        raise ValueError("Argument must be a (6,N) array.")
+
+    # angular rate of Earth (rad/s)
+    omega_earth = getConstants()["earth_rotation_rate"]
+    omega_vec = array([0, 0, omega_earth])
+
+    R = rot3(omega_earth * JD)
+
+    x_eci = zeros(x_ecef.shape)
+    x_eci[:3] = matmul(R, x_ecef[:3])
+    x_eci[3:] = matmul(R, x_ecef[3:]) + cross(
+        omega_vec, matmul(R, x_ecef[:3]).flatten()
+    ).reshape((3, -1))
+
+    return x_eci
+
+
 # %% ECI -> ECEF
 def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
     """Convert an ECI state vector into an ECEF state vector.

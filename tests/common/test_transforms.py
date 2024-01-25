@@ -9,6 +9,7 @@ from numpy.random import rand
 from punchclock.common.transforms import (
     coe2eci,
     ecef2eci,
+    ecef2eci_test,
     eci2ecef,
     lla2ecef,
     rot3,
@@ -30,6 +31,31 @@ print(f"r_ecef={r_ecef}")
 
 # %% ECEF 2 ECI Converter
 print("\nTest ecef2eci()...")
+# Simple test
+x_ecef = array([6000, 0, 0, 0, 0, 0])
+# expected answer should be [6000, 0, 0, 0, +num, 0]
+x_eci = ecef2eci_test(x_ecef, 0)
+print(f"{x_ecef=}")
+print(f"{x_eci=}")
+
+for i in [1, 2, 3, 5]:
+    assert x_eci[i] == 0, f"x_eci[{i}] should be zero {x_eci[i]=}"
+assert x_eci[0] == 6000, f"x_eci[0] should be 6000 {x_eci[0]=}"
+assert x_eci[4] > 0, f"x_eci[4] should be positive {x_eci[4]=}"
+
+# expected answer should be [+num, +num, 0, -num, +num, 0]
+x_eci = ecef2eci_test(x_ecef, 1)
+print(f"{x_ecef=}")
+print(f"{x_eci=}")
+
+assert x_eci[0] > 0, f"x_eci[0] should be positive {x_eci[0]=}"
+assert x_eci[1] > 0, f"x_eci[1] should be positive {x_eci[1]=}"
+assert x_eci[2] == 0, f"x_eci[2] should be zero {x_eci[2]=}"
+assert x_eci[3] < 0, f"x_eci[3] should be negative {x_eci[3]=}"
+assert x_eci[4] > 0, f"x_eci[4] should be positive {x_eci[4]=}"
+assert x_eci[5] == 0, f"x_eci[5] should be zero {x_eci[5]=}"
+
+
 # test with 1D input
 print("  1D input")
 x_ecef = array([6000, 2000, 1000, 1, 2, 3])
@@ -102,10 +128,6 @@ axs[1, 1].set_ylabel("K")
 axs[1, 1].set_xlabel("I")
 plt.tight_layout()
 
-x_ecef = array([6000, 0, 0, 0, 0, 0])
-x_eci = ecef2eci(x_ecef, 1)
-print(f"{x_ecef=}")
-print(f"{x_eci=}")
 
 # %% eci2ecef
 print("\nTest eci2ecef()...")
