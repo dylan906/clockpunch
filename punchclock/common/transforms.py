@@ -81,18 +81,8 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
 
     x_eci = zeros(x_ecef.shape)
     for i, vec in enumerate(x_ecef.transpose()):
-        # # position and velocity vectors of object, ECEF frame
-        # r_ecef = vec[:3]
-        # v_ecef = vec[3:]
-
-        # # position vector, ECI frame
-        # r_eci = matmul(R, r_ecef)
-
-        # # velocity vector, ECI frame
-        # v_eci = matmul(R, v_ecef) + cross(omega_vec, matmul(R, r_ecef))
         x_eci_i = _transport_theorem_posvel(vec, R, omega_vec)
 
-        # x_eci[:, i] = concatenate((r_eci, v_eci), axis=0)
         x_eci[:, i] = x_eci_i
 
     # convert to singleton dimension if single vector was input
@@ -152,30 +142,6 @@ def _transport_theorem_posvel(x_frame0: ndarray, R: ndarray, omega: ndarray) -> 
     return x1
 
 
-def ecef2eci_test(x_ecef: ndarray, JD: float = 0) -> ndarray:
-    # reshape array if single-dimension
-    if x_ecef.ndim == 1:
-        x_ecef = reshape(x_ecef, (6, 1))
-
-    # make array (6xN) if passed in as (Nx6)
-    # note that this is ambiguous if you want to convert 6 vectors
-    if x_ecef.shape[0] != 6:
-        raise ValueError("Argument must be a (6,N) array.")
-
-    # angular rate of Earth (rad/s)
-    omega_vec = array([0, 0, OMEGA_EARTH])
-
-    R = rot3(OMEGA_EARTH * JD)
-
-    x_eci = zeros(x_ecef.shape)
-    x_eci[:3] = matmul(R, x_ecef[:3])
-    x_eci[3:] = matmul(R, x_ecef[3:]) + cross(
-        omega_vec, matmul(R, x_ecef[:3]).flatten()
-    ).reshape((3, -1))
-
-    return x_eci
-
-
 # %% ECI -> ECEF
 def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
     """Convert an ECI state vector into an ECEF state vector.
@@ -206,15 +172,6 @@ def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
     for i, vec in enumerate(x_eci.transpose()):
         x_ecef_i = _transport_theorem_posvel(vec, R, omega_vec)
         x_ecef[:, i] = x_ecef_i
-        # r_eci = vec[:3]
-        # v_eci = vec[3:]
-
-        # r_ecef = matmul(R, r_eci)
-
-        # v_ecef_correction = cross(omega_vec, matmul(R, r_eci))
-        # v_ecef = matmul(R, v_eci) - v_ecef_correction
-
-        # x_ecef[:, i] = concatenate((r_ecef, v_ecef), axis=0)
 
     # convert to singleton dimension if single vector was input
     x_ecef = x_ecef.squeeze()
