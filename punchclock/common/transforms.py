@@ -111,6 +111,7 @@ def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
     x_eci = _check_dimensions(x_eci)
 
     # angular rate of Earth (rad/s)
+    # Use negative angular rate to convert from ECI to ECEF
     omega_vec = array([0, 0, -OMEGA_EARTH])
 
     R = rot3(-OMEGA_EARTH * JD)
