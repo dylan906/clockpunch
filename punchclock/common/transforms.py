@@ -91,6 +91,43 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
     return x_eci
 
 
+# %% ECI -> ECEF
+def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
+    """Convert an ECI state vector into an ECEF state vector.
+
+    Args:
+        x_eci (`ndarray`): (6, N) or (6,) state vector(s) in ECI frame (km, km/s). If converting
+            a single state vector, input can be 1D.
+        JD (`float`): Time since vernal equinox (since ECEF was aligned with ECI)
+
+    Returns:
+        ndarray: (6, N) or (6,) state vector(s) in ECEF frame (km, km/s). Returns (6,) if
+            input is (6,1).
+
+    Notes:
+        - Doesn't account for Earth precession, nutation.
+        - Passing in 6 vectors is an edge case which is not flagged as an error and outputs
+            incorrect values, so ensure that the 0th dimension of the input array is the
+            state vector.
+    """
+    x_eci = _check_dimensions(x_eci)
+
+    # angular rate of Earth (rad/s)
+    omega_vec = array([0, 0, -OMEGA_EARTH])
+
+    R = rot3(-OMEGA_EARTH * JD)
+
+    x_ecef = zeros(x_eci.shape)
+    for i, vec in enumerate(x_eci.transpose()):
+        x_ecef_i = _transport_theorem_posvel(vec, R, omega_vec)
+        x_ecef[:, i] = x_ecef_i
+
+    # convert to singleton dimension if single vector was input
+    x_ecef = x_ecef.squeeze()
+
+    return x_ecef
+
+
 def _check_dimensions(x: ndarray) -> ndarray:
     """Checks dimensions of input array and returns a (6,N) array."""
     # reshape array if single-dimension
@@ -140,43 +177,6 @@ def _transport_theorem_posvel(x_frame0: ndarray, R: ndarray, omega: ndarray) -> 
     x1 = concatenate((r1, v1), axis=0)
 
     return x1
-
-
-# %% ECI -> ECEF
-def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
-    """Convert an ECI state vector into an ECEF state vector.
-
-    Args:
-        x_eci (`ndarray`): (6, N) or (6,) state vector(s) in ECI frame (km, km/s). If converting
-            a single state vector, input can be 1D.
-        JD (`float`): Time since vernal equinox (since ECEF was aligned with ECI)
-
-    Returns:
-        ndarray: (6, N) or (6,) state vector(s) in ECEF frame (km, km/s). Returns (6,) if
-            input is (6,1).
-
-    Notes:
-        - Doesn't account for Earth precession, nutation.
-        - Passing in 6 vectors is an edge case which is not flagged as an error and outputs
-            incorrect values, so ensure that the 0th dimension of the input array is the
-            state vector.
-    """
-    x_eci = _check_dimensions(x_eci)
-
-    # angular rate of Earth (rad/s)
-    omega_vec = array([0, 0, -OMEGA_EARTH])
-
-    R = rot3(-OMEGA_EARTH * JD)
-
-    x_ecef = zeros(x_eci.shape)
-    for i, vec in enumerate(x_eci.transpose()):
-        x_ecef_i = _transport_theorem_posvel(vec, R, omega_vec)
-        x_ecef[:, i] = x_ecef_i
-
-    # convert to singleton dimension if single vector was input
-    x_ecef = x_ecef.squeeze()
-
-    return x_ecef
 
 
 # %% 3-axis rotations
