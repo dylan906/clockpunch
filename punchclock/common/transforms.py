@@ -24,6 +24,7 @@ from punchclock.common.constants import getConstants
 # %% Constants
 mu = getConstants()["mu"]
 RE = getConstants()["earth_radius"]
+OMEGA_EARTH = getConstants()["earth_rotation_rate"]
 
 
 # %% Lat-Lon-Alt -> ECEF
@@ -80,12 +81,10 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
         raise ValueError("Argument must be a (6,N) array.")
 
     # angular rate of Earth (rad/s)
-    # omega_earth = 7.27e-5
-    omega_earth = getConstants()["earth_rotation_rate"]
-    omega_vec = array([0, 0, omega_earth])
+    omega_vec = array([0, 0, OMEGA_EARTH])
 
     # rotation matrix from ECEF to ECI frame
-    R = rot3(omega_earth * JD)  # negative angle?
+    R = rot3(OMEGA_EARTH * JD)
 
     x_eci = zeros(x_ecef.shape)
     for i, vec in enumerate(x_ecef.transpose()):
@@ -96,8 +95,7 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
         # position vector, ECI frame
         r_eci = matmul(R, r_ecef)
 
-        # v_eci_correction = cross(omega_vec, r_ecef)
-        # v_eci = matmul(R, (v_ecef + v_eci_correction))
+        # velocity vector, ECI frame
         v_eci = matmul(R, v_ecef) + cross(omega_vec, matmul(R, r_ecef))
 
         x_eci[:, i] = concatenate((r_eci, v_eci), axis=0)
@@ -119,10 +117,9 @@ def ecef2eci_test(x_ecef: ndarray, JD: float = 0) -> ndarray:
         raise ValueError("Argument must be a (6,N) array.")
 
     # angular rate of Earth (rad/s)
-    omega_earth = getConstants()["earth_rotation_rate"]
-    omega_vec = array([0, 0, omega_earth])
+    omega_vec = array([0, 0, OMEGA_EARTH])
 
-    R = rot3(omega_earth * JD)
+    R = rot3(OMEGA_EARTH * JD)
 
     x_eci = zeros(x_ecef.shape)
     x_eci[:3] = matmul(R, x_ecef[:3])
@@ -162,11 +159,9 @@ def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
         raise ValueError("Argument must be a (6,N) array.")
 
     # angular rate of Earth (rad/s)
-    # omega_earth = 7.27e-5
-    omega_earth = getConstants()["earth_rotation_rate"]
-    omega_vec = array([0, 0, omega_earth])
+    omega_vec = array([0, 0, OMEGA_EARTH])
 
-    R = rot3(-omega_earth * JD)  # negative angle?
+    R = rot3(-OMEGA_EARTH * JD)  # negative angle?
     R = R.transpose()
 
     x_ecef = zeros(x_eci.shape)
