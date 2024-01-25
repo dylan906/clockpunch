@@ -4,6 +4,7 @@
 import matplotlib.pyplot as plt
 from numpy import array, pi
 from numpy.random import rand
+from numpy.testing import assert_array_almost_equal
 
 # Punch Clock Imports
 from punchclock.common.transforms import (
@@ -12,7 +13,6 @@ from punchclock.common.transforms import (
     ecef2eci_test,
     eci2ecef,
     lla2ecef,
-    rot3,
 )
 
 # %% lat-lon-alt 2 ECEF converter
@@ -124,20 +124,35 @@ except Exception as e:
 
 # %% eci2ecef
 print("\nTest eci2ecef()...")
-# test with 1D input
-# Two-way test
-print("  Convert ECI->ECEF->ECI")
-x_eci = array([6000, 6000, 6000, 1, 2, 3])
-print(f"x_eci={x_eci}")
-print(f"x_ecef={eci2ecef(x_eci, 100)}")
-print(f"x_eci reconvert={ecef2eci(eci2ecef(x_eci, 100), 100)}")
+# Test for correct values
+print("  Test for correct values")
+x_eci = array([6000, 0, 0, 0, 0, 0])
+# expected answer should be [6000, 0, 0, 0, -num, 0]
+x_ecef = eci2ecef(x_eci, 0)
+print(f"{x_eci=}")
+print(f"{x_ecef=}")
 
-# Two-way test
-print("  Convert ECEF->ECI->ECEF")
-x_ecef = array([6000, 6000, 6000, 1, 2, 3])
+for i in [1, 2, 3, 5]:
+    assert x_ecef[i] == 0, f"x_ecef[{i}] should be zero {x_ecef[i]=}"
+assert x_ecef[0] == 6000, f"x_ecef[0] should be 6000 {x_ecef[0]=}"
+assert x_ecef[4] < 0, f"x_ecef[4] should be negative {x_ecef[4]=}"
+
+# expected answer should be [<6000, -num, 0, -num, -num, 0]
+x_ecef = eci2ecef(x_eci, 1)
+print(f"{x_eci=}")
+print(f"{x_ecef=}")
+for i in [1, 3, 4]:
+    assert x_ecef[i] < 0, f"x_ecef[{i}] should be negative {x_ecef[i]=}"
+assert x_ecef[0] < 6000, f"x_ecef[0] should be less than 6000 {x_ecef[0]=}"
+assert x_ecef[2] == 0, f"x_ecef[2] should be zero {x_ecef[2]=}"
+assert x_ecef[5] == 0, f"x_ecef[5] should be zero {x_ecef[5]=}"
+
+# test with (6,1) input
+print("  (6,1) input")
+x_eci = array([[6000, 2000, 1000, 1, 2, 3]]).transpose()
+print(f"x_eci={x_eci}")
+x_ecef = eci2ecef(x_eci, 5000)
 print(f"x_ecef={x_ecef}")
-print(f"x_eci={ecef2eci(x_ecef, 200)}")
-print(f"x_ecef reconvert={eci2ecef(ecef2eci(x_ecef, 200), 200)}")
 
 # test with (1,6) input
 print("  (1,6) input")
@@ -146,9 +161,10 @@ print(f"x_eci={x_eci}")
 try:
     x_ecef = eci2ecef(x_eci, 5000)
     print(f"x_ecef={x_ecef}")
+    print("Test failed")
 except Exception as e:
     print(e)
-
+    print("Test passed")
 
 # test with 2D input
 print("  2D input")
@@ -156,6 +172,7 @@ x_eci = rand(6, 3)
 x_ecef = eci2ecef(x_eci, 5000)
 print(f"x_eci=\n{x_eci}")
 print(f"x_ecef=\n{x_ecef}")
+assert x_ecef.shape == (6, 3)
 
 # test with 2D input, swapped dimensions
 print("  2D input, swapped dimensions")
@@ -164,15 +181,26 @@ print(f"x_eci=\n{x_eci}")
 try:
     x_ecef = eci2ecef(x_eci, 5000)
     print(f"x_ecef=\n{x_ecef}")
+    print("Test failed")
 except Exception as e:
     print(e)
+    print("Test passed")
 
-# test with (6,1) input
-print("  (6,1) input")
-x_eci = array([[6000, 2000, 1000, 1, 2, 3]]).transpose()
-print(f"x_eci={x_eci}")
-x_ecef = eci2ecef(x_eci, 5000)
-print(f"x_ecef={x_ecef}")
+# %% Reversability
+print("\nTest ECEF/ECI transform revsersability...")
+print("  Convert ECI->ECEF->ECI")
+x_eci = array([6000, 6000, 6000, 1, 2, 3])
+x_eci_reconvert = ecef2eci(eci2ecef(x_eci, 100), 100)
+print(f"{x_eci=}")
+print(f"{x_eci_reconvert=}")
+assert_array_almost_equal(x_eci, x_eci_reconvert)
+
+print("  Convert ECEF->ECI->ECEF")
+x_ecef = array([6000, 6000, 6000, 1, 2, 3])
+x_ecef_reconvert = eci2ecef(ecef2eci(x_ecef, 100), 100)
+print(f"{x_ecef=}")
+print(f"{x_ecef_reconvert=}")
+assert_array_almost_equal(x_ecef, x_ecef_reconvert)
 
 # %% Test coe2eci
 print("\nTest coe2eci()...")

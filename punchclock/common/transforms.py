@@ -71,14 +71,7 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
             incorrect values, so ensure that the 0th dimension of the input array is the
             state vector.
     """
-    # reshape array if single-dimension
-    if x_ecef.ndim == 1:
-        x_ecef = reshape(x_ecef, (6, 1))
-
-    # make array (6xN) if passed in as (Nx6)
-    # note that this is ambiguous if you want to convert 6 vectors
-    if x_ecef.shape[0] != 6:
-        raise ValueError("Argument must be a (6,N) array.")
+    x_ecef = _check_dimensions(x_ecef)
 
     # angular rate of Earth (rad/s)
     omega_vec = array([0, 0, OMEGA_EARTH])
@@ -88,22 +81,75 @@ def ecef2eci(x_ecef: ndarray, JD: float = 0) -> ndarray:
 
     x_eci = zeros(x_ecef.shape)
     for i, vec in enumerate(x_ecef.transpose()):
-        # position and velocity vectors of object, ECEF frame
-        r_ecef = vec[:3]
-        v_ecef = vec[3:]
+        # # position and velocity vectors of object, ECEF frame
+        # r_ecef = vec[:3]
+        # v_ecef = vec[3:]
 
-        # position vector, ECI frame
-        r_eci = matmul(R, r_ecef)
+        # # position vector, ECI frame
+        # r_eci = matmul(R, r_ecef)
 
-        # velocity vector, ECI frame
-        v_eci = matmul(R, v_ecef) + cross(omega_vec, matmul(R, r_ecef))
+        # # velocity vector, ECI frame
+        # v_eci = matmul(R, v_ecef) + cross(omega_vec, matmul(R, r_ecef))
+        x_eci_i = _transport_theorem_posvel(vec, R, omega_vec)
 
-        x_eci[:, i] = concatenate((r_eci, v_eci), axis=0)
+        # x_eci[:, i] = concatenate((r_eci, v_eci), axis=0)
+        x_eci[:, i] = x_eci_i
 
     # convert to singleton dimension if single vector was input
     x_eci = x_eci.squeeze()
 
     return x_eci
+
+
+def _check_dimensions(x: ndarray) -> ndarray:
+    """Checks dimensions of input array and returns a (6,N) array."""
+    # reshape array if single-dimension
+    if x.ndim == 1:
+        x = reshape(x, (6, 1))
+
+    # make array (6xN) if passed in as (Nx6)
+    # note that this is ambiguous if you want to convert 6 vectors
+    if x.shape[0] != 6:
+        raise ValueError("Argument must be a (6,N) array.")
+    return x
+
+
+def _transport_theorem_posvel(x_frame0: ndarray, R: ndarray, omega: ndarray) -> ndarray:
+    """Apply the transport theorem to a position+velocity state vector.
+
+    This function applies the transport theorem to transform a state vector
+    from one frame to another. The transformation
+    is performed using a rotation matrix and an angular velocity vector.
+
+    Args:
+        x_frame0 (ndarray): The initial position and velocity vectors in
+            the original frame. The first three elements represent the
+            position vector and the last three elements represent the
+            velocity vector.
+        R (ndarray): The rotation matrix used to transform the vectors
+            from the original frame to the new frame. Shape is (3, 3).
+        omega (ndarray): The angular velocity vector of the new frame
+            with respect to the original frame. Must have 3 elements.
+
+    Returns:
+        ndarray: The transformed position and velocity vectors in the
+            new frame.
+
+    Note:
+        This function assumes that the input arrays are of appropriate
+        sizes: x_frame0 should be a 1-D array of length 6, R should be
+        a 2-D square matrix, and omega should be a 1-D array of length 3.
+    """
+    r0 = x_frame0[:3]
+    v0 = x_frame0[3:]
+
+    r1 = matmul(R, r0)
+
+    v1 = matmul(R, v0) + cross(omega, matmul(R, r0))
+
+    x1 = concatenate((r1, v1), axis=0)
+
+    return x1
 
 
 def ecef2eci_test(x_ecef: ndarray, JD: float = 0) -> ndarray:
@@ -149,32 +195,26 @@ def eci2ecef(x_eci: ndarray, JD: float) -> ndarray:
             incorrect values, so ensure that the 0th dimension of the input array is the
             state vector.
     """
-    # reshape array if single-dimension
-    if x_eci.ndim == 1:
-        x_eci = reshape(x_eci, (6, 1))
-
-    # make array (6xN) if passed in as (Nx6)
-    # note that this is ambiguous if you want to convert 6 vectors
-    if x_eci.shape[0] != 6:
-        raise ValueError("Argument must be a (6,N) array.")
+    x_eci = _check_dimensions(x_eci)
 
     # angular rate of Earth (rad/s)
-    omega_vec = array([0, 0, OMEGA_EARTH])
+    omega_vec = array([0, 0, -OMEGA_EARTH])
 
-    R = rot3(-OMEGA_EARTH * JD)  # negative angle?
-    R = R.transpose()
+    R = rot3(-OMEGA_EARTH * JD)
 
     x_ecef = zeros(x_eci.shape)
     for i, vec in enumerate(x_eci.transpose()):
-        r_eci = vec[:3]
-        v_eci = vec[3:]
+        x_ecef_i = _transport_theorem_posvel(vec, R, omega_vec)
+        x_ecef[:, i] = x_ecef_i
+        # r_eci = vec[:3]
+        # v_eci = vec[3:]
 
-        r_ecef = matmul(R, r_eci)
+        # r_ecef = matmul(R, r_eci)
 
-        v_ecef_correction = cross(omega_vec, matmul(R, r_eci))
-        v_ecef = matmul(R, v_eci) - v_ecef_correction
+        # v_ecef_correction = cross(omega_vec, matmul(R, r_eci))
+        # v_ecef = matmul(R, v_eci) - v_ecef_correction
 
-        x_ecef[:, i] = concatenate((r_ecef, v_ecef), axis=0)
+        # x_ecef[:, i] = concatenate((r_ecef, v_ecef), axis=0)
 
     # convert to singleton dimension if single vector was input
     x_ecef = x_ecef.squeeze()
