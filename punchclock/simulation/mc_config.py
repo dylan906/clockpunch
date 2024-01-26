@@ -19,7 +19,7 @@ class MonteCarloConfig:
         num_episodes: int,
         policy_configs: list[dict | str | PosixPath],
         env_configs: list[dict],
-        results_dir: str,
+        results_dir: str | PosixPath,
         trial_names: list = None,
         print_status: bool = False,
         num_cpus: int = None,
@@ -35,7 +35,7 @@ class MonteCarloConfig:
             (see policy_builder.py). If entry is a str, a RayPolicy will be
             loaded from the checkpoint specified by the arg.
         env_configs (list[dict]): See buildEnv.
-        results_dir (str): Where to save trial results. One DataFrame per
+        results_dir (str | PosixPath): Where to save trial results. One DataFrame per
             trial will be saved here. Each file will have a unique name.
         trial_names (list, optional): Names of trials. If not specified,
             trials are assigned integer names starting at 0.
@@ -58,7 +58,9 @@ class MonteCarloConfig:
         ), "All entries of policy_configs must be either a dict or str."
         assert isinstance(env_configs, list)
         assert all(isinstance(ec, dict) for ec in env_configs)
-        assert isinstance(results_dir, str)
+        assert isinstance(results_dir, (str, PosixPath))
+        # convert results_dir to string so that it can be JSON serialized
+        results_dir = str(results_dir)
 
         if trial_names is not None:
             assert isinstance(trial_names, list)

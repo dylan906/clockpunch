@@ -8,6 +8,7 @@
 # Standard Library Imports
 import os
 from copy import deepcopy
+from pathlib import Path
 
 # Third Party Imports
 from numpy.random import default_rng
@@ -24,10 +25,9 @@ from punchclock.simulation.sim_utils import buildCustomOrRayPolicy
 
 # %% Load env config
 print("\nLoad environment config...")
-fpath = os.path.dirname(os.path.realpath(__file__))
-env_config_path = fpath + "/data/config_env.json"
+fpath = Path(__file__).parent
+env_config_path = fpath.joinpath("data/config_env").with_suffix(".json")
 env_config = loadJSONFile(env_config_path)
-# env_config["seed"] = 9793741
 env_config["horizon"] = 2
 
 env_config2 = deepcopy(env_config)
@@ -37,13 +37,11 @@ print("\nBuild policy configs...")
 
 # For Ray policies, configs are just checkpoint paths. For CustomPolicies, configs
 # are dicts.
-
-checkpoint_path = (
-    fpath
-    # + "/data/test_checkpoint2/test_trial/PPO_ssa_env_6a185_00000_0_2023-09-20_12-40-31/checkpoint_000001/policies/default_policy"
-    + "/data/test_checkpoint2/test_trial/PPO_ssa_env_172e4_00000_0_2023-10-17_17-28-18/checkpoint_000001/policies/default_policy"
+checkpoint_path = fpath.joinpath(
+    # "data/test_checkpoint2/test_trial/PPO_ssa_env_6a185_00000_0_2023-09-20_12-40-31/checkpoint_000001/policies/default_policy"
+    "data/test_checkpoint2/test_trial/PPO_ssa_env_172e4_00000_0_2023-10-17_17-28-18/checkpoint_000001/policies/default_policy"  # noqa
 )
-results_dir = "tests/simulation/data/mc_results"
+results_dir = fpath.joinpath("data/mc_results")
 
 test_env = buildEnv(env_config)
 obs_space_config = buildSpaceConfig(test_env.env.observation_space).toDict()
@@ -78,7 +76,7 @@ mc_config = MonteCarloConfig(
 
 # %% Save MCConfig as json
 print("\nSaving MCConfig...")
-results_path = fpath + "/data/config_mc.json"
+results_path = fpath.joinpath("data/config_mc").with_suffix(".json")
 mc_config.save(results_path, append_timestamp=False)
 
 # %% Load MC Config and check that policies can be built
@@ -88,5 +86,6 @@ loaded_config = loadJSONFile(results_path)
 for p_config in loaded_config["policy_configs"]:
     policy = buildCustomOrRayPolicy(p_config)
     print(f"policy = {policy}")
+
 # %% done
 print("done")

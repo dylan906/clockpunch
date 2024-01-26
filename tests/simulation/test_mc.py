@@ -1,13 +1,13 @@
 """Tests for mc.py."""
 # NOTE: Running script saves multiple files.
 # NOTE: This script requires "config_mc.json" to run
-# NOTE: If this test is not running correctly, first try running config_mc.py
+# NOTE: If this test is not running correctly, first try running test_mc_config.py
 # to regenerate config_mc.json.
 # %% Imports
 # Standard Library Imports
-import os
 from copy import deepcopy
 from multiprocessing import active_children
+from pathlib import Path
 
 # Third Party Imports
 from pandas import DataFrame, concat, read_csv, read_pickle
@@ -17,12 +17,14 @@ from punchclock.common.utilities import loadJSONFile
 from punchclock.simulation.mc import MonteCarloRunner
 
 # %% Load MC Config
-fpath = os.path.dirname(os.path.realpath(__file__))
-mc_config_path = fpath + "/data/config_mc"
-mc_config_loaded = loadJSONFile(mc_config_path + ".json")
+fpath = Path(__file__).parent
+mc_config_path = fpath.joinpath("data/config_mc").with_suffix(".json")
+mc_config_loaded = loadJSONFile(mc_config_path)
+
 mc_config_loaded["num_episodes"] = 2
 print(mc_config_loaded)
 mc_config_loaded["print_status"] = True
+
 # %% Test MC Runner
 print("\nTest initialization...")
 mcr = MonteCarloRunner(**mc_config_loaded)
@@ -51,10 +53,8 @@ for path in exp_dir.glob("*/*.pkl"):
     combined_df = concat([combined_df, loaded_df])
 print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
-
 # %% runMC with fixed initial conditions
 print("\nTest runMC with fixed initial conditions...")
-
 mc_config4 = deepcopy(mc_config_loaded)
 mc_config4["num_episodes"] = 1
 mc_config4["single_sim_mode"] = True
@@ -69,7 +69,6 @@ print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
 # %% runMC save as csv
 print("\nTest runMC with save_format as csv...")
-
 mc_config4b = deepcopy(mc_config_loaded)
 mc_config4b["save_format"] = "csv"
 mcr4b = MonteCarloRunner(**mc_config4b)
@@ -82,7 +81,6 @@ print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 
 # %% Test Error and warning catchers
 print("\nTest error and warning catchers...")
-
 mc_config5 = deepcopy(mc_config_loaded)
 # Test <1 number of episodes
 mc_config5["num_episodes"] = 0
