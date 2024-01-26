@@ -28,6 +28,7 @@ I'm trying to get better about that.
 ### Deprecated
 
 ### Fixed
+- Fixed bug in `ecef2eci`/`eci2ecef` conversions that caused incorrect values (#117).
 
 ### Removed
 
