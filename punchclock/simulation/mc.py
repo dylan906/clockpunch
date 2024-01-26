@@ -92,9 +92,13 @@ class MonteCarloRunner:
             "pkl",
             "csv",
         ], "save_format must be in recognized list ['pkl', 'csv']"
-        if any("seed" in ec.keys() for ec in env_configs):
+        # If any env config in env_configs has "seed", then all will use the same seed.
+        if any(["seed" in ec.keys() for ec in env_configs]):
+            env_config_seed = [ec["seed"] for ec in env_configs if "seed" in ec.keys()][
+                0
+            ]
             assert isinstance(
-                env_config.get("seed"), int
+                env_config_seed, int
             ), "If env_config contains 'seed' as a key, the value must be an integer."
 
             if static_initial_conditions in (True, None):
@@ -104,9 +108,10 @@ class MonteCarloRunner:
                 warn("""Using env_config['seed'] to build environments.""")
             elif static_initial_conditions is False:
                 warn(
-                    """static_intial_conditions is False, but env_config['seed']
+                    """static_initial_conditions is False, but env_config['seed']
                     is provided. Will generate random initial conditions (ignoring
-                    env_config['seed'])."""
+                    env_config['seed']). Set static_initial_conditions = None to
+                    use env_config['seed']."""
                 )
         else:
             if static_initial_conditions is None:

@@ -5,6 +5,7 @@
 # to regenerate config_mc.json.
 # %% Imports
 # Standard Library Imports
+import warnings
 from copy import deepcopy
 from multiprocessing import active_children
 from pathlib import Path
@@ -57,7 +58,6 @@ print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 print("\nTest runMC with fixed initial conditions...")
 mc_config4 = deepcopy(mc_config_loaded)
 mc_config4["num_episodes"] = 1
-# mc_config4["single_sim_mode"] = True
 mc_config4["static_initial_conditions"] = True
 mc_config4["print_status"] = False
 mcr4 = MonteCarloRunner(**mc_config4)
@@ -83,7 +83,9 @@ print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 # %% Test Error and warning catchers
 print("\nTest error and warning catchers...")
 mc_config5 = deepcopy(mc_config_loaded)
+
 # Test <1 number of episodes
+print("  \nTest <1 number of episodes...")
 mc_config5["num_episodes"] = 0
 try:
     mcr = MonteCarloRunner(**mc_config5)
@@ -91,8 +93,8 @@ except Exception as e:
     print(e)
 
 # Test fixed initial conditions but with >1 episodes
+print("  \nTest fixed initial conditions but with >1 episodes...")
 mc_config5["num_episodes"] = 3
-# mc_config5["single_sim_mode"] = True
 mc_config5["static_initial_conditions"] = True
 try:
     mcr = MonteCarloRunner(**mc_config5)
@@ -100,31 +102,32 @@ except Exception as e:
     print(e)
 
 # Test Set env_config["seed"] to improper value
-# mc_config5["single_sim_mode"] = False
+print("  \nTest Set env_config['seed'] to improper value...")
 mc_config5["static_initial_conditions"] = False
 mc_config5["env_configs"][0]["seed"] = None
 try:
     mcr = MonteCarloRunner(**mc_config5)
+    print("Test failed")
 except Exception as e:
     print(e)
+    print("Test passed")
 
-# Set env_config seed to real number and single_sim_mode to False
+# Set env_config seed to real number and static_initial_conditions to False
 # (should get 1 warning)
+print("  \nSet env_config seed to real number and static_initial_conditions to False")
 mc_config5["env_configs"][0]["seed"] = 1
-mc_config5["single_sim_mode"] = False
-try:
+mc_config5["static_initial_conditions"] = False
+with warnings.catch_warnings(record=True) as w:
     mcr = MonteCarloRunner(**mc_config5)
-except Exception as e:
-    print(e)
+    assert len(w) == 1
 
-# Set env_config seed to real number and single_sim_mode to True
+# Set env_config seed to real number and static_initial_conditions to True
 # (should get 1 warning)
-mc_config5["single_sim_mode"] = True
-mc_config5["num_episodes"] = 1
-try:
+print("  \nSet env_config seed to real number and static_initial_conditions to True")
+mc_config5["static_initial_conditions"] = True
+with warnings.catch_warnings(record=True) as w:
     mcr = MonteCarloRunner(**mc_config5)
-except Exception as e:
-    print(e)
+    assert len(w) == 1
 
 # %% Test runMC w/ multiprocess
 # # NOTE: This test hangs on loading the Ray policy.
