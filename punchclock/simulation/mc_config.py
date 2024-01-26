@@ -24,7 +24,6 @@ class MonteCarloConfig:
         print_status: bool = False,
         num_cpus: int = None,
         multiprocess: bool = False,
-        # single_sim_mode: bool = False,
         static_initial_conditions: bool = False,
         save_last_step_only: bool = False,
     ):
@@ -47,10 +46,18 @@ class MonteCarloConfig:
             MC. Defaults to max available.
         multiprocess (bool, optional): Whether or not to multiprocess trials
             during sim run. Used for debugging. Defaults to False.
-        single_sim_mode (bool, optional): Whether or not to use
-            identical initial conditions between trials. If True, num_episodes
-            must be 1, and all steps from all trials will be saved. Defaults
-            to False.
+        static_initial_conditions (bool | None, optional): Set to True to use
+            same initial conditions for all episodes, using a seed generated
+            by MonteCarloRunner on instantiation. Set to False to use
+            randomly-generated ICs, where a new seed is generated every episode.
+            Set to None to use env_config["seed"] to generate ICs. If
+            static_initial_conditions is None and "seed" not in env_config,
+            static_initial_conditions is reassigned to False. If
+            static_initial_conditions is False and "seed" is in env_config,
+            a new seed is generated every episode, ignoring env_config['seed'].
+            Defaults to False.
+        save_last_step_only (bool, optional): Set to True to save only the
+            last step of each episode. Defaults to False.
         """
         assert isinstance(num_episodes, int)
         assert isinstance(policy_configs, list), "policy_configs must be a list"
@@ -81,7 +88,6 @@ class MonteCarloConfig:
             "print_status": print_status,
             "env_configs": env_configs,
             "policy_configs": policy_configs,
-            # "single_sim_mode": single_sim_mode,
             "static_initial_conditions": static_initial_conditions,
             "save_last_step_only": save_last_step_only,
         }

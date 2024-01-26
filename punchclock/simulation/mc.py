@@ -42,7 +42,6 @@ class MonteCarloRunner:
         print_status: bool = False,
         num_cpus: int = None,
         multiprocess: bool = True,
-        # single_sim_mode: bool = False,
         static_initial_conditions: bool | None = False,
         save_last_step_only: bool = False,
         save_format: str = "pkl",
@@ -70,10 +69,6 @@ class MonteCarloRunner:
                 MC. Defaults to max available.
             multiprocess (bool, optional): Whether or not to multiprocess trials
                 during sim run. Used for debugging. Defaults to True.
-            # single_sim_mode (bool, optional): Whether or not to use
-            #     identical initial conditions between trials. If True, num_episodes
-            #     must be 1, and all steps from all trials will be saved. Defaults
-            #     to False.
             static_initial_conditions (bool | None, optional): Set to True to use
                 same initial conditions for all episodes, using a seed generated
                 by MonteCarloRunner on instantiation. Set to False to use
@@ -97,11 +92,6 @@ class MonteCarloRunner:
             "pkl",
             "csv",
         ], "save_format must be in recognized list ['pkl', 'csv']"
-        # if single_sim_mode is True:
-        #     assert (
-        #         num_episodes == 1
-        #     ), """When using fixed initial conditions (single_sim_mode
-        #         == True), num_episodes must be 1."""
         if any("seed" in ec.keys() for ec in env_configs):
             assert isinstance(
                 env_config.get("seed"), int
@@ -127,13 +117,6 @@ class MonteCarloRunner:
                     generate random initial conditions."""
                 )
 
-            # elif single_sim_mode is False:
-            #     warn(
-            #         """Environment config fixes initial conditions, but Monte Carlo
-            #         config specified random initial conditions. All steps of all
-            #         trials will be saved, which may result in large file sizes."""
-            #     )
-
         assert isinstance(policy_configs, list)
 
         # TODO: Delete env_config after a version or two.
@@ -152,7 +135,6 @@ class MonteCarloRunner:
         self.print_status = deepcopy(print_status)
         self.results_dir = Path(results_dir)
         self.multiprocess = multiprocess
-        # self.single_sim_mode = single_sim_mode
         self.static_initial_conditions = static_initial_conditions
         self.save_last_step_only = save_last_step_only
         self.save_format = save_format
@@ -168,7 +150,6 @@ class MonteCarloRunner:
             "print_status": deepcopy(print_status),
             "num_cpus": deepcopy(num_cpus),
             "multiprocess": deepcopy(multiprocess),
-            # "single_sim_mode": deepcopy(single_sim_mode),
             "static_initial_conditions": deepcopy(static_initial_conditions),
             "save_last_step_only": deepcopy(save_last_step_only),
             "save_format": deepcopy(save_format),
@@ -399,7 +380,6 @@ class MonteCarloRunner:
         for ep in range(self.num_episodes):
             [env, seed] = self._buildEnvironment(
                 env_config=env_config,
-                # single_sim_mode=self.single_sim_mode,
                 static_initial_conditions=self.static_initial_conditions,
             )
             info = {"seed": seed}
@@ -416,7 +396,6 @@ class MonteCarloRunner:
             df = ep_results.toDataFrame()
             df = addPostProcessedCols(df, info)
 
-            # if self.single_sim_mode is False:
             if self.save_last_step_only is True:
                 # Drop all but the last time step of the DF
                 last_frame = df.tail(1)
@@ -470,7 +449,6 @@ class MonteCarloRunner:
     def _buildEnvironment(
         self,
         env_config: dict,
-        # single_sim_mode: bool,
         static_initial_conditions: bool,
     ) -> SSAScheduler:
         """Wrapper for buildEnv that handles initial conditions seed generation.

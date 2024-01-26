@@ -24,6 +24,7 @@ extend-ignore =
     RST301,
     RST215,
     RST213,
+    RST305,
 
 # These directories are ignored my flake8
 exclude =
