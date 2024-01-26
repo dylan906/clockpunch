@@ -46,6 +46,7 @@ class MonteCarloRunner:
         save_last_step_only: bool = False,
         save_format: str = "pkl",
         env_config: dict = None,
+        single_sim_mode=None,
     ):
         """Initialize MonteCarloRunner. Does not run a simulation.
 
@@ -85,7 +86,16 @@ class MonteCarloRunner:
                 for debugging. Saving as csv is not guaranteed to retain all sim
                 data. Defaults to "pkl".
             env_config (dict, optional): Here for backward compatibility.
+            single_sim_mode (optional): Here for backward compatibility.
         """
+        if single_sim_mode is not None:
+            raise ValueError(
+                "The 'single_sim_mode' parameter is deprecated. If you "
+                "set single_sim_mode to True, instead set static_initial_conditions and "
+                "save_last_step_only to True. Otherwise, set both to False. Delete "
+                "single_sim_mode from your code."
+            )
+
         # Assertions and warnings
         assert num_episodes > 0, "num_episodes must be > 0"
         assert save_format in [
