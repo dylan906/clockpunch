@@ -90,10 +90,10 @@ class MonteCarloRunner:
         """
         if single_sim_mode is not None:
             raise ValueError(
-                "The 'single_sim_mode' parameter is deprecated. If you "
-                "set single_sim_mode to True, instead set static_initial_conditions and "
-                "save_last_step_only to True. Otherwise, set both to False. Delete "
-                "single_sim_mode from your code."
+                "The 'single_sim_mode' parameter is deprecated. If you set "
+                "single_sim_mode to True, instead set static_initial_conditions "
+                "to True and save_last_step_only to False. Otherwise, do the "
+                "opposite. Delete single_sim_mode from your code."
             )
 
         # Assertions and warnings
