@@ -42,7 +42,9 @@ class MonteCarloRunner:
         print_status: bool = False,
         num_cpus: int = None,
         multiprocess: bool = True,
-        single_sim_mode: bool = False,
+        # single_sim_mode: bool = False,
+        static_initial_conditions: bool | None = False,
+        save_last_step_only: bool = False,
         save_format: str = "pkl",
         env_config: dict = None,
     ):
@@ -68,10 +70,22 @@ class MonteCarloRunner:
                 MC. Defaults to max available.
             multiprocess (bool, optional): Whether or not to multiprocess trials
                 during sim run. Used for debugging. Defaults to True.
-            single_sim_mode (bool, optional): Whether or not to use
-                identical initial conditions between trials. If True, num_episodes
-                must be 1, and all steps from all trials will be saved. Defaults
-                to False.
+            # single_sim_mode (bool, optional): Whether or not to use
+            #     identical initial conditions between trials. If True, num_episodes
+            #     must be 1, and all steps from all trials will be saved. Defaults
+            #     to False.
+            static_initial_conditions (bool | None, optional): Set to True to use
+                same initial conditions for all episodes, using a seed generated
+                by MonteCarloRunner on instantiation. Set to False to use
+                randomly-generated ICs, where a new seed is generated every episode.
+                Set to None to use env_config["seed"] to generate ICs. If
+                static_initial_conditions is None and "seed" not in env_config,
+                static_initial_conditions is reassigned to False. If
+                static_initial_conditions is False and "seed" is in env_config,
+                a new seed is generated every episode, ignoring env_config['seed'].
+                Defaults to False.
+            save_last_step_only (bool, optional): Set to True to save only the
+                last step of each episode. Defaults to False.
             save_format (str, optional): ["pkl" | "csv"] Only change from default
                 for debugging. Saving as csv is not guaranteed to retain all sim
                 data. Defaults to "pkl".
@@ -83,28 +97,42 @@ class MonteCarloRunner:
             "pkl",
             "csv",
         ], "save_format must be in recognized list ['pkl', 'csv']"
-        if single_sim_mode is True:
-            assert (
-                num_episodes == 1
-            ), """When using fixed initial conditions (single_sim_mode
-                == True), num_episodes must be 1."""
+        # if single_sim_mode is True:
+        #     assert (
+        #         num_episodes == 1
+        #     ), """When using fixed initial conditions (single_sim_mode
+        #         == True), num_episodes must be 1."""
         if any("seed" in ec.keys() for ec in env_configs):
             assert isinstance(
                 env_config.get("seed"), int
             ), "If env_config contains 'seed' as a key, the value must be an integer."
 
-            if single_sim_mode is True:
+            if static_initial_conditions in (True, None):
+                # Change static_initial_conditions to True if None and env_config
+                # provides seed.
+                static_initial_conditions = True
+                warn("""Using env_config['seed'] to build environments.""")
+            elif static_initial_conditions is False:
                 warn(
-                    """Initial conditions are fixed by both env_config['seed']
-                    and single_sim_mode. Using env_config['seed'] to build
-                    environments."""
+                    """static_intial_conditions is False, but env_config['seed']
+                    is provided. Will generate random initial conditions (ignoring
+                    env_config['seed'])."""
                 )
-            elif single_sim_mode is False:
+        else:
+            if static_initial_conditions is None:
+                static_initial_conditions = False
                 warn(
-                    """Environment config fixes initial conditions, but Monte Carlo
-                    config specified random initial conditions. All steps of all
-                    trials will be saved, which may result in large file sizes."""
+                    """static_initial_conditions is None, but no seed is provided
+                    in env_config. Setting static_initial_conditions = False. Will
+                    generate random initial conditions."""
                 )
+
+            # elif single_sim_mode is False:
+            #     warn(
+            #         """Environment config fixes initial conditions, but Monte Carlo
+            #         config specified random initial conditions. All steps of all
+            #         trials will be saved, which may result in large file sizes."""
+            #     )
 
         assert isinstance(policy_configs, list)
 
@@ -124,7 +152,9 @@ class MonteCarloRunner:
         self.print_status = deepcopy(print_status)
         self.results_dir = Path(results_dir)
         self.multiprocess = multiprocess
-        self.single_sim_mode = single_sim_mode
+        # self.single_sim_mode = single_sim_mode
+        self.static_initial_conditions = static_initial_conditions
+        self.save_last_step_only = save_last_step_only
         self.save_format = save_format
 
         # Store config as dict for later saving as a file. Do this before inserting
@@ -138,7 +168,9 @@ class MonteCarloRunner:
             "print_status": deepcopy(print_status),
             "num_cpus": deepcopy(num_cpus),
             "multiprocess": deepcopy(multiprocess),
-            "single_sim_mode": deepcopy(single_sim_mode),
+            # "single_sim_mode": deepcopy(single_sim_mode),
+            "static_initial_conditions": deepcopy(static_initial_conditions),
+            "save_last_step_only": deepcopy(save_last_step_only),
             "save_format": deepcopy(save_format),
         }
 
@@ -367,7 +399,8 @@ class MonteCarloRunner:
         for ep in range(self.num_episodes):
             [env, seed] = self._buildEnvironment(
                 env_config=env_config,
-                single_sim_mode=self.single_sim_mode,
+                # single_sim_mode=self.single_sim_mode,
+                static_initial_conditions=self.static_initial_conditions,
             )
             info = {"seed": seed}
 
@@ -383,7 +416,8 @@ class MonteCarloRunner:
             df = ep_results.toDataFrame()
             df = addPostProcessedCols(df, info)
 
-            if self.single_sim_mode is False:
+            # if self.single_sim_mode is False:
+            if self.save_last_step_only is True:
                 # Drop all but the last time step of the DF
                 last_frame = df.tail(1)
                 trial_result[ep] = deepcopy(last_frame)
@@ -436,16 +470,22 @@ class MonteCarloRunner:
     def _buildEnvironment(
         self,
         env_config: dict,
-        single_sim_mode: bool,
+        # single_sim_mode: bool,
+        static_initial_conditions: bool,
     ) -> SSAScheduler:
         """Wrapper for buildEnv that handles initial conditions seed generation.
 
-                                                        single_sim_mode
-                              |         True                     |     False         |
-        seed provided | True  | Use env_config["seed"]           | Generate new seed |
-        in env_config | False | Use un-changing self.fixed_seed  | Generate new seed |
+        |-----------------------|-----------------------------------------------------|
+        |                       |             static_initial_conditions               |
+        |                       |-----------------------------------------------------|
+        |                       |   True                          | False             |
+        |---------------|-------|---------------------------------|-------------------|
+        | seed provided | True  | Use env_config["seed"]          | Generate new seed |
+        | in env_config |-------|---------------------------------|-------------------|
+        |               | False | Use un-changing self.fixed_seed | Generate new seed |
+        |---------------|-------|---------------------------------|-------------------|
         """
-        if single_sim_mode is False:
+        if static_initial_conditions is False:
             # generate new seed every time
             env_config["seed"] = self.rng.integers(self.max_int)
             print("Generating new env seed.")

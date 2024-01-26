@@ -24,7 +24,9 @@ class MonteCarloConfig:
         print_status: bool = False,
         num_cpus: int = None,
         multiprocess: bool = False,
-        single_sim_mode: bool = False,
+        # single_sim_mode: bool = False,
+        static_initial_conditions: bool = False,
+        save_last_step_only: bool = False,
     ):
         """Initialize MC config.
 
@@ -79,7 +81,9 @@ class MonteCarloConfig:
             "print_status": print_status,
             "env_configs": env_configs,
             "policy_configs": policy_configs,
-            "single_sim_mode": single_sim_mode,
+            # "single_sim_mode": single_sim_mode,
+            "static_initial_conditions": static_initial_conditions,
+            "save_last_step_only": save_last_step_only,
         }
         return
 

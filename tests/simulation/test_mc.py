@@ -57,7 +57,8 @@ print("Loaded results DF:\n", combined_df[["trial", "episode", "step", "seed"]])
 print("\nTest runMC with fixed initial conditions...")
 mc_config4 = deepcopy(mc_config_loaded)
 mc_config4["num_episodes"] = 1
-mc_config4["single_sim_mode"] = True
+# mc_config4["single_sim_mode"] = True
+mc_config4["static_initial_conditions"] = True
 mc_config4["print_status"] = False
 mcr4 = MonteCarloRunner(**mc_config4)
 exp_dir, results = mcr4.runMC()
@@ -91,14 +92,16 @@ except Exception as e:
 
 # Test fixed initial conditions but with >1 episodes
 mc_config5["num_episodes"] = 3
-mc_config5["single_sim_mode"] = True
+# mc_config5["single_sim_mode"] = True
+mc_config5["static_initial_conditions"] = True
 try:
     mcr = MonteCarloRunner(**mc_config5)
 except Exception as e:
     print(e)
 
 # Test Set env_config["seed"] to improper value
-mc_config5["single_sim_mode"] = False
+# mc_config5["single_sim_mode"] = False
+mc_config5["static_initial_conditions"] = False
 mc_config5["env_configs"][0]["seed"] = None
 try:
     mcr = MonteCarloRunner(**mc_config5)
