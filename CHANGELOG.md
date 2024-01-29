@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that.
 
-## [unreleased] - 20YY-MM-DD
+## [0.8.3] - 2024-01-29
 
 ### Added
 - Added feature to `NumWindows` wrapper to return time until next window (#102, #111).
