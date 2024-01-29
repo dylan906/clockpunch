@@ -106,7 +106,7 @@ def calcVisMap(
                 vis_map[row, col] = isVis(sens[:3], targ[:3], body_radius)
             else:
                 vis_map[row, col], _, _, _ = visibilityFunc(
-                    sens[:3], targ[:3], body_radius, 0
+                    r1=sens[:3], r2=targ[:3], RE=body_radius, hg=0, tol=1e-6
                 )
 
     if binary is True:
