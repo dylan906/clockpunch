@@ -55,7 +55,6 @@ class CustomCallbacks(DefaultCallbacks):
         # last_info is a 2-item dict, where the 0th item is empty and the 1st item
         # is info returned from env.
         last_info1 = list(last_info.values())[1]
-        # pprint(f"\n {last_info1=}")
 
         # map keys in info to keys in episode.custom_metrics.
         info_metric_map = {
@@ -72,7 +71,8 @@ class CustomCallbacks(DefaultCallbacks):
 
     def on_train_result(self, *, algorithm, result: dict, **kwargs):
         """Rename and cleanup spurious metrics added by on_episode_end callback."""
-
+        # Rename metrics: remove "_mean" from key and delete "[metric]_min" and
+        # "[metric]_max" items.
         metrics_to_cleanup = ["curriculum_task", "curriculum_metric_threshold"]
 
         if "custom_metrics" in result:
@@ -84,25 +84,6 @@ class CustomCallbacks(DefaultCallbacks):
                     result["custom_metrics"].pop(metric + "_mean", None)
                     result["custom_metrics"].pop(metric + "_min", None)
                     result["custom_metrics"].pop(metric + "_max", None)
-
-            # if "curriculum_task_mean" in result["custom_metrics"]:
-            #     result["custom_metrics"]["curriculum_task"] = result["custom_metrics"][
-            #         "curriculum_task_mean"
-            #     ]
-            # if "curriculum_metric_threshold_mean" in result["custom_metrics"]:
-            #     result["custom_metrics"]["curriculum_metric_threshold"] = result[
-            #         "custom_metrics"
-            #     ]["curriculum_metric_threshold_mean"]
-
-        # for k in [
-        #     "curriculum_task_mean",
-        #     "curriculum_task_min",
-        #     "curriculum_task_max",
-        #     "curriculum_metric_threshold_mean",
-        #     "curriculum_metric_threshold_min",
-        #     "curriculum_metric_threshold_max",
-        # ]:
-        #     result["custom_metrics"].pop(k, None)
 
 
 # %% ConfigurableCurriculumFnV2
