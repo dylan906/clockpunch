@@ -12,6 +12,7 @@ I'm trying to get better about that.
 ### Added
 
 ### Changed
+- Replaces `single_sim_mode` in `MonteCarloRunner` with separate `save_last_step_only` and `static_initial_conditions` args (#118).
 
 ### Deprecated
 
