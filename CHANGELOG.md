@@ -13,6 +13,7 @@ I'm trying to get better about that.
 
 ### Changed
 - Replaces `single_sim_mode` in `MonteCarloRunner` with separate `save_last_step_only` and `static_initial_conditions` args (#118).
+- `CustomCallbacks` no longer assign None to custom metrics that don't exist, instead do not create the those metrics (#119).
 
 ### Deprecated
 
