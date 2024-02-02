@@ -1,4 +1,5 @@
 """Tests for sim_utils.py."""
+
 # NOTE: This script requires a Ray checkpoint in "data/" to run.
 # %% Imports
 # Standard Library Imports
@@ -6,7 +7,9 @@ import os
 
 # Third Party Imports
 from gymnasium.spaces import Box, Dict, MultiDiscrete
-from numpy import pi
+from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
+from numpy import array, pi
 from numpy.linalg import norm
 
 # Punch Clock Imports
@@ -79,45 +82,71 @@ init_coe = genInitStates(
 )
 print(f"COE init (in ECI frame) = \n{init_coe}")
 
-# %% Test buildCustomOrRayPolicy
-print("\nTest buildCustomOrRayPolicy...")
-# ray_path = "tests/simulation/data/test_checkpoint/checkpoint_000200/policies/default_policy"
-fpath = os.path.dirname(os.path.realpath(__file__))
-ray_path = (
-    fpath
-    + "/data/test_checkpoint2/test_trial/PPO_ssa_env_f26ba_00000_0_2023-08-22_11-52-50/checkpoint_000001/policies/default_policy"
+# Test wrapping true anomaly
+init_coe = genInitStates(
+    4,
+    "uniform",
+    [[6000, 6000], [0, 0], [0, 0], [0, 0], [0, 0], [-pi / 8, pi / 8]],
+    frame="COE",
 )
+print(f"COE init (in ECI frame) = \n{init_coe}")
 
-ray_policy = buildCustomOrRayPolicy(config_or_path=ray_path)
-print(f"Ray policy = {ray_policy}")
+# Plot positional states
+arr = array(init_coe).squeeze()
 
-custom_policy_config = {
-    "policy": "RandomPolicy",
-    "observation_space": {
-        "space": "Dict",
-        "observations": {
-            "space": "Dict",
-            "a": {
-                "space": "Box",
-                "low": 0,
-                "high": 1,
-                "shape": [2, 2],
-            },
-        },
-        "action_mask": {
-            "space": "Box",
-            "low": 0,
-            "high": 1,
-            "shape": (2, 2),
-        },
-    },
-    "action_space": {
-        "space": "MultiDiscrete",
-        "nvec": [2, 2, 2],
-    },
-}
-custom_policy = buildCustomOrRayPolicy(config_or_path=custom_policy_config)
-print(f"Custom policy = {custom_policy}")
+fig, axs = plt.subplots(2)
+axs[0].scatter(arr[:, 0], arr[:, 1])
+axs[0].set_xlabel("I")
+axs[0].set_ylabel("J")
+axs[1].scatter(arr[:, 0], arr[:, 2])
+axs[1].set_xlabel("I")
+axs[1].set_ylabel("K")
+
+circle = Circle((0, 0), radius=6000, edgecolor="r", facecolor="none")
+axs[0].add_patch(circle)
+plt.tight_layout()
+
+# %% Test buildCustomOrRayPolicy
+# print("\nTest buildCustomOrRayPolicy...")
+# # ray_path = "tests/simulation/data/test_checkpoint/checkpoint_000200/policies/default_policy"
+# fpath = os.path.dirname(os.path.realpath(__file__))
+# ray_path = (
+#     fpath
+#     + "/data/test_checkpoint2/test_trial/PPO_ssa_env_f26ba_00000_0_2023-08-22_11-52-50/checkpoint_000001/policies/default_policy"
+# )
+
+# ray_policy = buildCustomOrRayPolicy(config_or_path=ray_path)
+# print(f"Ray policy = {ray_policy}")
+
+# custom_policy_config = {
+#     "policy": "RandomPolicy",
+#     "observation_space": {
+#         "space": "Dict",
+#         "observations": {
+#             "space": "Dict",
+#             "a": {
+#                 "space": "Box",
+#                 "low": 0,
+#                 "high": 1,
+#                 "shape": [2, 2],
+#             },
+#         },
+#         "action_mask": {
+#             "space": "Box",
+#             "low": 0,
+#             "high": 1,
+#             "shape": (2, 2),
+#         },
+#     },
+#     "action_space": {
+#         "space": "MultiDiscrete",
+#         "nvec": [2, 2, 2],
+#     },
+# }
+# custom_policy = buildCustomOrRayPolicy(config_or_path=custom_policy_config)
+# print(f"Custom policy = {custom_policy}")
 
 # %% Done
+plt.show()
+
 print("done")
