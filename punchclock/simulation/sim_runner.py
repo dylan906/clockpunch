@@ -1,4 +1,5 @@
 """Module for things to run simulations."""
+
 # %% Imports
 from __future__ import annotations
 
@@ -125,12 +126,10 @@ class SimRunner:
             action = self.policy._computeSingleAction(obs=obs)
         elif self.policy.is_recurrent():
             # recurrent Ray policies
-            rnn_state = getattr(
-                self, "rnn_state", self.policy.get_initial_state()
-            )
-
+            rnn_state = getattr(self, "rnn_state", self.policy.get_initial_state())
+            obs_tensor = self._convertObs2Tensor(obs)
             action, rnn_state, _ = self.policy.compute_single_action(
-                obs=obs,
+                obs=obs_tensor,
                 state=rnn_state,
                 explore=False,
             )
@@ -138,9 +137,7 @@ class SimRunner:
         else:
             # non-recurrent Ray policies
             obs_tensor = self._convertObs2Tensor(obs)
-            action = self.policy.compute_single_action(
-                obs=obs_tensor, explore=False
-            )
+            action = self.policy.compute_single_action(obs=obs_tensor, explore=False)
 
         return action
 
@@ -173,9 +170,7 @@ class SimRunner:
             # from bottom-up to transform to top-level env observation space.
             obs = self.env.unwrapped._getObs()
             for i in range(1, self.num_env_wrappers + 1):
-                env = getXLevelWrapper(
-                    deepcopy(self.env), self.num_env_wrappers - i
-                )
+                env = getXLevelWrapper(deepcopy(self.env), self.num_env_wrappers - i)
                 # print(env)
                 # if isinstance(env, ObservationWrapper):
                 if hasattr(env, "observation"):
@@ -186,10 +181,7 @@ class SimRunner:
                 if stop_at_identity_wrapper is True:
                     # Break for loop if at IdentityWrapper, skip any higher
                     # levels of wrappers.
-                    if (
-                        self._isWrapperIdentity(env, identity_wrapper_id)
-                        is True
-                    ):
+                    if self._isWrapperIdentity(env, identity_wrapper_id) is True:
                         break
 
             obs = OrderedDict(obs)
@@ -410,9 +402,7 @@ class SimResults:
                 if len(v) == 0:
                     out[k] = [self._convert2JSONable(a) for a in v]
                 elif isinstance(v[0], dict):
-                    out[k] = [
-                        self._recursivelyConvertDicts2JSONable(a) for a in v
-                    ]
+                    out[k] = [self._recursivelyConvertDicts2JSONable(a) for a in v]
                 else:
                     out[k] = [self._convert2JSONable(a) for a in v]
             else:
@@ -468,9 +458,7 @@ def results2DF(results: SimResults | PrimitiveSimResults) -> DataFrame:
     obs_df = obs_df.add_prefix("obs_")
     info_df = json_normalize(results.info)
     info_df = info_df.add_prefix("info_")
-    terminated_df = json_normalize(
-        [{"terminated": v} for v in results.terminated]
-    )
+    terminated_df = json_normalize([{"terminated": v} for v in results.terminated])
     truncated_df = json_normalize([{"truncated": v} for v in results.truncated])
     action_df = json_normalize([{"action": v} for v in results.actions])
     reward_df = json_normalize([{"reward": v} for v in results.reward])
