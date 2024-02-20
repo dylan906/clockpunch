@@ -18,6 +18,7 @@ I'm trying to get better about that.
 ### Deprecated
 
 ### Fixed
+- Fixed bug in `SimRunner` that would cause recurrent nets to error when getting a dict observation (#120).
 
 ### Removed
 
