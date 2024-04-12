@@ -7,12 +7,12 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that.
 
-## [unreleased] - 20XX-MM-DD
+## [v0.8.4] - 2024-04-12
 
 ### Added
 
 ### Changed
-- Replaces `single_sim_mode` in `MonteCarloRunner` with separate `save_last_step_only` and `static_initial_conditions` args (#118).
+- Replaced `single_sim_mode` in `MonteCarloRunner` with separate `save_last_step_only` and `static_initial_conditions` args (#118).
 - `CustomCallbacks` no longer assign None to custom metrics that don't exist, instead do not create the those metrics (#119).
 
 ### Deprecated
