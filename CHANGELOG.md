@@ -7,6 +7,20 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that.
 
+## [unreleased] - 20YY-MM-DD
+
+### Added
+
+### Changed
+- `TransformInfoWithNumpy` now works if `key` is not provided by creating a new entry `info[new_key]`.
+Allows using `np.ones` and other functions that don't need dynamic args (#121).
+
+### Deprecated
+
+### Fixed
+
+### Removed
+
 ## [v0.8.4] - 2024-04-12
 
 ### Added

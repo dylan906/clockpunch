@@ -1,4 +1,5 @@
 """Tests for info_wrappers.py."""
+
 # %% Imports
 # Standard Library Imports
 from copy import deepcopy
@@ -403,6 +404,13 @@ np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="sum", key="a")
 print(f"info (via step) = {info}")
 
 np_env = TransformInfoWithNumpy(env=rand_env, numpy_func_str="nonzero", key="a")
+(_, _, _, _, info) = np_env.step(np_env.action_space.sample())
+print(f"info (via step) = {info}")
+
+# Test with no base key
+np_env = TransformInfoWithNumpy(
+    env=rand_env, numpy_func_str="ones", key=None, new_key="new_key", shape=(3, 3)
+)
 (_, _, _, _, info) = np_env.step(np_env.action_space.sample())
 print(f"info (via step) = {info}")
 

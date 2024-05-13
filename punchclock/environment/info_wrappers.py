@@ -1,4 +1,5 @@
 """Info wrappers."""
+
 # %% Import
 # Standard Library Imports
 from abc import ABC, abstractmethod
@@ -1153,7 +1154,7 @@ class TransformInfoWithNumpy(InfoWrapper):
         self,
         env: Env,
         numpy_func_str: str,
-        key: str,
+        key: str | None,
         new_key: str = None,
         **kwargs,
     ):
@@ -1163,19 +1164,28 @@ class TransformInfoWithNumpy(InfoWrapper):
             env (Env): A Gymnasium Environment.
             numpy_func_str (str): Must be an attribute of numpy (i.e. works by calling
                 getattr(numpy, numpy_func_str)).
-            key (str): Key in info, as returned from env.step().
+            key (str | None): Key in info, as returned from env.step(). If None,
+                then no items from info will be used when calling numpy func.
+                If None, new_key cannot also be None.
             new_key (str, optional): New key to assign to info. If None, overrides
-                key. Defaults to None.
+                key. If None, key cannot also be None. Defaults to None.
+            ``**kwargs``: Additional arguments to pass to numpy function.
         """
         super().__init__(env)
         self.partialFunc = convertNumpyFuncStrToCallable(
             numpy_func_str=numpy_func_str,
             **kwargs,
         )
-        self.key = key
+
         if new_key is None:
             new_key = key
+
+        assert not (
+            key is None and new_key is None
+        ), "key and new_key cannot both be None."
+
         self.new_key = new_key
+        self.key = key
 
     def updateInfo(
         self, observations, rewards, terminations, truncations, infos, action
@@ -1191,8 +1201,16 @@ class TransformInfoWithNumpy(InfoWrapper):
                 Numpy function.
         """
         new_info = deepcopy(infos)
-        val = new_info[self.key]
-        val_trans = self.partialFunc(val)
+
+        # If self.key is not in info, numpy function doesn't require any args,
+        # so call self.partialFunc w/o args.
+        val = new_info.get(self.key, None)
+
+        if val is not None:
+            val_trans = self.partialFunc(val)
+        else:
+            val_trans = self.partialFunc()
+
         new_info[self.new_key] = val_trans
 
         return new_info
