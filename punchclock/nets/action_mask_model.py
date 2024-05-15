@@ -1,4 +1,5 @@
 """Model with action masking."""
+
 # Based on Ray examples:
 # https://github.com/ray-project/ray/blob/3e1cdeb117c945ba42df93d629f9a70189e38db9/rllib/examples/models/action_mask_model.py
 # https://github.com/ray-project/ray/blob/3e1cdeb117c945ba42df93d629f9a70189e38db9/rllib/examples/action_masking.py
@@ -18,8 +19,6 @@ from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 from torch import Tensor, tensor
 
-# from ray.rllib.models.modelv2 import restore_original_dimensions
-
 # %% Class
 
 
@@ -38,10 +37,9 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         obs_space: Space,
         action_space: Space,
         num_outputs: int,
-        model_config: dict,
-        name: str,
-        no_masking: bool = False,
-        **kwargs,
+        model_config: dict = None,
+        name: str = None,
+        **custom_model_kwargs,
     ):
         """Initialize action masking model.
 
@@ -50,16 +48,18 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
             action_space (`Space`): A gym space.
             num_outputs (`int`): Number of outputs of neural net. Should be the
                 size of the flattened action space.
-            model_config (`dict`): Model configuration. Required inputs are:
-                {
-                    "fcnet_hiddens" (`list[int]`): Fully connected hidden layers.
-                }
-            name (`str`): Name of model.
-            no_masking (`bool`, optional): If True, disables action masking. Defaults
-                to False.
+            model_config (`dict`, optional): Model configuration for TorchFC.
+                Defaults to None.
+            name (`str`, optional): Name of model. Defaults to "MyActionMaskModel".
+            custom_model_kwargs (`dict`): Custom model configuration. Required.
 
-        To disable action masking, set:
-            model_config["custom_model_config"]["no_masking"] = True.
+        Expected items in custom_model_kwargs:
+            fcnet_hiddens (list[int]): Number and size of FC layers.
+            fcnet_activation (str): Activation function for FC layers. See Ray
+                SlimFC documentation for recognized args.
+            no_masking (bool, optional): Disables masking if True. Defaults to
+                False.
+
         """
         # Check that the observation space is a dict that contains "action_mask"
         # and "observations" as keys.
@@ -67,20 +67,31 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         assert isinstance(orig_space, Dict)
         assert "action_mask" in orig_space.spaces
         assert "observations" in orig_space.spaces
+        assert "fcnet_hiddens" in custom_model_kwargs
+        assert "fcnet_activation" in custom_model_kwargs
 
-        # Boilerplate Torch stuff.
-        TorchModelV2.__init__(
-            self,
+        # Defaults
+        if model_config is None:
+            model_config = {}
+        if name is None:
+            name = "MyActionMaskModel"
+
+        # disable action masking --> will likely lead to invalid actions
+        self.no_masking = custom_model_kwargs.get("no_masking", False)
+
+        # Inheritance
+        nn.Module.__init__(self)
+        super().__init__(
             obs_space,
             action_space,
             num_outputs,
             model_config,
             name,
-            **kwargs,
         )
-        nn.Module.__init__(self)
 
         # Build feed-forward layers
+        model_config["fcnet_hiddens"] = custom_model_kwargs["fcnet_hiddens"]
+        model_config["fcnet_activation"] = custom_model_kwargs["fcnet_activation"]
         self.internal_model = TorchFC(
             orig_space["observations"],
             action_space,
@@ -90,13 +101,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         )
 
         last_layer_size = model_config["fcnet_hiddens"][-1]
-        print(f"last_layer_size = {last_layer_size}")
-        print(f"num_outputs = {num_outputs}")
         self.action_head = nn.Linear(last_layer_size, num_outputs)
         self.value_head = nn.Linear(last_layer_size, 1)
-
-        # disable action masking --> will likely lead to invalid actions
-        self.no_masking = no_masking
 
     def forward(
         self,
@@ -161,9 +167,7 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
                 [a["action_mask"] for a in input_dict["obs"]], axis=0
             )
             action_mask = tensor(array_of_masks)
-            array_of_obs = stack(
-                [a["observations"] for a in input_dict["obs"]], axis=0
-            )
+            array_of_obs = stack([a["observations"] for a in input_dict["obs"]], axis=0)
             observation = tensor(array_of_obs).float()
         else:
             action_mask = input_dict["obs"]["action_mask"]
@@ -176,8 +180,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         # the forward pass, but it doesn't seem to work. Instead, just use
         # _hidden_layers.forward().
         # appropriate_features = self.internal_model({"obs": observation})
-        self.internal_model._features = (
-            self.internal_model._hidden_layers.forward(observation)
+        self.internal_model._features = self.internal_model._hidden_layers.forward(
+            observation
         )
         # print(
         #     f"internal_model._features.size() = {self.internal_model._features.size()}"

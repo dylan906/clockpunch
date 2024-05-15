@@ -1,4 +1,5 @@
 """Test for action_mask_model.py."""
+
 # Based on Ray examples:
 # https://github.com/ray-project/ray/blob/3e1cdeb117c945ba42df93d629f9a70189e38db9/rllib/examples/models/action_mask_model.py
 # https://github.com/ray-project/ray/blob/3e1cdeb117c945ba42df93d629f9a70189e38db9/rllib/examples/action_masking.py
@@ -66,11 +67,6 @@ print(f"num_outputs = {num_outputs}")
 # defaults will be filled in for non-specified entries of model_config. First
 # layer must be size of flattened observations.
 obs_space_size = obs_space["observations"].shape[0]
-model_config = {
-    "custom_model_config": {},
-    "fcnet_hiddens": [15, 20],
-    "fcnet_activation": "relu",
-}
 name = "test_model"
 # %% Initialize model
 print("\nInitializing model...")
@@ -79,8 +75,11 @@ model = MyActionMaskModel(
     obs_space=obs_space,
     action_space=action_space,
     num_outputs=num_outputs,
-    model_config=model_config,
+    model_config=None,
     name=name,
+    fcnet_hiddens=[15, 20],
+    fcnet_activation="relu",
+    no_masking=False,
 )
 
 # %% Test forward
@@ -118,21 +117,23 @@ print(f"state = {state}")
 # %% Test with masking disabled
 print("\nTest masking disabled...")
 
-model_config = {
-    # "custom_model_config": {
-    #     "no_masking": True,
-    # },
-    # "no_masking": True,
-    "fcnet_hiddens": [15, 20],
-    "fcnet_activation": "relu",
-}
+# model_config = {
+# "custom_model_config": {
+#     "no_masking": True,
+# },
+# "no_masking": True,
+# "fcnet_hiddens": [15, 20],
+# "fcnet_activation": "relu",
+# }
 model = MyActionMaskModel(
     obs_space=obs_space,
     action_space=action_space,
     num_outputs=num_outputs,
-    model_config=model_config,
+    model_config=None,
     name=name,
-    # no_masking=False,
+    fcnet_hiddens=[15, 20],
+    fcnet_activation="relu",
+    no_masking=False,
 )
 
 print(f"model.no_masking = {model.no_masking}")
@@ -166,9 +167,10 @@ rand_env = RandomEnv(
 rand_model = MyActionMaskModel(
     obs_space=rand_env.observation_space,
     action_space=rand_env.action_space,
-    model_config={"fcnet_hiddens": [10, 5], "custom_model_config": {}},
     name="my_model",
     num_outputs=obs_space["action_mask"].shape[0],
+    fcnet_hiddens=[10, 5],
+    fcnet_activation="relu",
 )
 
 obs_sample = rand_env.observation_space.sample()
@@ -199,12 +201,15 @@ config = (
     )
     .training(
         # The ActionMaskModel retrieves the invalid actions and avoids them.
-        # When using .training() input, `no_masking` is input via `custom_model_config`
-        # subdict.
+        # When using .training() input, custom_model_kwargs are input via
+        # `custom_model_config` dict.
         model={
             "custom_model": MyActionMaskModel,
-            "custom_model_config": {"no_masking": False},
-            "fcnet_hiddens": [10, 5],
+            "custom_model_config": {
+                "fcnet_hiddens": [10, 5],
+                "fcnet_activation": "relu",
+                "no_masking": False,
+            },
         },
     )
     .framework("torch")
@@ -257,9 +262,7 @@ md_env = FlatDict(
 # are not guaranteed to look like a flattened MultiDiscrete.
 def wrapOb(ob):
     """Flatten 'action_mask' part of observation."""
-    flat_mask = flatten(
-        md_env.observation_space["action_mask"], ob["action_mask"]
-    )
+    flat_mask = flatten(md_env.observation_space["action_mask"], ob["action_mask"])
     new_ob = deepcopy(ob)
     new_ob["action_mask"] = flat_mask
     return new_ob
