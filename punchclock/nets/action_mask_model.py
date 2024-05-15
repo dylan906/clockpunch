@@ -23,14 +23,7 @@ from torch import Tensor, tensor
 
 
 class MyActionMaskModel(TorchModelV2, nn.Module):
-    """Model that handles simple discrete action masking.
-
-    Include all regular model configuration parameters (fcnet_hiddens,
-    fcnet_activation, etc.) in model_config.
-
-    Custom model parameters are set in model_config["custom_model_config"]. The
-    only custom model parameter is "no_masking" (default False).
-    """
+    """Model that handles simple discrete action masking."""
 
     def __init__(
         self,
@@ -44,14 +37,14 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         """Initialize action masking model.
 
         Args:
-            obs_space (`Space`): A gym space.
-            action_space (`Space`): A gym space.
-            num_outputs (`int`): Number of outputs of neural net. Should be the
+            obs_space (Space): A gym space.
+            action_space (Space): A gym space.
+            num_outputs (int): Number of outputs of neural net. Should be the
                 size of the flattened action space.
-            model_config (`dict`, optional): Model configuration for TorchFC.
+            model_config (dict, optional): Model configuration for TorchFC.
                 Defaults to None.
-            name (`str`, optional): Name of model. Defaults to "MyActionMaskModel".
-            custom_model_kwargs (`dict`): Custom model configuration. Required.
+            name (str, optional): Name of model. Defaults to "MyActionMaskModel".
+            custom_model_kwargs (dict): Custom model configuration. Required.
 
         Expected items in custom_model_kwargs:
             fcnet_hiddens (list[int]): Number and size of FC layers.
@@ -112,7 +105,7 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
     ) -> [Tensor, Any]:
         """Forward propagate observations through the model.
 
-        Takes a `dict` as an argument with the only key being "obs", which is either
+        Takes a dict as an argument with the only key being "obs", which is either
         a sample from the observation space or a list of samples from the observation
         space.
 
@@ -121,28 +114,28 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         multiple observations, the input is a dict[dict[list_of_dicts]].
 
         Args:
-            input_dict (`dict`[`dict`]):
+            input_dict (dict[dict]):
                 {
                     "obs": {
-                        "action_mask": `Tensor`,
-                        "observations": `Tensor`,
+                        "action_mask": Tensor,
+                        "observations": Tensor,
                     }
                 }
                 or
                 {
                     "obs": list[
                         {
-                        "action_mask": `Tensor`,
-                        "observations": `Tensor`
+                        "action_mask": Tensor,
+                        "observations": Tensor
                         },
                         ...]
                 }
-            state (`Any`): _description_
-            seq_lens (`Any`): _description_
+            state (Any): _description_
+            seq_lens (Any): _description_
 
         Returns:
-            logits (`Tensor`): Logits in shape of (num_outputs, ).
-            state (`Any`): _description_
+            logits (Tensor): Logits in shape of (num_outputs, ).
+            state (Any): _description_
         """
         # Potential solution to sample batch errors.
         # https://discuss.ray.io/t/dict-observation-space-flattened/541
@@ -204,7 +197,7 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         """Get current value of value function.
 
         Returns:
-            `Tensor[torch.float32]`: Value function value.
+            Tensor[torch.float32]: Value function value.
         """
         # get features and squeeze extra dimensions out.
         y = self.value_head(self.internal_model._features)
