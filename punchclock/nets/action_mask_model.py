@@ -206,6 +206,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
 
     def maskLogits(self, logits: TensorType, mask: TensorType):
         """Apply mask over raw logits."""
+        assert all([i in [0, 1] for i in mask.detach().numpy().flatten()])
+
         # If action masking is disabled, skip masking and return unmasked logits.
         # Otherwise, step into masking block.
         if self.no_masking is False:
