@@ -17,6 +17,7 @@ from numpy import stack
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork as TorchFC
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.utils.torch_utils import FLOAT_MIN
+from ray.rllib.utils.typing import TensorType
 from torch import Tensor, tensor
 
 # %% Class
@@ -60,8 +61,18 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         assert isinstance(orig_space, Dict)
         assert "action_mask" in orig_space.spaces
         assert "observations" in orig_space.spaces
+        assert len(orig_space.spaces) == 2
+        assert len(orig_space["action_mask"].shape) == 1
+        assert (
+            orig_space["action_mask"].shape[0] == num_outputs
+        ), f"""
+        orig_space['action_mask'].shape[0] = {orig_space['action_mask'].shape[0]}\n
+        num_outputs = {num_outputs}
+        """
         assert "fcnet_hiddens" in custom_model_kwargs
         assert "fcnet_activation" in custom_model_kwargs
+        assert isinstance(custom_model_kwargs["fcnet_hiddens"], list)
+        assert all([isinstance(i, int) for i in custom_model_kwargs["fcnet_hiddens"]])
 
         # Defaults
         if model_config is None:
@@ -74,13 +85,7 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
 
         # Inheritance
         nn.Module.__init__(self)
-        super().__init__(
-            obs_space,
-            action_space,
-            num_outputs,
-            model_config,
-            name,
-        )
+        super().__init__(obs_space, action_space, num_outputs, model_config, name)
 
         # Build feed-forward layers
         model_config["fcnet_hiddens"] = custom_model_kwargs["fcnet_hiddens"]
@@ -96,6 +101,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         last_layer_size = model_config["fcnet_hiddens"][-1]
         self.action_head = nn.Linear(last_layer_size, num_outputs)
         self.value_head = nn.Linear(last_layer_size, 1)
+
+        print(f"MyActionMaskModel built: \n{self}")
 
     def forward(
         self,
@@ -181,15 +188,8 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         # )
         logits = self.action_head(self.internal_model._features)
 
-        # If action masking is disabled, skip masking and return unmasked logits.
-        # Otherwise, step into masking block.
-        if self.no_masking is False:
-            # Convert action_mask into a [0.0 || -inf]-type mask.
-            inf_mask = torch.clamp(torch.log(action_mask), min=FLOAT_MIN)
-            # print(f"logits.size() = {logits.size()}")
-            # print(f"inf_mask.size() = {inf_mask.size()}")
-            masked_logits = logits + inf_mask
-            logits = masked_logits
+        # Apply mask
+        logits = self.maskLogits(logits, action_mask)
 
         return logits, state
 
@@ -203,3 +203,20 @@ class MyActionMaskModel(TorchModelV2, nn.Module):
         y = self.value_head(self.internal_model._features)
         y = y.squeeze(-1)
         return y
+
+    def maskLogits(self, logits: TensorType, mask: TensorType):
+        """Apply mask over raw logits."""
+        # If action masking is disabled, skip masking and return unmasked logits.
+        # Otherwise, step into masking block.
+        if self.no_masking is False:
+            # Convert action_mask into a [0.0 || -inf]-type mask.
+            inf_mask = torch.clamp(torch.log(mask), min=FLOAT_MIN)
+
+            # print(f"logits.size() = {logits.size()}")
+            # print(f"inf_mask.size() = {inf_mask.size()}")
+            masked_logits = logits + inf_mask
+
+            return masked_logits
+
+        else:
+            return logits
