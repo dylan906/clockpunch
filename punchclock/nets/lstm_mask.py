@@ -1,4 +1,5 @@
 """Custom LSTM + Action Mask model."""
+
 # %% Imports
 # Standard Library Imports
 from typing import Dict, List, Tuple
@@ -69,9 +70,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         assert "fcnet_hiddens" in custom_model_kwargs
         assert "fcnet_activation" in custom_model_kwargs
         assert isinstance(custom_model_kwargs["fcnet_hiddens"], list)
-        assert all(
-            [isinstance(i, int) for i in custom_model_kwargs["fcnet_hiddens"]]
-        )
+        assert all([isinstance(i, int) for i in custom_model_kwargs["fcnet_hiddens"]])
 
         # print(f"obs_space = {obs_space}")
         # print(f"action_space = {action_space}")
@@ -90,9 +89,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
         # Inheritance
         nn.Module.__init__(self)
-        super().__init__(
-            obs_space, action_space, num_outputs, model_config, name
-        )
+        super().__init__(obs_space, action_space, num_outputs, model_config, name)
 
         self.obs_size = orig_space["observations"].shape[0]
         # transition layer size: size of output of final hidden layer
@@ -190,9 +187,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
 
         # check for binary action mask so error doesn't happen in action distribution
         # creation.
-        assert all(
-            [i in [0, 1] for i in mask_binary.detach().numpy().flatten()]
-        )
+        assert all([i in [0, 1] for i in mask_binary.detach().numpy().flatten()])
         if tensorall(mask_binary == 0):
             warn("All actions masked")
 
@@ -221,9 +216,7 @@ class MaskedLSTM(TorchRNN, nn.Module):
         action_out = self.action_branch(self._features)
         return action_out, [torch.squeeze(h, 0), torch.squeeze(c, 0)]
 
-    def makeFCLayers(
-        self, model_config: dict, input_size: int
-    ) -> nn.Sequential:
+    def makeFCLayers(self, model_config: dict, input_size: int) -> nn.Sequential:
         """Make fully-connected layers.
 
         See Ray SlimFC for details.
