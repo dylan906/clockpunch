@@ -7,7 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/) in spirit, but
 PATCH versions generally don't break interfaces.
 I'm trying to get better about that.
 
-## [unreleased] - 20YY-MM-DD
+## [v0.8.5] - 2024-06-25
 
 ### Added
 
