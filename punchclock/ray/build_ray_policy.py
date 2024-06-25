@@ -15,7 +15,7 @@ from punchclock.nets.lstm_mask import MaskedLSTM
 # %% Functions
 def buildCustomRayPolicy(
     checkpoint_path: str,
-) -> dict | Policy:
+) -> Policy:
     """Build Ray policy using MyActionMask model from a checkpoint path.
 
     Args:
@@ -38,5 +38,11 @@ def buildCustomRayPolicy(
     print("build policy from checkpoint")
     print(f"checkpoint path = {checkpoint_path}")
     policy = Policy.from_checkpoint(checkpoint_path)
+
+    if isinstance(policy, dict):
+        # Policy.from_checkpoint() returns a dict if checkpoint_path is an algo
+        # checkpoint.
+        policy = next(iter(policy.values()))
+
     print("...policy built")
     return policy

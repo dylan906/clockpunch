@@ -100,7 +100,7 @@ class SimRunner:
         ), "Environment observation space must contain 'action_mask' as a key."
         assert isinstance(
             policy, (RayPolicy, CustomPolicy)
-        ), "Policy must be RayPolicy or CustomPolicy"
+        ), f"Policy must be RayPolicy or CustomPolicy (policy={policy})"
         if isinstance(policy, CustomPolicy):
             assert (
                 IdentityWrapper in self.wrappers
@@ -124,7 +124,7 @@ class SimRunner:
         assert isinstance(obs, dict)
         if isinstance(self.policy, CustomPolicy):
             action = self.policy._computeSingleAction(obs=obs)
-        elif self.policy.is_recurrent():
+        elif getattr(self.policy, "is_recurrent", lambda: False)():
             # recurrent Ray policies
             rnn_state = getattr(self, "rnn_state", self.policy.get_initial_state())
             obs_tensor = self._convertObs2Tensor(obs)
