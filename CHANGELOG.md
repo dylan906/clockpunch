@@ -18,6 +18,7 @@ Allows using `np.ones` and other functions that don't need dynamic args (#121).
 ### Deprecated
 
 ### Fixed
+- Fixed bug in building Ray policies using algorithm checkpoints.
 
 ### Removed
 
