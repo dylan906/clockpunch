@@ -1,4 +1,5 @@
 """Build Ray Policies module."""
+
 # %% Imports
 from __future__ import annotations
 
@@ -30,6 +31,8 @@ def buildCustomRayPolicy(
     print("register model")
     # Register model (assumes MyActionMaskModel is used in policies)
     ModelCatalog.register_custom_model("action_mask_model", MyActionMaskModel)
+    # Pseudonym for MyActionMaskModel
+    ModelCatalog.register_custom_model("masked_fc", MyActionMaskModel)
     ModelCatalog.register_custom_model("MaskedLSTM", MaskedLSTM)
 
     print("build policy from checkpoint")
